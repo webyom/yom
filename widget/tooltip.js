@@ -275,24 +275,32 @@ define(function(require) {
 			arrow = wrapper.find('[data-type="yom-tooltip-arrow"]').get();
 			if(direction == 'L') {
 				wrapper.setStyle({
+					width: width + 'px',
+					height: height + 'px',
 					left: (pos.x - width) + offset.L.x + 'px',
 					top: pos.y + offset.L.y + 'px'
 				});
 				arrow.className = 'yom-tooltip-arrow-rt';
 			} else if(direction == 'R') {
 				wrapper.setStyle({
+					width: width + 'px',
+					height: height + 'px',
 					left: pos.x + offset.R.x + 'px',
 					top: pos.y + offset.R.y + 'px'
 				});
 				arrow.className = 'yom-tooltip-arrow-lt';
 			} else if(direction == 'T' || direction == 'TT') {
 				wrapper.setStyle({
+					width: width + 'px',
+					height: height + 'px',
 					left: pos.x + offset.T.x + 'px',
 					top: (pos.y - height) + offset.T.y + 'px'
 				});
 				arrow.className = 'yom-tooltip-arrow-bl';
 			} else {
 				wrapper.setStyle({
+					width: width + 'px',
+					height: height + 'px',
 					left: pos.x + offset.B.x + 'px',
 					top: pos.y + offset.B.y + 'px'
 				});
