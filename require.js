@@ -10,6 +10,7 @@ var define, require;
 	 * utils
 	 */
 	var _head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+	var _isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]';
 	var _op = Object.prototype;
 	var _ots = _op.toString;
 	
@@ -434,8 +435,14 @@ var define, require;
 		return urlArgs && (urlArgs[_removeIdPrefix(id)] || urlArgs['*']) || '';
 	};
 	
-	function _endLoad(jsNode) {
+	function _endLoad(jsNode, onload, onerror) {
 		_loadingCount--;
+		if(jsNode.attachEvent && !_isOpera) {
+			jsNode.detachEvent('onreadystatechange', onload);
+		} else {
+			jsNode.removeEventListener('load', onload, false);
+			jsNode.removeEventListener('error', onerror, false);
+		}
 		jsNode.parentNode.removeChild(jsNode);
 		if(_loadingCount === 0 && _gcfg.onLoadStart) {
 			try {
@@ -455,34 +462,12 @@ var define, require;
 		var baseUrl = config.baseUrl;
 		var jsNode, urlArg;
 		jsNode = document.createElement('script');
-		if(jsNode.attachEvent) {
+		if(jsNode.attachEvent && !_isOpera) {
 			_interactiveMode = true;
-			jsNode.attachEvent('onreadystatechange', function() {
-				if(jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
-					_endLoad(jsNode);
-					jsNode = null;
-					_checkHoldDefine(hold);
-				}
-			});
+			jsNode.attachEvent('onreadystatechange', _ieOnload);
 		} else {
-			jsNode.addEventListener('load', function() {
-				var def;
-				_endLoad(jsNode);
-				def = _defQueue.shift();
-				while(def) {
-					_defineCall(def.id, def.nrmId, def.deps, def.factory, {
-						nrmId: nrmId,
-						baseUrl: baseUrl
-					}, def.config);
-					def = _defQueue.shift();
-				}
-				_checkHoldDefine(hold);
-			}, false);
-			jsNode.addEventListener('error', function() {
-				_endLoad(jsNode);
-				hold.dispatch(_ERR_CODE.LOAD_ERROR);
-				hold.remove();
-			}, false);
+			jsNode.addEventListener('load', _onload, false);
+			jsNode.addEventListener('error', _onerror, false);
 		}
 		if(config.charset) {
 			jsNode.charset = config.charset;
@@ -498,6 +483,31 @@ var define, require;
 		if(_loadingCount === 1 && _gcfg.onLoadStart) {
 			_gcfg.onLoadStart();
 		}
+		function _ieOnload() {
+			if(jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
+				_endLoad(jsNode, _ieOnload);
+				jsNode = null;
+				_checkHoldDefine(hold);
+			}
+		};
+		function _onload() {
+			var def;
+			_endLoad(jsNode, _onload, _onerror);
+			def = _defQueue.shift();
+			while(def) {
+				_defineCall(def.id, def.nrmId, def.deps, def.factory, {
+					nrmId: nrmId,
+					baseUrl: baseUrl
+				}, def.config);
+				def = _defQueue.shift();
+			}
+			_checkHoldDefine(hold);
+		};
+		function _onerror() {
+			_endLoad(jsNode, _onload, _onerror);
+			hold.dispatch(_ERR_CODE.LOAD_ERROR);
+			hold.remove();
+		};
 	};
 	
 	function _load(id, nrmId, config, onRequire) {
