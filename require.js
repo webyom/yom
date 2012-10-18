@@ -89,7 +89,8 @@ var define, require;
 	var _RESERVED_NRM_ID = {
 		require: 1,
 		exports: 1,
-		module: 1
+		module: 1,
+		domready: 1
 	};
 	var _ERR_CODE = {
 		DEFAULT: 1,
@@ -121,7 +122,7 @@ var define, require;
 	var _defined = {};
 	var _depReverseMap = {};
 	
-	function Def(nrmId, config, exports, module, getter) {
+	function Def(nrmId, config, exports, module, getter, loader) {
 		var baseUrl = config.baseUrl;
 		this._nrmId = nrmId;
 		this._baseUrl = baseUrl;
@@ -129,6 +130,7 @@ var define, require;
 		this._exports = exports;
 		this._module = module;
 		this._getter = getter;
+		this._loader = loader;
 		this._fullUrl = _getFullUrl(nrmId, baseUrl);
 		_defined[this._fullUrl] = this;
 	};
@@ -140,6 +142,10 @@ var define, require;
 			} else {
 				return this._exports;
 			}
+		},
+		
+		getLoader: function() {
+			return this._loader;
 		},
 		
 		constructor: Def
@@ -159,6 +165,60 @@ var define, require;
 	new Def('module', _gcfg, {}, {}, function(context) {
 		return {};
 	});
+	new Def('domready', _gcfg, {}, {}, function(context) {
+		return {};
+	}, (function() {
+		var _queue = [];
+		var _checking = false;
+		var _ready = false;
+		
+		function _onready() {
+			if(_ready) {
+				return;
+			}
+			_ready = true;
+			while(_queue.length) {
+				(function(args) {
+					setTimeout(function() {
+						domreadyLoader.apply(null, _getArray(args));
+					}, 0);
+				})(_queue.shift());
+			}
+		};
+		
+		function _onReadyStateChange() {
+			if(document.readyState == 'complete') {
+				_onready();
+			}
+		};
+		
+		function _checkReady() {
+			if(_checking || _ready) {
+				return;			
+			}
+			_checking = true;
+			if(document.readyState == 'complete') {
+				_onready();
+			} else if(document.addEventListener) {
+				document.addEventListener('DOMContentLoaded', _onready, false);
+				window.addEventListener('load', _onready, false);
+			} else {
+				document.attachEvent('onreadystatechange', _onReadyStateChange);
+				window.attachEvent('onload', _onready);
+			}
+		};		
+		
+		function domreadyLoader(context, onRequire) {
+			if(_ready) {
+				onRequire();
+			} else {
+				_queue.push(arguments);
+				_checkReady();
+			}
+		};
+		
+		return domreadyLoader;
+	})());
 	
 	function Hold(id, nrmId, config) {
 		var baseUrl = config.baseUrl;
@@ -200,10 +260,12 @@ var define, require;
 		},
 		
 		dispatch: function(errCode) {
-			var callback;
 			while(this._queue.length) {
-				callback = this._queue.shift();
-				callback && callback(this._nrmId, this._baseUrl, errCode);
+				(function(callback) {
+					setTimeout(function() {
+						callback && callback(errCode);
+					}, 0);
+				})(this._queue.shift());
 			}
 		},
 		
@@ -659,7 +721,7 @@ var define, require;
 			sourceConf = config.source[_getSourceName(id)];
 			def = _defined[id];
 			if(def) {
-				return {inst: def};
+				return {inst: def, loader: def.getLoader()};
 			}
 			conf = _extendConfig(['charset', 'baseUrl', 'path', 'shim', 'urlArgs'], config, sourceConf);
 			nrmId = _normalizeId(id, context.base, conf.path);
@@ -689,7 +751,10 @@ var define, require;
 			callArgs = new Array(deps.length);
 			_each(deps, function(id, i) {
 				var def = _getDef(id);
-				if(def.inst) {
+				if(def.inst && def.loader) {
+					callArgs[i] = def.inst.getDef(context);
+					loadList.push(def.loader);
+				} else if(def.inst) {
 					callArgs[i] = def.inst.getDef(context);
 				} else if(def.load) {
 					loadList.push(def.load);
@@ -709,7 +774,12 @@ var define, require;
 					}, config.waitSeconds * 1000);
 				}
 				_each(loadList, function(item, i) {
-					var hold = _getHold(item.nrmId, item.config.baseUrl);
+					var hold;
+					if(_isFunction(item)) {
+						item(context, onRequire);
+						return;
+					}
+					hold = _getHold(item.nrmId, item.config.baseUrl);
 					if(hold) {
 						hold.push(onRequire);
 					} else {
@@ -719,7 +789,7 @@ var define, require;
 			} else {
 				callback.apply(null, callArgs);
 			}
-			function onRequire(nrmId, baseUrl, errCode) {
+			function onRequire(errCode) {
 				if(over) {
 					return;
 				}
