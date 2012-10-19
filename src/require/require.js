@@ -469,7 +469,7 @@ var define, require;
 	};
 	
 	function _extendConfig(props, config, ext) {
-		if(!ext) {
+		if(!ext || config == ext) {
 			return config;
 		}
 		ext.baseUrl = _getFullBaseUrl(ext.baseUrl);
