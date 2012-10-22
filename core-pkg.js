@@ -238,18 +238,33 @@ define('yom/object', ['require'], function(require) {
 			return $bind(obj, fn);
 		},
 
-		clone: function(obj, deep) {
+		clone: function(obj, deep, _level) {
 			var YOM = {
 				'array': require('yom/array')
 			};
-			if(typeof obj == 'object') {
-				var res = YOM.array.isArray(obj) ? [] : {};
-				for(var i in obj) {
-					res[i] = deep ? this.clone(obj[i], deep) : obj[i];
-				}
+			var res = obj;
+			var i, j, p;
+			deep = deep || 0;
+			_level = _level || 0;
+			if(_level > deep) {
 				return res;
 			}
-			return obj;
+			if(typeof obj == 'object' && obj) {
+				if(YOM.array.isArray(obj)) {
+					res = [];
+					for(i = 0, l = obj.length; i < l; i++) {
+						res.push(obj[i]);
+					}
+				} else {
+					res = {};
+					for(p in obj) {
+						if(this.hasOwnProperty(obj, p)) {
+							res[p] = deep ? this.clone(obj[p], deep, ++_level) : obj[p];
+						}
+					}
+				}
+			}
+			return res;
 		},
 		
 		toQueryString: function(obj) {
