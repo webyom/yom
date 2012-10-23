@@ -3,6 +3,7 @@
  */
 define('yom/console', ['require'], function(require) {
 	var YOM = {
+		'Error': require('yom/error'),
 		'browser': require('yom/browser'),
 		'string': require('yom/string'),
 		'object': require('yom/object'),
@@ -25,7 +26,7 @@ define('yom/console', ['require'], function(require) {
 				'<div id="yomConsoleOutputBox" style="line-height: 15px;"></div>',
 				'<div>',
 					'<label for="yomConsoleInputBox" style="font-weight: bold; color: blue;">&gt;&gt;</label>',
-					'<input id="yomConsoleInputBox" type="text" style="width: 458px; border: none; font-family: Courier New, Courier, monospace;" onkeyup="if(event.keyCode === 13) {YOM.console.eval(this.value); return false;}" ondblclick="YOM.console.eval(this.value); return false;" />',
+					'<input id="yomConsoleInputBox" type="text" style="width: 458px; border: none; font-family: Courier New, Courier, monospace;" onkeyup="if(event.keyCode === 13) {require(\'yom/core-pkg\').console.eval(this.value); return false;}" ondblclick="require(\'yom/core-pkg\').console.eval(this.value); return false;" />',
 				'</div>',
 			'</div>',
 			'<div style="height: 0; line-height: 0; clear: both;">&nbsp;</div>',
