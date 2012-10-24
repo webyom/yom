@@ -2,18 +2,8 @@
  * @namespace YOM.console
  */
 define('yom/console', ['require'], function(require) {
-	var YOM = {
-		'Error': require('yom/error'),
-		'browser': require('yom/browser'),
-		'string': require('yom/string'),
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'json': require('yom/json'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element'),
-		'tmpl': require('yom/tmpl'),
-		'Chunker': require('yom/chunker')
-	};
+	var YOM = require('yom/core-pkg');
+	var Chunker = require('yom/chunker');
 	
 	var _TMPL = [
 		'<div style="background: #555; padding: 2px; padding-top: 0; font-size: 12px; font-family: Courier New, Courier, monospace;">',
@@ -26,7 +16,7 @@ define('yom/console', ['require'], function(require) {
 				'<div id="yomConsoleOutputBox" style="line-height: 15px;"></div>',
 				'<div>',
 					'<label for="yomConsoleInputBox" style="font-weight: bold; color: blue;">&gt;&gt;</label>',
-					'<input id="yomConsoleInputBox" type="text" style="width: 458px; border: none; font-family: Courier New, Courier, monospace;" onkeyup="if(event.keyCode === 13) {require(\'yom/core-pkg\').console.eval(this.value); return false;}" ondblclick="require(\'yom/core-pkg\').console.eval(this.value); return false;" />',
+					'<input id="yomConsoleInputBox" type="text" style="width: 458px; border: none; font-family: Courier New, Courier, monospace;" onkeyup="if(event.keyCode === 13) {require(\'yom/ext-pkg\').console.eval(this.value); return false;}" ondblclick="require(\'yom/ext-pkg\').console.eval(this.value); return false;" />',
 				'</div>',
 			'</div>',
 			'<div style="height: 0; line-height: 0; clear: both;">&nbsp;</div>',
@@ -93,7 +83,7 @@ define('yom/console', ['require'], function(require) {
 		_el.clearBtn = $id('yomConsoleClearBtn');
 		YOM.Event.addListener(_el.colExpBtn, 'click', _colExp);
 		YOM.Event.addListener(_el.clearBtn, 'click', _clear);
-		_chunker = _chunker || new YOM.Chunker(_log, {interval2: 1000});
+		_chunker = _chunker || new Chunker(_log, {interval2: 1000});
 		_chunker.push(_data, true);
 		_chunker.process();
 		_data = [];
