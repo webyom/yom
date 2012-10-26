@@ -1631,8 +1631,8 @@ define('yom/element', ['require'], function(require) {
 			return new Element(el.parentNode.removeChild(el));
 		},
 		
-		getFirstChild: function() {
-			var res;
+		first: function() {
+			var res = null;
 			var el = this.get();
 			if(!el) {
 				return res;
@@ -1647,8 +1647,28 @@ define('yom/element', ['require'], function(require) {
 			return res;
 		},
 		
+		next: function() {
+			var el = this.get();
+			if(!el) {
+				return null;
+			}
+			return el.nextElementSibling || Element.searchChain(el, 'nextSibling', function(el) {
+				return _isElementNode(el);
+			});
+		},
+		
+		previous: function() {
+			var el = this.get();
+			if(!el) {
+				return null;
+			}
+			return el.previousElementSibling || Element.searchChain(el, 'previousSibling', function(el) {
+				return _isElementNode(el);
+			});
+		},
+		
 		head: function(tar) {
-			var firstChild = this.getFirstChild();
+			var firstChild = this.first();
 			if(firstChild) {
 				return new Element(this.get().insertBefore(tar, firstChild));
 			} else {
@@ -1658,7 +1678,7 @@ define('yom/element', ['require'], function(require) {
 		
 		headTo: function(tar) {
 			tar = $query(tar);
-			var firstChild = tar.getFirstChild();
+			var firstChild = tar.first();
 			if(firstChild) {
 				return new Element(tar.get().insertBefore(this.get(), firstChild));
 			} else {
@@ -1814,6 +1834,18 @@ define('yom/element', ['require'], function(require) {
 	
 	Element.contains = function(a, b) {
 		return (a.contains) ? (a != b && a.contains(b)) : !!(a.compareDocumentPosition(b) & 16);
+	};
+	
+	Element.searchChain = function(el, prop, validator) {
+		var res;
+		while(el && el.nodeType) {
+			res = el[prop];
+			if(res && (!validator || validator(res))) {
+				return res;
+			}
+			el = res;
+		}
+		return null;
 	};
 	
 	Element.getViewRect = function() {
