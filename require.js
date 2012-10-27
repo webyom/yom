@@ -5,7 +5,7 @@
  */
 var define, require;
 
-(function(global) {
+;(function(global) {
 	/**
 	 * utils
 	 */
@@ -182,7 +182,7 @@ var define, require;
 			}
 			_ready = true;
 			while(_queue.length) {
-				(function(args) {
+				;(function(args) {
 					setTimeout(function() {
 						domreadyLoader.apply(null, _getArray(args));
 					}, 0);
@@ -265,7 +265,7 @@ var define, require;
 		
 		dispatch: function(errCode) {
 			while(this._queue.length) {
-				(function(callback) {
+				;(function(callback) {
 					setTimeout(function() {
 						callback && callback(errCode);
 					}, 0);
