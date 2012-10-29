@@ -856,6 +856,29 @@ define('yom/element', ['require'], function(require) {
 		res.right = res.left + res.width;
 		return res;
 	};
+
+	Element.getFrameRect = function(maxBubble) {
+		var res, rect;
+		var win = window;
+		var frame = win.frameElement;
+		var bubbleLeft = maxBubble;
+		if(!frame) {
+			return new Element(document.body).getRect();
+		}
+		res = new Element(frame).getRect();
+		win = win.parent;
+		frame = win.frameElement;
+		while(frame && (!maxBubble || --bubbleLeft > 0)) {
+			rect = new Element(frame).getRect();
+			res.left += rect.left;
+			res.right += rect.left;
+			res.top += rect.top;
+			res.bottom += rect.top;
+			win = win.parent;
+			frame = win.frameElement;
+		}
+		return res;
+	};
 	
 	Element.getDocSize = function(doc) {
 		var w, h;
