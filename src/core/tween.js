@@ -194,7 +194,7 @@ define('yom/tween', ['require'], function(require) {
 	Tween._im = _im;
 	
 	Tween.getCssTransitionName = function() {
-		var el = $query(_getParserEl());
+		var el = new YOM.Element(_getParserEl());
 		var name = 'transition';
 		var isSupport = el.getStyle(name) != undefined;
 		if(!isSupport) {
@@ -239,7 +239,7 @@ define('yom/tween', ['require'], function(require) {
 
 	Tween.stopAllTween = function(el) {
 		$query(el).each(function(el) {
-			var tweenObj = _im.get($query(el).getDatasetVal('yom-tween-oid'));
+			var tweenObj = _im.get(new YOM.Element(el).getDatasetVal('yom-tween-oid'));
 			tweenObj && tweenObj.stop();
 		});
 	};
@@ -252,7 +252,7 @@ define('yom/tween', ['require'], function(require) {
 	
 	Tween.prototype._removeTweeningEl = function() {
 		this._el.removeItem(function(el) {
-			var tweenObj = _im.get($query(el).getDatasetVal('yom-tween-oid'));
+			var tweenObj = _im.get(new YOM.Element(el).getDatasetVal('yom-tween-oid'));
 			return tweenObj && tweenObj.isTweening();
 		});
 	};

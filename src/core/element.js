@@ -270,7 +270,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						$query(el).setAttr(key, val);
+						new Element(el).setAttr(key, val);
 					});
 				} else {
 					if(!name) {
@@ -279,7 +279,7 @@ define('yom/element', ['require'], function(require) {
 					if(name.indexOf('data-') === 0 && el.dataset) {
 						name = name.split('-');
 						name.shift();
-						$query(el).setDatasetVal(name.join('-'), value);
+						new Element(el).setDatasetVal(name.join('-'), value);
 					} else if(name == 'class' || name == 'className') {
 						el.className = value;
 					} else {
@@ -312,7 +312,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						$query(el).setProp(key, val);
+						new Element(el).setProp(key, val);
 					});
 				} else {
 					if(!name) {
@@ -342,7 +342,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						$query(el).setDatasetVal(key, val);
+						new Element(el).setDatasetVal(key, val);
 					});
 				} else {
 					if(el.dataset) {
@@ -469,7 +469,7 @@ define('yom/element', ['require'], function(require) {
 				return this;
 			}
 			x = x < 0 ? 0 : (x > scrollWidth - clientWidth ? scrollWidth - clientWidth : x);
-			var tweenObj = isBody ? $query(YOM.browser.chrome ? document.body : document.documentElement) : $query(el);
+			var tweenObj = isBody ? new Element(YOM.browser.chrome ? document.body : document.documentElement) : new Element(el);
 			if(interval === 0) {
 				tweenObj.setProp('scrollLeft', x);
 				return this;
@@ -514,7 +514,7 @@ define('yom/element', ['require'], function(require) {
 				return this;
 			}
 			y = y < 0 ? 0 : (y > scrollHeight - clientHeight ? scrollHeight - clientHeight : y);
-			var tweenObj = isBody ? $query(YOM.browser.chrome ? document.body : document.documentElement) : $query(el);
+			var tweenObj = isBody ? new Element(YOM.browser.chrome ? document.body : document.documentElement) : new Element(el);
 			if(interval === 0) {
 				tweenObj.setProp('scrollTop', y);
 				return this;
@@ -559,7 +559,7 @@ define('yom/element', ['require'], function(require) {
 			}
 			rect = el.getBoundingClientRect && el.getBoundingClientRect();
 			relative = relative ? $query(relative).getRect() : {top: 0, left: 0};
-			docScrolls = Element.getViewRect();
+			docScrolls = Element.getViewRect(el.ownerDocument);
 			elScrolls = this.getScrolls();
 			if(rect) {
 				if(YOM.browser.ie && !YOM.browser.isQuirksMode() && (YOM.browser.v <= 7 || document.documentMode <= 7)) {
@@ -587,8 +587,8 @@ define('yom/element', ['require'], function(require) {
 				};
 				while(el.offsetParent) {
 					el = el.offsetParent;
-					res.top += el.offsetTop + (parseInt($query(el).getStyle('borderTopWidth')) || 0);
-					res.left += el.offsetLeft + (parseInt($query(el).getStyle('borderLeftWidth')) || 0);
+					res.top += el.offsetTop + (parseInt(new Element(el).getStyle('borderTopWidth')) || 0);
+					res.left += el.offsetLeft + (parseInt(new Element(el).getStyle('borderLeftWidth')) || 0);
 				}
 				res.bottom = res.top + res.height - relative.top;
 				res.right = res.left + res.width - relative.left;
@@ -630,7 +630,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return res;
 			}
-			$query(el.childNode || el.children).each(function(item) {
+			new Element(el.childNode || el.children).each(function(item) {
 				if(_isElementNode(item)) {
 					res = item;
 					return false;
@@ -756,7 +756,7 @@ define('yom/element', ['require'], function(require) {
 		
 		toggle: function(callback) {
 			this.each(function(el) {
-				el = $query(el);
+				el = new Element(el);
 				if(el.getStyle('display') == 'none') {
 					el.show();
 					callback && callback.call(el, 'SHOW');
@@ -819,7 +819,7 @@ define('yom/element', ['require'], function(require) {
 	};
 
 	Element.create = function(name, attrs, style) {
-		var el = $query(document.createElement(name));
+		var el = new Element(document.createElement(name));
 		attrs && el.setAttr(attrs);
 		style && el.setStyle(style);
 		return el.get();
@@ -841,15 +841,16 @@ define('yom/element', ['require'], function(require) {
 		return null;
 	};
 	
-	Element.getViewRect = function() {
+	Element.getViewRect = function(doc) {
 		var res;
+		doc = doc || document;
 		res = {
-			top: window.pageYOffset || Math.max(document.documentElement.scrollTop, document.body.scrollTop),
-			left: window.pageXOffset || Math.max(document.documentElement.scrollLeft, document.body.scrollLeft),
+			top: window.pageYOffset || Math.max(doc.documentElement.scrollTop, doc.body.scrollTop),
+			left: window.pageXOffset || Math.max(doc.documentElement.scrollLeft, doc.body.scrollLeft),
 			bottom: 0,
 			right: 0,
-			width: document.documentElement.clientWidth || document.body.clientWidth,
-			height: document.documentElement.clientHeight || document.body.clientHeight
+			width: doc.documentElement.clientWidth || doc.body.clientWidth,
+			height: doc.documentElement.clientHeight || doc.body.clientHeight
 		};
 		res.bottom = res.top + res.height;
 		res.right = res.left + res.width;

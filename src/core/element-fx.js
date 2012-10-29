@@ -109,7 +109,7 @@ define('yom/element-fx', ['require'], function(require) {
 				var self = this;
 				duration = duration || _DURATION;
 				this.each(function(el) {
-					_doFx.call(self, type, $query(el), duration, complete);
+					_doFx.call(self, type, new YOM.Element(el), duration, complete);
 				});
 				return this;
 			};

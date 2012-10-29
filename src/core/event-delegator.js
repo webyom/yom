@@ -3,7 +3,8 @@
  */
 define('yom/event-delegator', ['require'], function(require) {
 	var YOM = {
-		'Event': require('yom/event')
+		'Event': require('yom/event'),
+		'Element': require('yom/element')
 	};
 	
 	var _pageDelegator;
@@ -69,7 +70,7 @@ define('yom/event-delegator', ['require'], function(require) {
 			maxBubble = this._delegatedTypes[type].maxBubble;
 			bubbleTimes = 0;
 			while(target && target != this._ele) {
-				$target = $query(target);
+				$target = new YOM.Element(target);
 				if(target.disabled || $target.getAttr('disabled')) {
 					return;
 				}
