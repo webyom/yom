@@ -1,7 +1,7 @@
 /**
  * @namespace
  */
-define(['require'], function(require) {
+define(function(require) {
 	var ext = {
 		'Chunker': require('yom/chunker'),
 		'console': require('yom/console')

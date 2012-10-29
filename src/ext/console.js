@@ -1,10 +1,7 @@
 /**
  * @namespace YOM.console
  */
-define('yom/console', ['require'], function(require) {
-	var YOM = require('yom/core-pkg');
-	var Chunker = require('yom/chunker');
-	
+define('yom/console', ['require', 'yom/core-pkg', 'yom/chunker'], function(require, YOM, Chunker) {
 	var _TMPL = [
 		'<div style="background: #555; padding: 2px; padding-top: 0; font-size: 12px; font-family: Courier New, Courier, monospace;">',
 			'<h2 style="margin: 0; font-size: 14px; line-height: 22px; color: #fff; padding: 2px; padding-top: 0;">',
