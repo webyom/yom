@@ -43,6 +43,7 @@
             <path path="${src.dir}/src/core/tmpl.js"/>
             <path path="${src.dir}/src/core/transition.js"/>
             <path path="${src.dir}/src/core/tween.js"/>
+            <path path="${src.dir}/src/core/flash.js"/>
             <path path="${src.dir}/src/core/widget.js"/>
             <path path="${src.dir}/src/core/core-pkg.js"/>
         </concat>

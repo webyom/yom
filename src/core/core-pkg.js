@@ -34,6 +34,7 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 		'console': require('yom/console'),
 		'transition': require('yom/transition'),
 		'Tween': require('yom/tween'),
+		'flash': require('yom/flash'),
 		'widget': require('yom/widget')
 	});
 	
