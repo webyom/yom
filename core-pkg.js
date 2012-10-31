@@ -4038,7 +4038,7 @@ define('yom/flash', ['require'], function(require) {
 		if(flashObj && !flashObj[methodName]) {
 			eval('flashObj["' + methodName + '"] = function(){return eval(this.CallFunction("<invoke name=\\"' + methodName + '\\" returntype=\\"javascript\\">" + __flash__argumentsToXML(arguments,0) + "</invoke>"));}');
 		}
-		return flashObj[methodName].apply(flashObj, args);
+		return flashObj[methodName].apply(flashObj, args || []);
 	};
 	
 	return {
