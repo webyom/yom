@@ -376,12 +376,12 @@ define(function(require) {
 			this._closed = 0;
 			this._show();
 			if(fx == 'fade') {
-				this.resize(thisOpt.width, thisOpt.height);
+				this.resize(thisOpt.width, thisOpt.height, opt);
 				this._el.fadeIn(this._fxDuration, function() {
 					self.focus();
 				});
 			} else if(fx == 'slideDown' || fx == 'slideUp') {
-				this.resize(thisOpt.width, thisOpt.height);
+				this.resize(thisOpt.width, thisOpt.height, opt);
 				elTop = this._el.getStyle('top');
 				elRect = this._el.getRect();
 				viewRect = YOM.Element.getViewRect();
@@ -402,19 +402,19 @@ define(function(require) {
 					prior: true
 				});
 			} else if(fx) {
-				self.resize(_INIT_WIDTH, _INIT_HEIGHT);
+				self.resize(_INIT_WIDTH, _INIT_HEIGHT, opt);
 				self._el.setStyle('opacity', '0');
 				YOM.Tween.setTimer($empty, fxDuration, function(percent) {
 					var w = _INIT_WIDTH + (thisOpt.width - _INIT_WIDTH) * percent;
 					var h = _INIT_HEIGHT + (thisOpt.height - _INIT_HEIGHT) * percent;
-					self.resize(w, h);
+					self.resize(w, h, opt);
 					self._el.setStyle('opacity', percent);
 					if(percent === 1) {
 						self.focus();
 					}
 				});
 			} else {
-				this.resize(thisOpt.width, thisOpt.height);
+				this.resize(thisOpt.width, thisOpt.height, opt);
 				this.focus();
 			}
 			this._closeTimeout(thisOpt.closeTimeout, thisOpt.tips);
@@ -474,8 +474,8 @@ define(function(require) {
 				var height = this._height;
 				var viewRect = YOM.Element.getViewRect();
 				var wrapperRect = wrapper.getRect();
-				var leftFix = wrapperRect.left - (viewRect.left + (viewRect.width - wrapperRect.width) / 2)
-				var topFix = wrapperRect.top - (viewRect.top + (viewRect.height - wrapperRect.height) / 2)
+				var leftFix = wrapperRect.left - (viewRect.left + (viewRect.width - wrapperRect.width) / 2) + (opt.leftFix || 0);
+				var topFix = wrapperRect.top - (viewRect.top + (viewRect.height - wrapperRect.height) / 2) + (opt.topFix || 0);
 				YOM.Tween.setTimer($empty, fxDuration, function(percent) {
 					var w = width - (width - _INIT_WIDTH) * percent;
 					var h = height - (height - _INIT_HEIGHT) * percent;
