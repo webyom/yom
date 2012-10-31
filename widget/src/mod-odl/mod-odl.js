@@ -6,7 +6,7 @@ define(function(require) {
 	
 	var _ID = 128004;
 	
-	var _frameRect = YOM.Element.getFrameRect();
+	var _frameRect;
 	
 	function Loader(opt) {
 		opt = opt || {};
@@ -20,6 +20,7 @@ define(function(require) {
 	
 	Loader.prototype = {
 		_getClientBottom: function() {
+			_frameRect = _frameRect || YOM.Element.getFrameRect();
 			return YOM.Element.getViewRect(top.document).bottom - _frameRect.top;
 		},
 		
