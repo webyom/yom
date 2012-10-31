@@ -4,6 +4,8 @@
 define(function(require) {
 	var YOM = require('yom/core-pkg');
 	
+	var _ID = 128004;
+	
 	var _frameRect = YOM.Element.getFrameRect();
 	
 	function Loader(opt) {

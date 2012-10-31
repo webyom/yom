@@ -1,6 +1,8 @@
 /**
- * @fileoverview base of YOM framework
- * @author Gary Wang webyom@gmail.com webyom.org
+ * YOM framework
+ * Copyright (c) Gary Wang, webyom@gmail.com http://webyom.org
+ * Under the MIT license
+ * https://github.com/webyom/yom
  */
 
 /*
@@ -34,9 +36,12 @@ ID LIST:
 126: json
 127: history
 128: widget
-128001: widget.Mask
-128002: widget.Dialog
-128003: widget.Tooltip
+129: flash
+128001: Mask widget
+128002: Dialog widget
+128003: Tooltip widget
+128004: ModOdl widget
+128005: ImgOdl widget
 */
 
 /**

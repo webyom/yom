@@ -1,7 +1,9 @@
 /**
- * YOM module define and require lib
+ * YOM module define and require lib 1.0
  * Inspired by RequireJS AMD spec
- * @author Gary Wang webyom@gmail.com webyom.org
+ * Copyright (c) Gary Wang, webyom@gmail.com http://webyom.org
+ * Under the MIT license
+ * https://github.com/webyom/yom
  */
 var define, require;
 

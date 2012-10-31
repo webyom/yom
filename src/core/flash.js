@@ -7,6 +7,8 @@ define('yom/flash', ['require'], function(require) {
 		'object': require('yom/object')
 	};
 	
+	var _ID = 129;
+	
 	var _flashVersion = null;
 	
 	/**
