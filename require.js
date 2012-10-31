@@ -769,7 +769,6 @@ var define, require;
 			_each(deps, function(id, i) {
 				var def = _getDef(id);
 				if(def.load && def.load.loader) {//reserved module loader
-					callArgs[i] = def.inst.getDef(context);
 					loadList.push(def.load);
 				} else if(def.inst) {
 					callArgs[i] = def.inst.getDef(context);
