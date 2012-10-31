@@ -1,7 +1,7 @@
 /**
  * YOM module define and require lib 1.0
  * Inspired by RequireJS AMD spec
- * Copyright (c) Gary Wang, webyom@gmail.com http://webyom.org
+ * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
  * https://github.com/webyom/yom
  */
@@ -105,7 +105,7 @@ var define, require;
 		NO_DEFINE: 4
 	};
 	
-	var _gcfg = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
+	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
 		charset: 'utf-8',
 		baseUrl: location.href.split('/').slice(0, -1).join('/'),
 		source: {},
@@ -120,6 +120,7 @@ var define, require;
 		waitSeconds: 30
 	}, require);//global config
 	_gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl);
+	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-require-debug=1') > 0;
 	var _interactiveMode = false;
 	var _loadingCount = 0;
 	
@@ -184,11 +185,7 @@ var define, require;
 			}
 			_ready = true;
 			while(_queue.length) {
-				;(function(args) {
-					setTimeout(function() {
-						domreadyLoader.apply(null, _getArray(args));
-					}, 0);
-				})(_queue.shift());
+				domreadyLoader.apply(null, _getArray(_queue.shift()));
 			}
 		};
 		
@@ -266,12 +263,12 @@ var define, require;
 		},
 		
 		dispatch: function(errCode) {
+			var callback;
 			while(this._queue.length) {
-				;(function(callback) {
-					setTimeout(function() {
-						callback && callback(errCode);
-					}, 0);
-				})(this._queue.shift());
+				callback = this._queue.shift();
+				if(callback) {
+					callback(errCode);
+				}
 			}
 		},
 		
@@ -814,7 +811,17 @@ var define, require;
 				if(errCode) {
 					over = true;
 					clearTimeout(toRef);
-					_dealError(errCode, errCallback);
+					if(context.base) {
+						_dealError(errCode, errCallback);
+					} else {
+						try {
+							_dealError(errCode, errCallback);
+						} catch(e) {
+							if(_gcfg.debug) {
+								throw e;
+							}
+						}
+					}
 				} else {
 					count--;
 					if(count <= 0) {
@@ -829,7 +836,17 @@ var define, require;
 									callArgs[i] = def.getDef(context);
 								}
 							});
-							callback.apply(null, callArgs);
+							if(context.base) {
+								callback.apply(null, callArgs);
+							} else {
+								try {
+									callback.apply(null, callArgs);
+								} catch(e) {
+									if(_gcfg.debug) {
+										throw e;
+									}
+								}
+							}
 						}
 					}
 				}
