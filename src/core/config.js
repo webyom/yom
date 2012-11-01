@@ -50,7 +50,7 @@ ID LIST:
 define('yom/config', [], function() {
 	var t = document.domain.split('.'), l = t.length;
 	return {
-		debugMode: 0,
+		debug: location.href.indexOf('yom-debug=1') > 0,
 		domain: t.slice(l - 2, l).join('.')
 	};
 });

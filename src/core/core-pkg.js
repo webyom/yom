@@ -10,6 +10,7 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 	YOM.debugMode = 0;
 	
 	YOM = $extend(YOM, {
+		'config': require('yom/config'),
 		'Error': require('yom/error'),
 		'browser': require('yom/browser'),
 		'string': require('yom/string'),

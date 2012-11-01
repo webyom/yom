@@ -107,7 +107,7 @@ define('yom/xhr', ['require'], function(require) {
 			_loading_count === 0 && Xhr.dispatchEvent(Xhr.createEvent('allcomplete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
 			Xhr.dispatchEvent(Xhr.createEvent('complete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
 		} catch(e) {
-			if(YOM.config.debugMode) {
+			if(YOM.config.debug) {
 				throw new YOM.Error(YOM.Error.getCode(_ID, 2));
 			}
 		}

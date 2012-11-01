@@ -94,7 +94,7 @@ define('yom/cross-domain-poster', ['require'], function(require) {
 			_loading_count === 0 && CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('allcomplete', {url: this._url, opt: this._opt}));
 		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
 		} catch(e) {
-			if(YOM.config.debugMode) {
+			if(YOM.config.debug) {
 				throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 			}
 		}
@@ -117,7 +117,7 @@ define('yom/cross-domain-poster', ['require'], function(require) {
 			if(parseError) {
 				this._complete(CrossDomainPoster.RET.ERROR);
 				this._onerror.call(this._bind);
-				if(YOM.config.debugMode) {
+				if(YOM.config.debug) {
 					throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 				}
 			} else {

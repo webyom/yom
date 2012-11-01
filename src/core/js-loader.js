@@ -128,7 +128,7 @@ define('yom/js-loader', ['require'], function(require) {
 			_loading_count === 0 && JsLoader.dispatchEvent(JsLoader.createEvent('allcomplete', {src: this._src, opt: this._opt, ret: ret}));
 			JsLoader.dispatchEvent(JsLoader.createEvent('complete', {src: this._src, opt: this._opt, ret: ret}));
 		} catch(e) {
-			if(YOM.config.debugMode) {
+			if(YOM.config.debug) {
 				throw new YOM.Error(YOM.Error.getCode(JsLoader._ID, 2));
 			}
 		}

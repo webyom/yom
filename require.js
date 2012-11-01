@@ -120,7 +120,7 @@ var define, require;
 		waitSeconds: 30
 	}, require);//global config
 	_gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl);
-	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-require-debug=1') > 0;
+	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-debug=1') > 0;
 	var _interactiveMode = false;
 	var _loadingCount = 0;
 	

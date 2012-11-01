@@ -50,7 +50,7 @@ ID LIST:
 define('yom/config', [], function() {
 	var t = document.domain.split('.'), l = t.length;
 	return {
-		debugMode: 0,
+		debug: location.href.indexOf('yom-debug=1') > 0,
 		domain: t.slice(l - 2, l).join('.')
 	};
 });
@@ -2651,7 +2651,7 @@ define('yom/xhr', ['require'], function(require) {
 			_loading_count === 0 && Xhr.dispatchEvent(Xhr.createEvent('allcomplete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
 			Xhr.dispatchEvent(Xhr.createEvent('complete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
 		} catch(e) {
-			if(YOM.config.debugMode) {
+			if(YOM.config.debug) {
 				throw new YOM.Error(YOM.Error.getCode(_ID, 2));
 			}
 		}
@@ -2808,7 +2808,7 @@ define('yom/cross-domain-poster', ['require'], function(require) {
 			_loading_count === 0 && CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('allcomplete', {url: this._url, opt: this._opt}));
 		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
 		} catch(e) {
-			if(YOM.config.debugMode) {
+			if(YOM.config.debug) {
 				throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 			}
 		}
@@ -2831,7 +2831,7 @@ define('yom/cross-domain-poster', ['require'], function(require) {
 			if(parseError) {
 				this._complete(CrossDomainPoster.RET.ERROR);
 				this._onerror.call(this._bind);
-				if(YOM.config.debugMode) {
+				if(YOM.config.debug) {
 					throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 				}
 			} else {
@@ -3152,7 +3152,7 @@ define('yom/js-loader', ['require'], function(require) {
 			_loading_count === 0 && JsLoader.dispatchEvent(JsLoader.createEvent('allcomplete', {src: this._src, opt: this._opt, ret: ret}));
 			JsLoader.dispatchEvent(JsLoader.createEvent('complete', {src: this._src, opt: this._opt, ret: ret}));
 		} catch(e) {
-			if(YOM.config.debugMode) {
+			if(YOM.config.debug) {
 				throw new YOM.Error(YOM.Error.getCode(JsLoader._ID, 2));
 			}
 		}
@@ -4065,6 +4065,7 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 	YOM.debugMode = 0;
 	
 	YOM = $extend(YOM, {
+		'config': require('yom/config'),
 		'Error': require('yom/error'),
 		'browser': require('yom/browser'),
 		'string': require('yom/string'),
