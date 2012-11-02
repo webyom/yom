@@ -853,7 +853,7 @@ var define, require;
 				if(arguments.length === 1) {
 					def = _getDef(deps)
 					if(def.plugin) {
-						return plugin.require(deps, config);
+						return def.plugin.require(deps, config);
 					} else {
 						return def.inst && def.inst.getDef(context);
 					}
