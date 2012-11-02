@@ -751,7 +751,7 @@ var define, require;
 		context.parentConfig = context.parentConfig || _gcfg;
 		config = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], context.parentConfig, context.config);
 		function def(id, deps, factory) {
-			var nrmId, script;
+			var nrmId, script, factoryStr, reqFnName;
 			if(typeof id != 'string') {
 				factory = deps;
 				deps = id;
@@ -763,11 +763,14 @@ var define, require;
 				deps = [];
 			}
 			if(!deps.length && _isFunction(factory) && factory.length) {
-				factory.toString().replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
-					.replace(/[(=;:{}&|]\s*require\(\s*["']([^"'\s]+)["']\s*\)/g, function(m, dep) {//extract dependencies
+				factoryStr = factory.toString();
+				reqFnName = factoryStr.match(/function[^\(]*\(([^\)]*)\)/);
+				reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '');
+				factoryStr.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
+					.replace(new RegExp('[(=;:{}&|]\\s*' + reqFnName + '\\(\\s*["\']([^"\'\\s]+)["\']\\s*\\)', 'g'), function(m, dep) {//extract dependencies
 						deps.push(dep);
 					});
-				deps = (factory.length === 1? ['require'] : ['require', 'exports', 'moudule']).concat(deps);
+				deps = (factory.length === 1? ['require'] : ['require', 'exports', 'module']).concat(deps);
 			}
 			if(_interactiveMode) {
 				script = _getInteractiveScript();
