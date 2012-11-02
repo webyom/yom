@@ -7,7 +7,13 @@ define('require-plugin/jsonp', ['global'], function(global) {
 	var _callbackLoadingHash = {};
 	var _cache = {};
 	
-	function _clear(jsEl, callbackName) {
+	function _clear(jsEl, callbackName, onload, onerror) {
+		if(jsEl.addEventListener)  {
+			jsEl.removeEventListener('load', onload, false);
+			jsEl.removeEventListener('error', onerror, false);
+		} else {
+			jsEl.detachEvent('onreadystatechange', onload);
+		}
 		jsEl.parentNode.removeChild(jsEl);
 		_callbackLoadingHash[callbackName] = 0;
 		if(_callbackQueueHash[callbackName] && _callbackQueueHash[callbackName].length) {
@@ -29,30 +35,30 @@ define('require-plugin/jsonp', ['global'], function(global) {
 			global[callbackName] = null;
 		};
 		function onload() {
-			_clear(jsEl, callbackName);
+			_clear(jsEl, callbackName, onload, onerror);
 			if(!callbacked) {
 				callback(null, 1);
 			}
 		};
 		function onerror() {
-			_clear(jsEl, callbackName);
+			_clear(jsEl, callbackName, onload, onerror);
 			callback(null, 1);
 		};
+		function ieOnload() {
+			if(jsEl && (jsEl.readyState == 'loaded' || jsEl.readyState == 'complete')) {
+				_clear(jsEl, callbackName, ieOnload);
+				jsEl = null;
+				if(!callbacked) {
+					callback(null, 1);
+				}
+			}
+		}
 		var jsEl = document.createElement('script');
 		if(jsEl.addEventListener) {
-			jsEl.addEventListener('load', function() {
-				onload();
-			}, this);
-			jsEl.addEventListener('error', function() {
-				onerror();
-			}, this);
+			jsEl.addEventListener('load', onload, false);
+			jsEl.addEventListener('error', onerror, false);
 		} else {
-			jsEl.attachEvent('onreadystatechange', function() {
-				if(jsEl && (jsEl.readyState == 'loaded' || jsEl.readyState == 'complete')) {
-					onload();
-					jsEl = null;
-				}
-			}, this);
+			jsEl.attachEvent('onreadystatechange', ieOnload);
 		}
 		jsEl.charset = charset;
 		jsEl.type = 'text/javascript';
