@@ -764,7 +764,7 @@ var define, require;
 			}
 			if(!deps.length && _isFunction(factory) && factory.length) {
 				factoryStr = factory.toString();
-				reqFnName = factoryStr.match(/function[^\(]*\(([^\)]*)\)/);
+				reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require'];
 				reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '');
 				factoryStr.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
 					.replace(new RegExp('[(=;:{}&|]\\s*' + reqFnName + '\\(\\s*["\']([^"\'\\s]+)["\']\\s*\\)', 'g'), function(m, dep) {//extract dependencies
