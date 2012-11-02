@@ -214,7 +214,7 @@ var define, require;
 		
 		function domReadyLoader(context, onRequire) {
 			if(_ready) {
-				onRequire();
+				onRequire(0);
 			} else {
 				_queue.push(arguments);
 				_checkReady();
@@ -263,12 +263,12 @@ var define, require;
 			delete _hold[this._fullUrl];
 		},
 		
-		dispatch: function(errCode) {
+		dispatch: function(errCode, opt) {
 			var callback;
 			while(this._queue.length) {
 				callback = this._queue.shift();
 				if(callback) {
-					callback(errCode);
+					callback(errCode, opt || {url: this._fullUrl});
 				}
 			}
 		},
@@ -317,10 +317,10 @@ var define, require;
 					exports = shim.init.apply(global, args) || exports;
 				}
 				new Def(nrmId, config, exports, {});
-				hold.dispatch();
+				hold.dispatch(0);
 				hold.remove();
-			}, function(code) {
-				hold.dispatch(code);
+			}, function(code, opt) {
+				hold.dispatch(code, opt);
 				hold.remove();
 			});
 			return true;
@@ -632,7 +632,7 @@ var define, require;
 			hold = _getHold(nrmId, baseUrl),
 			jsNode, urlArg;
 		if(def) {
-			onRequire(nrmId, baseUrl);
+			onRequire(0);
 			return;
 		} else if(hold) {
 			hold.push(onRequire);
@@ -654,11 +654,12 @@ var define, require;
 		}
 	};
 	
-	function _dealError(code, errCallback) {
+	function _dealError(code, opt, errCallback) {
+		opt = opt || {};
 		if(errCallback) {
-			errCallback(code);
+			errCallback(code, opt);
 		} else if(_gcfg.errCallback) {
-			_gcfg.errCallback(code);
+			_gcfg.errCallback(code, opt);
 		} else {
 			throw new Error('Load error.');
 		}
@@ -675,12 +676,12 @@ var define, require;
 				}
 			}
 			plugin.require(id, config, function(res) {
-				onRequire();
-			}, function(errCode) {
-				onRequire(errCode);
+				onRequire(0);
+			}, function(errCode, opt) {
+				onRequire(errCode, opt);
 			});
-		}, function(errCode) {
-			onRequire(errCode);
+		}, function(errCode, opt) {
+			onRequire(errCode, opt);
 		});
 	};
 	
@@ -716,10 +717,10 @@ var define, require;
 				exports = factory;
 			}
 			new Def(nrmId, conf, exports, module);
-			hold.dispatch();
+			hold.dispatch(0);
 			hold.remove();
-		}, function(code) {
-			hold.dispatch(code);
+		}, function(code, opt) {
+			hold.dispatch(code, opt);
 			hold.remove();
 		});
 	};
@@ -877,7 +878,7 @@ var define, require;
 			} else {
 				callback.apply(null, callArgs);
 			}
-			function onRequire(errCode) {
+			function onRequire(errCode, opt) {
 				if(over) {
 					return;
 				}
@@ -885,10 +886,10 @@ var define, require;
 					over = true;
 					clearTimeout(toRef);
 					if(context.base) {
-						_dealError(errCode, errCallback);
+						_dealError(errCode, opt, errCallback);
 					} else {
 						try {
-							_dealError(errCode, errCallback);
+							_dealError(errCode, opt, errCallback);
 						} catch(e) {
 							if(_gcfg.debug) {
 								throw e;

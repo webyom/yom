@@ -72,7 +72,7 @@ define('yom/require-plugin/jsonp', [], function() {
 				charset = charset && charset[1] || 'utf-8';
 				_load(url, function(data, err) {
 					if(err) {
-						errCallback && errCallback(require.ERR_CODE.LOAD_ERROR);
+						errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {url: url});
 					} else {
 						_cache[url] = data;
 						callback(data);
