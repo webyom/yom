@@ -335,7 +335,27 @@ var define, require;
 	};
 	
 	Plugin.prototype = {
-		_removePluginPrefix: _removePluginPrefix,
+		_paramsToken: '@',
+		
+		_getResource: function(id) {
+			var res = _removePluginPrefix(id).split(this._paramsToken);
+			return res.slice(0, res.length - 1).join(this._paramsToken);
+		},
+		
+		_getParams: function(id) {
+			var params = {};
+			var i, item;
+			var tmp = id.split(this._paramsToken);
+			if(tmp.length < 2) {
+				return params;
+			}
+			tmp = tmp.pop().split('&');
+			for(i = 0; i < tmp.length; i++) {
+				item = tmp[i].split('=');
+				params[item[0]] = item[1];
+			}
+			return params;
+		},
 		
 		require: function(id, config, callback, errCallback) {
 			if(callback) {
