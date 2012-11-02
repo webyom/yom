@@ -96,6 +96,7 @@ var define, require;
 		require: 1,
 		exports: 1,
 		module: 1,
+		global: 1,
 		domReady: 1
 	};
 	var _ERR_CODE = {
@@ -173,6 +174,7 @@ var define, require;
 	new Def('module', _gcfg, {}, {}, function(context) {
 		return {};
 	});
+	new Def('global', _gcfg, global, {});
 	new Def('domReady', _gcfg, {}, {}, function(context) {
 		return {};
 	}, (function() {

@@ -1,7 +1,7 @@
 /**
  * YOM require jsonp plugin
  */
-define('require-plugin/jsonp', [], function() {
+define('require-plugin/jsonp', ['global'], function(global) {
 	var _head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 	var _callbackQueueHash = {};
 	var _callbackLoadingHash = {};
@@ -23,10 +23,10 @@ define('require-plugin/jsonp', [], function() {
 			return;
 		}
 		_callbackLoadingHash[callbackName] = 1;
-		window[callbackName] = function(data) {
+		global[callbackName] = function(data) {
 			callbacked = true;
 			callback(data);
-			window[callbackName] = null;
+			global[callbackName] = null;
 		};
 		function onload() {
 			_clear(jsEl, callbackName);
