@@ -124,6 +124,7 @@ var define, require;
 	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-debug=1') > 0;
 	var _interactiveMode = false;
 	var _loadingCount = 0;
+	var _scriptBeingInserted = null;
 	
 	var _hold = {};//loading or waiting dependencies
 	var _defQueue = [];
@@ -623,7 +624,9 @@ var define, require;
 		jsNode.src = _getFullUrl(nrmId, baseUrl) + (urlArg ? '?' + urlArg : '');
 		jsNode.setAttribute('data-nrm-id', nrmId);
 		jsNode.setAttribute('data-base-url', baseUrl);
+		_scriptBeingInserted = jsNode;
 		_head.insertBefore(jsNode, _head.firstChild);
+		_scriptBeingInserted = null;
 		_loadingCount++;
 		if(_loadingCount === 1 && _gcfg.onLoadStart) {
 			_gcfg.onLoadStart();
@@ -775,7 +778,7 @@ var define, require;
 				deps = (factory.length === 1? ['require'] : ['require', 'exports', 'module']).concat(deps);
 			}
 			if(_interactiveMode) {
-				script = _getInteractiveScript();
+				script = _scriptBeingInserted || _getInteractiveScript();
 				if(script) {
 					_defineCall(id, nrmId, deps, factory, {
 						nrmId: script.getAttribute('data-nrm-id'),
