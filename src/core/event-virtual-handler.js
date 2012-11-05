@@ -1,10 +1,10 @@
 /**
  * @class YOM.Event.VirtualEventHandler
  */
-define('yom/event-virtual-handler', ['require'], function(require) {
+define('yom/event-virtual-handler', ['yom/object', 'yom/event'], function(object, Evt) {
 	var YOM = {
-		'object': require('yom/object'),
-		'Event': require('yom/event')
+		'object': object,
+		'Event': Evt
 	};
 	
 	var VirtualEventHandler = function(el) {

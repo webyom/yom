@@ -1,9 +1,9 @@
 /**
  * @class YOM.dragdrop.Droppable
  */
-define('yom/droppable', ['require', 'yom/core-pkg'], function(require, YOM) {
+define('yom/droppable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Draggable) {
 	YOM.dragdrop = YOM.dragdrop || {};
-	YOM.dragdrop.Draggable = require('yom/draggable');
+	YOM.dragdrop.Draggable = Draggable;
 	
 	function Droppable(el, dropboxes, opts) {
 		Droppable.superClass.constructor.call(this, el, opts);

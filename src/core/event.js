@@ -1,12 +1,14 @@
 /**
  * @class YOM.Event
  */
-define('yom/event', ['require'], function(require) {
+define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, object, Observer) {
 	var YOM = {
-		'Error': require('yom/error'),
-		'object': require('yom/object'),
-		'Observer': require('yom/observer')
+		'Error': Err,
+		'object': object,
+		'Observer': Observer
 	};
+	
+	var _ID = 108;
 	
 	var _elRefCount = 0;
 	_customizedEventHash = {
@@ -15,7 +17,7 @@ define('yom/event', ['require'], function(require) {
 	
 	function _getObserver(instance, type) {
 		if(!instance instanceof Event) {
-			throw new YOM.Error(YOM.Error.getCode(Event._ID, 1));
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		instance._observers = instance._observers || {};
 		instance._observers[type] = instance._observers[type] || new YOM.Observer();
@@ -24,7 +26,7 @@ define('yom/event', ['require'], function(require) {
 	
 	function _getObservers(instance) {
 		if(!instance instanceof Event) {
-			throw new YOM.Error(YOM.Error.getCode(Event._ID, 1));
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		instance._observers = instance._observers || {};
 		return instance._observers;
@@ -48,7 +50,7 @@ define('yom/event', ['require'], function(require) {
 		addEventListener: function(type, listener, bind) {
 			var observer = _getObserver(this, type);
 			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(Event._ID, 1));
+				throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 			}
 			return observer.subscribe(listener, bind);
 		},
@@ -56,7 +58,7 @@ define('yom/event', ['require'], function(require) {
 		removeEventListener: function(type, listener) {
 			var observer = _getObserver(this, type);
 			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(Event._ID, 2));
+				throw new YOM.Error(YOM.Error.getCode(_ID, 2));
 			}
 			return observer.remove(listener);
 		},
@@ -68,7 +70,7 @@ define('yom/event', ['require'], function(require) {
 			var self = this;
 			var observer = _getObserver(this, e.type);
 			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(Event._ID, 3));
+				throw new YOM.Error(YOM.Error.getCode(_ID, 3));
 			}
 			if(asyn) {
 				setTimeout(function() {
@@ -88,8 +90,6 @@ define('yom/event', ['require'], function(require) {
 		
 		constructor: Event
 	};
-	
-	Event._ID = 108;
 	
 	Event.addListener = function(el, eType, listener, bind) {
 		var cEvent, cEventHandler;

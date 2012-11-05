@@ -24,6 +24,8 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 		'Observer': require('yom/observer'),
 		'Event': require('yom/event'),
 		'Element': require('yom/element'),
+		'transition': require('yom/transition'),
+		'Tween': require('yom/tween'),
 		'cookie': require('yom/cookie'),
 		'Xhr': require('yom/xhr'),
 		'CrossDomainPoster': require('yom/cross-domain-poster'),
@@ -33,8 +35,6 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 		'css': require('yom/css'),
 		'tmpl': require('yom/tmpl'),
 		'console': require('yom/console'),
-		'transition': require('yom/transition'),
-		'Tween': require('yom/tween'),
 		'flash': require('yom/flash'),
 		'widget': require('yom/widget')
 	});

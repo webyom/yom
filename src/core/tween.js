@@ -2,13 +2,13 @@
  * Inspired by KISSY
  * @class YOM.Tween
  */
-define('yom/tween', ['require'], function(require) {
+define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/element', 'yom/transition'], function(browser, object, InstanceManager, Elem, transition) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'object': require('yom/object'),
-		'InstanceManager': require('yom/instance-manager'),
-		'Element': require('yom/element'),
-		'transition': require('yom/transition')
+		'browser': browser,
+		'object': object,
+		'InstanceManager': InstanceManager,
+		'Element': Elem,
+		'transition': transition
 	};
 	
 	var _ID = 120;

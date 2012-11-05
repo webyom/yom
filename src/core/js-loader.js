@@ -1,19 +1,19 @@
 /**
  * @class YOM.JsLoader
  */
-define('yom/js-loader', ['require'], function(require) {
+define('yom/js-loader', ['yom/config', 'yom/error', 'yom/browser', 'yom/object', 'yom/class', 'yom/array', 'yom/instance-manager', 'yom/observer', 'yom/event', 'yom/element', 'yom/util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
 	var YOM = {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'browser': require('yom/browser'),
-		'object': require('yom/object'),
-		'Class': require('yom/class'),
-		'array': require('yom/array'),
-		'InstanceManager': require('yom/instance-manager'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element'),
-		'util': require('yom/util')
+		'config': config,
+		'Error': Err,
+		'browser': browser,
+		'object': object,
+		'Class': Class,
+		'array': array,
+		'InstanceManager': InstanceManager,
+		'Observer': Observer,
+		'Event': Evt,
+		'Element': Elem,
+		'util': util
 	};
 	
 	var _TIMEOUT = 60000;

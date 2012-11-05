@@ -1,9 +1,9 @@
 /**
  * @class YOM.dragdrop.Resizeable
  */
-define('yom/resizeable', ['require', 'yom/core-pkg'], function(require, YOM) {
+define('yom/resizeable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Draggable) {
 	YOM.dragdrop = YOM.dragdrop || {};
-	YOM.dragdrop.Draggable = require('yom/draggable');
+	YOM.dragdrop.Draggable = Draggable;
 	
 	function ResizeHandle(el, opts) {
 		ResizeHandle.superClass.constructor.call(this, el, opts);

@@ -1,16 +1,16 @@
 /**
  * @class YOM.CrossDomainPoster
  */
-define('yom/cross-domain-poster', ['require'], function(require) {
+define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/class', 'yom/instance-manager', 'yom/json', 'yom/observer', 'yom/event', 'yom/element'], function(require, config, Err, Class, InstanceManager, json, Observer, Evt, Elem) {
 	var YOM = {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'Class': require('yom/class'),
-		'InstanceManager': require('yom/instance-manager'),
-		'json': require('yom/json'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
+		'config': config,
+		'Error': Err,
+		'Class': Class,
+		'InstanceManager': InstanceManager,
+		'json': json,
+		'Observer': Observer,
+		'Event': Evt,
+		'Element': Elem
 	};
 	
 	var _ID = 125;

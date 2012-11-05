@@ -1,11 +1,11 @@
 /**
  * @namespace YOM.tmpl
  */
-define('yom/tmpl', ['require'], function(require) {
+define('yom/tmpl', ['yom/browser', 'yom/string', 'yom/object'], function(browser, string, object) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'string': require('yom/string'),
-		'object': require('yom/object')
+		'browser': browser,
+		'string': string,
+		'object': object
 	};
 	
 	var _cache = {};

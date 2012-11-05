@@ -1,15 +1,15 @@
 /**
  * @namespace YOM.Xhr
  */
-define('yom/xhr', ['require'], function(require) {
+define('yom/xhr', ['yom/config', 'yom/error', 'yom/class', 'yom/object', 'yom/instance-manager', 'yom/observer', 'yom/event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
 	var YOM = {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'Class': require('yom/class'),
-		'object': require('yom/object'),
-		'InstanceManager': require('yom/instance-manager'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event')
+		'config': config,
+		'Error': Err,
+		'Class': Class,
+		'object': object,
+		'InstanceManager': InstanceManager,
+		'Observer': Observer,
+		'Event': Evt
 	};
 	
 	var _ID = 116;

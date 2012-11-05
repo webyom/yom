@@ -1,15 +1,15 @@
 /**
  * @class YOM.Event.MouseleaveEventHandler
  */
-define('yom/event-mouseleave', ['require'], function(require) {
+define('yom/event-mouseleave', ['yom/browser', 'yom/class', 'yom/array', 'yom/event', 'yom/element', 'yom/event-virtual-handler'], function(browser, Class, array, Evt, Elem, VirtualEventHandler) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'Class': require('yom/class'),
-		'array': require('yom/array'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
+		'browser': browser,
+		'Class': Class,
+		'array': array,
+		'Event': Evt,
+		'Element': Elem
 	};
-	YOM.Event.VirtualEventHandler = require('yom/event-virtual-handler');
+	YOM.Event.VirtualEventHandler = VirtualEventHandler;
 	
 	var MouseleaveEventHandler = function(el) {
 		this.name = 'mouseleave';

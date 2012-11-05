@@ -1,13 +1,16 @@
 /**
  * @class YOM.Element
  */
-define('yom/element', ['require'], function(require) {
+define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', 'yom/event'], function(browser, string, object, array, Evt) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'string': require('yom/string'),
-		'object': require('yom/object'),
-		'array': require('yom/array')
+		'browser': browser,
+		'string': string,
+		'object': object,
+		'array': array,
+		'Event': Evt
 	};
+	
+	var _ID = 107;
 	
 	function _isElementNode(el) {
 		return el && (el.nodeType === 1 || el.nodeType === 9);
@@ -122,9 +125,9 @@ define('yom/element', ['require'], function(require) {
 		}
 	});
 	
-	function Element(el) {
+	function Elem(el) {
 		this._items = [];
-		if(el instanceof Element) {
+		if(el instanceof Elem) {
 			return el;
 		} else if(YOM.array.isArray(el)) {
 			YOM.object.each(el, function(item) {
@@ -147,7 +150,7 @@ define('yom/element', ['require'], function(require) {
 		return this;
 	};
 
-	$extend(Element.prototype, {
+	$extend(Elem.prototype, {
 		_getItem: function(i) {
 			if(typeof i == 'undefined') {
 				return this._items[0];
@@ -187,7 +190,7 @@ define('yom/element', ['require'], function(require) {
 					}
 				}
 			});
-			return new Element(res);
+			return new Elem(res);
 		},
 		
 		toQueryString: function() {
@@ -270,7 +273,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Element(el).setAttr(key, val);
+						new Elem(el).setAttr(key, val);
 					});
 				} else {
 					if(!name) {
@@ -279,7 +282,7 @@ define('yom/element', ['require'], function(require) {
 					if(name.indexOf('data-') === 0 && el.dataset) {
 						name = name.split('-');
 						name.shift();
-						new Element(el).setDatasetVal(name.join('-'), value);
+						new Elem(el).setDatasetVal(name.join('-'), value);
 					} else if(name == 'class' || name == 'className') {
 						el.className = value;
 					} else {
@@ -312,7 +315,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Element(el).setProp(key, val);
+						new Elem(el).setProp(key, val);
 					});
 				} else {
 					if(!name) {
@@ -342,7 +345,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Element(el).setDatasetVal(key, val);
+						new Elem(el).setDatasetVal(key, val);
 					});
 				} else {
 					if(el.dataset) {
@@ -395,7 +398,7 @@ define('yom/element', ['require'], function(require) {
 			var el = this.get();
 			var parent = el.parentNode;
 			var res = {left: 0, top: 0};
-			while(parent && !Element.isBody(parent)) {
+			while(parent && !Elem.isBody(parent)) {
 				res.left = parent.scrollLeft;
 				res.top = parent.scrollTop;
 				parent = parent.parentNode;
@@ -408,7 +411,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return 0;
 			}
-			if(Element.isBody(el)) {
+			if(Elem.isBody(el)) {
 				return Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
 			} else {
 				return el.scrollLeft;
@@ -420,7 +423,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return 0;
 			}
-			if(Element.isBody(el)) {
+			if(Elem.isBody(el)) {
 				return Math.max(document.documentElement.scrollTop, document.body.scrollTop);
 			} else {
 				return el.scrollTop;
@@ -450,14 +453,14 @@ define('yom/element', ['require'], function(require) {
 			if(!el || el.scrollLeft == x) {
 				return this;
 			}
-			if(x instanceof Element) {
+			if(x instanceof Elem) {
 				this.scrollLeftTo(x.getRect(this).left, interval, transition);
 				return this;
 			}
 			var rect = this.getRect();
-			var viewRect = Element.getViewRect();
+			var viewRect = Elem.getViewRect();
 			var scrollWidth, clientWidth;
-			var isBody = Element.isBody(el);
+			var isBody = Elem.isBody(el);
 			if(isBody) {
 				scrollWidth = rect.width;
 				clientWidth = viewRect.width;
@@ -469,7 +472,7 @@ define('yom/element', ['require'], function(require) {
 				return this;
 			}
 			x = x < 0 ? 0 : (x > scrollWidth - clientWidth ? scrollWidth - clientWidth : x);
-			var tweenObj = isBody ? new Element(YOM.browser.chrome ? document.body : document.documentElement) : new Element(el);
+			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el);
 			if(interval === 0) {
 				tweenObj.setProp('scrollLeft', x);
 				return this;
@@ -495,14 +498,14 @@ define('yom/element', ['require'], function(require) {
 			if(!el || el.scrollTop == y) {
 				return this;
 			}
-			if(y instanceof Element) {
+			if(y instanceof Elem) {
 				this.scrollTopTo(y.getRect(this).top, interval, transition);
 				return this;
 			}
 			var rect = this.getRect();
-			var viewRect = Element.getViewRect();
+			var viewRect = Elem.getViewRect();
 			var scrollHeight, clientHeight;
-			var isBody = Element.isBody(el);
+			var isBody = Elem.isBody(el);
 			if(isBody) {
 				scrollHeight = rect.height;
 				clientHeight = viewRect.height;
@@ -514,7 +517,7 @@ define('yom/element', ['require'], function(require) {
 				return this;
 			}
 			y = y < 0 ? 0 : (y > scrollHeight - clientHeight ? scrollHeight - clientHeight : y);
-			var tweenObj = isBody ? new Element(YOM.browser.chrome ? document.body : document.documentElement) : new Element(el);
+			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el);
 			if(interval === 0) {
 				tweenObj.setProp('scrollTop', y);
 				return this;
@@ -537,17 +540,17 @@ define('yom/element', ['require'], function(require) {
 		
 		getOffsetParent: function() {
 			var el = this.get();
-			if(!el || Element.isBody(el)) {
+			if(!el || Elem.isBody(el)) {
 				return null;
 			}
-			return el.offsetParent && new Element(el.offsetParent);
+			return el.offsetParent && new Elem(el.offsetParent);
 		},
 		
 		getRect: function(relative) {
 			var el, rect, docScrolls, elScrolls, res;
 			el = this.get();
-			if(Element.isBody(el)) {
-				var bodySize = Element.getDocSize(el.ownerDocument);
+			if(Elem.isBody(el)) {
+				var bodySize = Elem.getDocSize(el.ownerDocument);
 				res = {
 					top: 0, left: 0,
 					width: bodySize.width,
@@ -559,7 +562,7 @@ define('yom/element', ['require'], function(require) {
 			}
 			rect = el.getBoundingClientRect && el.getBoundingClientRect();
 			relative = relative ? $query(relative).getRect() : {top: 0, left: 0};
-			docScrolls = Element.getViewRect(el.ownerDocument);
+			docScrolls = Elem.getViewRect(el.ownerDocument);
 			elScrolls = this.getScrolls();
 			if(rect) {
 				if(YOM.browser.ie && !YOM.browser.isQuirksMode() && (YOM.browser.v <= 7 || document.documentMode <= 7)) {
@@ -587,8 +590,8 @@ define('yom/element', ['require'], function(require) {
 				};
 				while(el.offsetParent) {
 					el = el.offsetParent;
-					res.top += el.offsetTop + (parseInt(new Element(el).getStyle('borderTopWidth')) || 0);
-					res.left += el.offsetLeft + (parseInt(new Element(el).getStyle('borderLeftWidth')) || 0);
+					res.top += el.offsetTop + (parseInt(new Elem(el).getStyle('borderTopWidth')) || 0);
+					res.left += el.offsetLeft + (parseInt(new Elem(el).getStyle('borderLeftWidth')) || 0);
 				}
 				res.bottom = res.top + res.height - relative.top;
 				res.right = res.left + res.width - relative.left;
@@ -602,7 +605,7 @@ define('yom/element', ['require'], function(require) {
 		},
 		
 		removeChild: function(el) {
-			if(!(el instanceof Element)) {
+			if(!(el instanceof Elem)) {
 				el = this.find(el);
 			}
 			el.each(function(child) {
@@ -618,10 +621,10 @@ define('yom/element', ['require'], function(require) {
 		
 		remove: function() {
 			var el = this.get();
-			if(!el || Element.isBody(el)) {
+			if(!el || Elem.isBody(el)) {
 				return null;
 			}
-			return new Element(el.parentNode.removeChild(el));
+			return new Elem(el.parentNode.removeChild(el));
 		},
 		
 		first: function() {
@@ -630,7 +633,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return res;
 			}
-			new Element(el.childNode || el.children).each(function(item) {
+			new Elem(el.childNode || el.children).each(function(item) {
 				if(_isElementNode(item)) {
 					res = item;
 					return false;
@@ -645,7 +648,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return null;
 			}
-			return el.nextElementSibling || Element.searchChain(el, 'nextSibling', function(el) {
+			return el.nextElementSibling || Elem.searchChain(el, 'nextSibling', function(el) {
 				return _isElementNode(el);
 			});
 		},
@@ -655,7 +658,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return null;
 			}
-			return el.previousElementSibling || Element.searchChain(el, 'previousSibling', function(el) {
+			return el.previousElementSibling || Elem.searchChain(el, 'previousSibling', function(el) {
 				return _isElementNode(el);
 			});
 		},
@@ -663,7 +666,7 @@ define('yom/element', ['require'], function(require) {
 		head: function(tar) {
 			var firstChild = this.first();
 			if(firstChild) {
-				return new Element(this.get().insertBefore(tar, firstChild));
+				return new Elem(this.get().insertBefore(tar, firstChild));
 			} else {
 				return this.append(tar);
 			}
@@ -673,7 +676,7 @@ define('yom/element', ['require'], function(require) {
 			tar = $query(tar);
 			var firstChild = tar.first();
 			if(firstChild) {
-				return new Element(tar.get().insertBefore(this.get(), firstChild));
+				return new Elem(tar.get().insertBefore(this.get(), firstChild));
 			} else {
 				return tar.append(this.get());
 			}
@@ -681,9 +684,9 @@ define('yom/element', ['require'], function(require) {
 		
 		append: function(el) {
 			if(_isElementNode(el)) {
-				return new Element(this.get().appendChild(el));
-			} else if(el instanceof Element) {
-				return new Element(this.get().appendChild(el.get()));
+				return new Elem(this.get().appendChild(el));
+			} else if(el instanceof Elem) {
+				return new Elem(this.get().appendChild(el.get()));
 			}
 			return null;
 		},
@@ -694,9 +697,9 @@ define('yom/element', ['require'], function(require) {
 				return null;
 			}
 			if(_isElementNode(parent)) {
-				return new Element(parent.appendChild(child));
-			} else if(parent instanceof Element) {
-				return new Element(parent.append(child));
+				return new Elem(parent.appendChild(child));
+			} else if(parent instanceof Elem) {
+				return new Elem(parent.append(child));
 			}
 			return null;
 		},
@@ -704,7 +707,7 @@ define('yom/element', ['require'], function(require) {
 		before: function(target) {
 			var el = this.get();
 			target = $query(target).get();
-			if(!el || !target || Element.isBody(target)) {
+			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
 			target.parentNode.insertBefore(el, target);
@@ -714,7 +717,7 @@ define('yom/element', ['require'], function(require) {
 		after: function(target) {
 			var el = this.get();
 			target = $query(target).get();
-			if(!el || !target || Element.isBody(target)) {
+			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
 			if(target.nextSibling) {
@@ -728,7 +731,7 @@ define('yom/element', ['require'], function(require) {
 		clone: function(bool) {
 			var el = this.get();
 			if(el) {
-				return new Element(el.cloneNode(bool));
+				return new Elem(el.cloneNode(bool));
 			}
 			return null;
 		},
@@ -756,7 +759,7 @@ define('yom/element', ['require'], function(require) {
 		
 		toggle: function(callback) {
 			this.each(function(el) {
-				el = new Element(el);
+				el = new Elem(el);
 				if(el.getStyle('display') == 'none') {
 					el.show();
 					callback && callback.call(el, 'SHOW');
@@ -769,23 +772,21 @@ define('yom/element', ['require'], function(require) {
 		},
 		
 		addEventListener: function(eType, listener, bind) {
-			var Event = require('yom/event');
 			this.each(function(el) {
-				Event.addListener(el, eType, listener, bind || el);
+				YOM.Event.addListener(el, eType, listener, bind || el);
 			});
 			return this;
 		},
 		
 		removeEventListener: function(eType, listener) {
-			var Event = require('yom/event');
 			this.each(function(el) {
-				Event.removeListener(el, eType, listener);
+				YOM.Event.removeListener(el, eType, listener);
 			});
 			return this;
 		},
 		
 		concat: function(els) {
-			return new Element(this.getAll().concat(new Element(els).getAll()));
+			return new Elem(this.getAll().concat(new Elem(els).getAll()));
 		},
 		
 		removeItem: function(el) {
@@ -806,11 +807,9 @@ define('yom/element', ['require'], function(require) {
 		}
 	});
 	
-	Element._ID = 107;
+	Elem.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 	
-	Element.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
-	
-	Element.isBody = function(el) {
+	Elem.isBody = function(el) {
 		el = $query(el).get();
 		if(!el) {
 			return false;
@@ -818,18 +817,18 @@ define('yom/element', ['require'], function(require) {
 		return el.tagName == 'BODY' || el.tagName == 'HTML';
 	};
 
-	Element.create = function(name, attrs, style) {
-		var el = new Element(document.createElement(name));
+	Elem.create = function(name, attrs, style) {
+		var el = new Elem(document.createElement(name));
 		attrs && el.setAttr(attrs);
 		style && el.setStyle(style);
 		return el.get();
 	};
 	
-	Element.contains = function(a, b) {
+	Elem.contains = function(a, b) {
 		return (a.contains) ? (a != b && a.contains(b)) : !!(a.compareDocumentPosition(b) & 16);
 	};
 	
-	Element.searchChain = function(el, prop, validator) {
+	Elem.searchChain = function(el, prop, validator) {
 		var res;
 		while(el && el.nodeType) {
 			res = el[prop];
@@ -841,7 +840,7 @@ define('yom/element', ['require'], function(require) {
 		return null;
 	};
 	
-	Element.getViewRect = function(doc) {
+	Elem.getViewRect = function(doc) {
 		var res;
 		doc = doc || document;
 		res = {
@@ -857,19 +856,19 @@ define('yom/element', ['require'], function(require) {
 		return res;
 	};
 
-	Element.getFrameRect = function(maxBubble) {
+	Elem.getFrameRect = function(maxBubble) {
 		var res, rect;
 		var win = window;
 		var frame = win.frameElement;
 		var bubbleLeft = maxBubble;
 		if(!frame) {
-			return new Element(document.body).getRect();
+			return new Elem(document.body).getRect();
 		}
-		res = new Element(frame).getRect();
+		res = new Elem(frame).getRect();
 		win = win.parent;
 		frame = win.frameElement;
 		while(frame && (!maxBubble || --bubbleLeft > 0)) {
-			rect = new Element(frame).getRect();
+			rect = new Elem(frame).getRect();
 			res.left += rect.left;
 			res.right += rect.left;
 			res.top += rect.top;
@@ -880,7 +879,7 @@ define('yom/element', ['require'], function(require) {
 		return res;
 	};
 	
-	Element.getDocSize = function(doc) {
+	Elem.getDocSize = function(doc) {
 		var w, h;
 		doc = doc || document;
 		if(YOM.browser.isQuirksMode()) {
@@ -901,5 +900,5 @@ define('yom/element', ['require'], function(require) {
 		};
 	};
 	
-	return Element;
+	return Elem;
 });

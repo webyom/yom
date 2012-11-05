@@ -45,7 +45,7 @@ ID LIST:
 */
 
 /**
- * @namespace
+ * @namespace YOM.config
  */
 define('yom/config', [], function() {
 	var t = document.domain.split('.'), l = t.length;

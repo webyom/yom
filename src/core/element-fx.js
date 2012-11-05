@@ -1,11 +1,12 @@
 /**
  * YOM.Element FX extention, inspired by KISSY
  */
-define('yom/element-fx', ['require'], function(require) {
+define('yom/element-fx', ['yom/object', 'yom/array', 'yom/element', 'yom/tween'], function(object, array, Elem, Tween) {
 	var YOM = {
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'Element': require('yom/element')
+		'object': object,
+		'array': array,
+		'Element': Elem,
+		'Tween': Tween
 	};
 	
 	$extend(YOM.Element.prototype, (function() {
@@ -21,9 +22,8 @@ define('yom/element-fx', ['require'], function(require) {
 		};
 		
 		function _doFx(type, el, duration, complete) {
-			var Tween = require('yom/tween');
 			var conf, iStyle, oStyle, tStyle, isShow, width, height;
-			Tween.stopAllTween(el);
+			YOM.Tween.stopAllTween(el);
 			if(type == 'fxToggle') {
 				type = el.getStyle('display') == 'none' ? 'fxShow' : 'fxHide';
 			}
@@ -76,7 +76,7 @@ define('yom/element-fx', ['require'], function(require) {
 				}
 			});
 			el.setStyle(oStyle);
-			new Tween(el, duration, {
+			new YOM.Tween(el, duration, {
 				target: {
 					style: tStyle
 				},
@@ -92,10 +92,9 @@ define('yom/element-fx', ['require'], function(require) {
 		
 		var fx = {
 			tween: function() {
-				var Tween = require('yom/tween');
 				var args = YOM.array.getArray(arguments);
 				this.each(function(el) {
-					Tween.apply(this, [el].concat(args)).play();
+					YOM.Tween.apply(this, [el].concat(args)).play();
 				});
 				return this;
 			}

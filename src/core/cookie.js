@@ -1,9 +1,9 @@
 /**
  * @namespace YOM.cookie
  */
-define('yom/cookie', ['require'], function(require) {
+define('yom/cookie', ['yom/config'], function(config) {
 	var YOM = {
-		'config': require('yom/config')
+		'config': config
 	};
 	
 	return {

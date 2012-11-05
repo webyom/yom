@@ -1,21 +1,20 @@
 /**
  * @class YOM.Class
  */
-define('yom/class', ['require'], function(require) {
+define('yom/class', ['yom/error', 'yom/object', 'yom/array'], function(Err, object, array) {
 	var YOM = {
-		'Error': require('yom/error'),
-		'browser': require('yom/browser'),
-		'object': require('yom/object'),
-		'array': require('yom/array')
+		'Error': Err,
+		'object': object,
+		'array': array
 	};
 	
 	var Class = function() {};
 
-	Class._ID = 102;
+	var _ID = 102;
 	
 	Class.extend = function(subClass, superClass) {
 		if(arguments.length < 2) {
-			throw new YOM.Error(YOM.Error.getCode(YOM.Class._ID, 1));
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		var F = function() {};
 		F.prototype = superClass.prototype;

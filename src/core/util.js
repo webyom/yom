@@ -1,9 +1,9 @@
 /**
  * @namespace YOM.util
  */
-define('yom/util', ['require'], function(require) {
+define('yom/util', ['yom/object'], function(object) {
 	var YOM = {
-		'object': require('yom/object')
+		'object': object
 	};
 	
 	return {

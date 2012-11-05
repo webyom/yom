@@ -1,13 +1,13 @@
 /**
  * @namespace YOM.css
  */
-define('yom/css', ['require'], function(require) {
+define('yom/css', ['yom/object', 'yom/array', 'yom/class', 'yom/event', 'yom/element'], function(object, array, Class, Evt, Elem) {
 	var YOM = {
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'Class': require('yom/class'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
+		'object': object,
+		'array': array,
+		'Class': Class,
+		'Event': Evt,
+		'Element': Elem
 	};
 	
 	var _linkCount = 0;

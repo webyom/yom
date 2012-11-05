@@ -1,10 +1,10 @@
 /**
  * @class YOM.InstanceManager
  */
-define('yom/instance-manager', ['require'], function(require) {
+define('yom/instance-manager', ['yom/object', 'yom/array'], function(object, array) {
 	var YOM = {
-		'object': require('yom/object'),
-		'array': require('yom/array')
+		'object': object,
+		'array': array
 	};
 		
 	var InstanceManager = function() {

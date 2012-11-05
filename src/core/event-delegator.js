@@ -1,10 +1,10 @@
 /**
  * @class YOM.Event.Delegator
  */
-define('yom/event-delegator', ['require'], function(require) {
+define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) {
 	var YOM = {
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
+		'Event': Evt,
+		'Element': Elem
 	};
 	
 	var _pageDelegator;

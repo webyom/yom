@@ -1,9 +1,9 @@
 /**
  * @class YOM.dragdrop.Sortable
  */
-define('yom/sortable', ['require', 'yom/core-pkg'], function(require, YOM) {
+define('yom/sortable', ['yom/core-pkg', 'yom/droppable'], function(YOM, Droppable) {
 	YOM.dragdrop = YOM.dragdrop || {};
-	YOM.dragdrop.Droppable = require('yom/droppable');
+	YOM.dragdrop.Droppable = Droppable;
 	
 	var _DIRECTION_MAP = {'H': 'H', 'V': 'V'};
 	

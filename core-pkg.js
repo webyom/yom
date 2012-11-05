@@ -45,7 +45,7 @@ ID LIST:
 */
 
 /**
- * @namespace
+ * @namespace YOM.config
  */
 define('yom/config', [], function() {
 	var t = document.domain.split('.'), l = t.length;
@@ -298,9 +298,9 @@ define('yom/object', ['require'], function(require) {
 /**
  * @namespace YOM.array
  */
-define('yom/array', ['require'], function(require) {
+define('yom/array', ['yom/object'], function(object) {
 	var YOM = {
-		'object': require('yom/object')
+		'object': object
 	};
 	
 	return {
@@ -355,21 +355,20 @@ define('yom/array', ['require'], function(require) {
 /**
  * @class YOM.Class
  */
-define('yom/class', ['require'], function(require) {
+define('yom/class', ['yom/error', 'yom/object', 'yom/array'], function(Err, object, array) {
 	var YOM = {
-		'Error': require('yom/error'),
-		'browser': require('yom/browser'),
-		'object': require('yom/object'),
-		'array': require('yom/array')
+		'Error': Err,
+		'object': object,
+		'array': array
 	};
 	
 	var Class = function() {};
 
-	Class._ID = 102;
+	var _ID = 102;
 	
 	Class.extend = function(subClass, superClass) {
 		if(arguments.length < 2) {
-			throw new YOM.Error(YOM.Error.getCode(YOM.Class._ID, 1));
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		var F = function() {};
 		F.prototype = superClass.prototype;
@@ -594,10 +593,10 @@ define('yom/hash-array', [], function() {
 /**
  * @class YOM.InstanceManager
  */
-define('yom/instance-manager', ['require'], function(require) {
+define('yom/instance-manager', ['yom/object', 'yom/array'], function(object, array) {
 	var YOM = {
-		'object': require('yom/object'),
-		'array': require('yom/array')
+		'object': object,
+		'array': array
 	};
 		
 	var InstanceManager = function() {
@@ -905,12 +904,12 @@ return jsonParse;
 /**
  * @namespace YOM.json
  */
-define('yom/json', ['require'], function(require) {
+define('yom/json', ['yom/error', 'yom/object', 'yom/array', 'yom/json-sans-eval'], function(Err, object, array, jsonParse) {
 	var YOM = {
-		'Error': require('yom/error'),
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'jsonParse': require('yom/json-sans-eval')
+		'Error': Err,
+		'object': object,
+		'array': array,
+		'jsonParse': jsonParse
 	};
 	
 	var _ID = 126;
@@ -1011,15 +1010,246 @@ define('yom/json', ['require'], function(require) {
 	};
 });
 /**
+ * @class YOM.Observer
+ */
+define('yom/observer', [], function() {
+	var Observer = function () {
+		this._subscribers = [];
+	};
+	
+	Observer.prototype = {
+		subscribe: function(subscriber, bind) {
+			subscriber = bind ? $bind(bind, subscriber) : subscriber;
+			for(var i = 0, l = this._subscribers.length; i < l; i++) {
+				if(subscriber == this._subscribers[i]) {
+					return null;
+				}
+			}
+			this._subscribers.push(subscriber);
+			return subscriber;
+		},
+		
+		remove: function(subscriber) {
+			var res = [];
+			if(subscriber) {
+				for(var i = this._subscribers.length - 1; i >= 0; i--) {
+					if(subscriber == this._subscribers[i]) {
+						res = res.concat(this._subscribers.splice(i, 1));
+					}
+				}
+			} else {
+				res = this._subscribers;
+				this._subscribers = [];
+			}
+			return res;
+		},
+		
+		dispatch: function(e, bind) {
+			var res, tmp, subscriber;
+			for(var i = this._subscribers.length - 1; i >= 0; i--) {
+				subscriber = this._subscribers[i];
+				if(!subscriber) {
+					continue;				
+				}
+				tmp = subscriber.call(bind, e);
+				res = tmp === false || res === false ? false : tmp;
+			}
+			return res;
+		},
+		
+		constructor: Observer
+	};
+	
+	Observer._ID = 111;
+	
+	return Observer;
+});
+/**
+ * @class YOM.Event
+ */
+define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, object, Observer) {
+	var YOM = {
+		'Error': Err,
+		'object': object,
+		'Observer': Observer
+	};
+	
+	var _ID = 108;
+	
+	var _elRefCount = 0;
+	_customizedEventHash = {
+		
+	};
+	
+	function _getObserver(instance, type) {
+		if(!instance instanceof Event) {
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
+		}
+		instance._observers = instance._observers || {};
+		instance._observers[type] = instance._observers[type] || new YOM.Observer();
+		return instance._observers[type];
+	};
+	
+	function _getObservers(instance) {
+		if(!instance instanceof Event) {
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
+		}
+		instance._observers = instance._observers || {};
+		return instance._observers;
+	};
+	
+	function Event(observers) {
+		this._observers = $getClean(observers) || {};
+	};
+	
+	Event.prototype = {
+		addObservers: function(newObservers) {
+			var observers = _getObservers(this);
+			newObservers = $getClean(newObservers);
+			for(var type in newObservers) {
+				if(newObservers[type] instanceof YOM.Observer) {
+					observers[type] = newObservers[type];
+				}
+			}
+		},
+		
+		addEventListener: function(type, listener, bind) {
+			var observer = _getObserver(this, type);
+			if(!observer) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 1));
+			}
+			return observer.subscribe(listener, bind);
+		},
+		
+		removeEventListener: function(type, listener) {
+			var observer = _getObserver(this, type);
+			if(!observer) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 2));
+			}
+			return observer.remove(listener);
+		},
+		
+		dispatchEvent: function(e, asyn) {
+			if(typeof e == 'string') {
+				e = {type: e};
+			}
+			var self = this;
+			var observer = _getObserver(this, e.type);
+			if(!observer) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 3));
+			}
+			if(asyn) {
+				setTimeout(function() {
+					observer.dispatch.call(observer, e, self);
+				}, 0);
+				return undefined;
+			} else {
+				return observer.dispatch.call(observer, e, self);
+			}
+		},
+		
+		createEvent: function(type, opt) {
+			var e = YOM.object.clone(opt) || {};
+			e.type = type;
+			return e;
+		},
+		
+		constructor: Event
+	};
+	
+	Event.addListener = function(el, eType, listener, bind) {
+		var cEvent, cEventHandler;
+		eType = eType.toLowerCase();
+		listener = bind ? $bind(bind, listener) : listener;
+		cEvent = _customizedEventHash[eType];
+		if(cEvent) {
+			el.elEventRef = el.elEventRef || ++_elRefCount;
+			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef];
+			if(!cEventHandler) {
+				cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef] = new cEvent.Handler(el);
+			}
+			cEventHandler.addListener(listener);
+		} else if(el.addEventListener) {
+			el.addEventListener(eType, listener, false);
+		} else {
+			el.attachEvent('on' + eType, listener);
+		}
+		return listener;
+	};
+	
+	Event.removeListener = function(el, eType, listener) {
+		var cEvent, cEventHandler;
+		eType = eType.toLowerCase();
+		cEvent = _customizedEventHash[eType];
+		if(cEvent) {
+			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef];
+			if(cEventHandler) {
+				cEventHandler.removeListener(listener);
+			}
+		} else if(el.removeEventListener) {
+			el.removeEventListener(eType, listener, false);
+		} else {
+			el.detachEvent('on' + eType, listener);
+		}
+	};
+	
+	Event.addCustomizedEvent = function(type, Handler) {
+		_customizedEventHash[type] = {
+			Handler: Handler,
+			elEventRefHandlerHash: {}
+		};
+	};
+	
+	Event.removeCustomizedEventHandler = function(type, ref) {
+		var cEvent = _customizedEventHash[type];
+		if(cEvent) {
+			cEvent.elEventRefHandlerHash[ref] = null;
+		}
+	};
+	
+	Event.cancelBubble = function(e) {
+		if(e.stopPropagation) {
+			e.stopPropagation();
+		} else {
+			e.cancelBubble = true;
+		}
+	};
+	
+	Event.preventDefault = function(e) {
+		if(e.preventDefault) {
+			e.preventDefault();
+		} else {
+			e.returnValue = false;
+		}
+	};
+	
+	Event.getTarget = function(e) {
+		return e.target || e.srcElement;
+	};
+	
+	Event.getPageX = function(e) {
+		return e.pageX != undefined ? e.pageX : e.clientX + Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
+	};
+	
+	Event.getPageY = function(e) {
+		return e.pageY != undefined ? e.pageY : e.clientY + Math.max(document.documentElement.scrollTop, document.body.scrollTop);
+	};
+	
+	return Event;
+});
+/**
  * @class YOM.Element
  */
-define('yom/element', ['require'], function(require) {
+define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', 'yom/event'], function(browser, string, object, array, Evt) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'string': require('yom/string'),
-		'object': require('yom/object'),
-		'array': require('yom/array')
+		'browser': browser,
+		'string': string,
+		'object': object,
+		'array': array,
+		'Event': Evt
 	};
+	
+	var _ID = 107;
 	
 	function _isElementNode(el) {
 		return el && (el.nodeType === 1 || el.nodeType === 9);
@@ -1134,9 +1364,9 @@ define('yom/element', ['require'], function(require) {
 		}
 	});
 	
-	function Element(el) {
+	function Elem(el) {
 		this._items = [];
-		if(el instanceof Element) {
+		if(el instanceof Elem) {
 			return el;
 		} else if(YOM.array.isArray(el)) {
 			YOM.object.each(el, function(item) {
@@ -1159,7 +1389,7 @@ define('yom/element', ['require'], function(require) {
 		return this;
 	};
 
-	$extend(Element.prototype, {
+	$extend(Elem.prototype, {
 		_getItem: function(i) {
 			if(typeof i == 'undefined') {
 				return this._items[0];
@@ -1199,7 +1429,7 @@ define('yom/element', ['require'], function(require) {
 					}
 				}
 			});
-			return new Element(res);
+			return new Elem(res);
 		},
 		
 		toQueryString: function() {
@@ -1282,7 +1512,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Element(el).setAttr(key, val);
+						new Elem(el).setAttr(key, val);
 					});
 				} else {
 					if(!name) {
@@ -1291,7 +1521,7 @@ define('yom/element', ['require'], function(require) {
 					if(name.indexOf('data-') === 0 && el.dataset) {
 						name = name.split('-');
 						name.shift();
-						new Element(el).setDatasetVal(name.join('-'), value);
+						new Elem(el).setDatasetVal(name.join('-'), value);
 					} else if(name == 'class' || name == 'className') {
 						el.className = value;
 					} else {
@@ -1324,7 +1554,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Element(el).setProp(key, val);
+						new Elem(el).setProp(key, val);
 					});
 				} else {
 					if(!name) {
@@ -1354,7 +1584,7 @@ define('yom/element', ['require'], function(require) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Element(el).setDatasetVal(key, val);
+						new Elem(el).setDatasetVal(key, val);
 					});
 				} else {
 					if(el.dataset) {
@@ -1407,7 +1637,7 @@ define('yom/element', ['require'], function(require) {
 			var el = this.get();
 			var parent = el.parentNode;
 			var res = {left: 0, top: 0};
-			while(parent && !Element.isBody(parent)) {
+			while(parent && !Elem.isBody(parent)) {
 				res.left = parent.scrollLeft;
 				res.top = parent.scrollTop;
 				parent = parent.parentNode;
@@ -1420,7 +1650,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return 0;
 			}
-			if(Element.isBody(el)) {
+			if(Elem.isBody(el)) {
 				return Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
 			} else {
 				return el.scrollLeft;
@@ -1432,7 +1662,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return 0;
 			}
-			if(Element.isBody(el)) {
+			if(Elem.isBody(el)) {
 				return Math.max(document.documentElement.scrollTop, document.body.scrollTop);
 			} else {
 				return el.scrollTop;
@@ -1462,14 +1692,14 @@ define('yom/element', ['require'], function(require) {
 			if(!el || el.scrollLeft == x) {
 				return this;
 			}
-			if(x instanceof Element) {
+			if(x instanceof Elem) {
 				this.scrollLeftTo(x.getRect(this).left, interval, transition);
 				return this;
 			}
 			var rect = this.getRect();
-			var viewRect = Element.getViewRect();
+			var viewRect = Elem.getViewRect();
 			var scrollWidth, clientWidth;
-			var isBody = Element.isBody(el);
+			var isBody = Elem.isBody(el);
 			if(isBody) {
 				scrollWidth = rect.width;
 				clientWidth = viewRect.width;
@@ -1481,7 +1711,7 @@ define('yom/element', ['require'], function(require) {
 				return this;
 			}
 			x = x < 0 ? 0 : (x > scrollWidth - clientWidth ? scrollWidth - clientWidth : x);
-			var tweenObj = isBody ? new Element(YOM.browser.chrome ? document.body : document.documentElement) : new Element(el);
+			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el);
 			if(interval === 0) {
 				tweenObj.setProp('scrollLeft', x);
 				return this;
@@ -1507,14 +1737,14 @@ define('yom/element', ['require'], function(require) {
 			if(!el || el.scrollTop == y) {
 				return this;
 			}
-			if(y instanceof Element) {
+			if(y instanceof Elem) {
 				this.scrollTopTo(y.getRect(this).top, interval, transition);
 				return this;
 			}
 			var rect = this.getRect();
-			var viewRect = Element.getViewRect();
+			var viewRect = Elem.getViewRect();
 			var scrollHeight, clientHeight;
-			var isBody = Element.isBody(el);
+			var isBody = Elem.isBody(el);
 			if(isBody) {
 				scrollHeight = rect.height;
 				clientHeight = viewRect.height;
@@ -1526,7 +1756,7 @@ define('yom/element', ['require'], function(require) {
 				return this;
 			}
 			y = y < 0 ? 0 : (y > scrollHeight - clientHeight ? scrollHeight - clientHeight : y);
-			var tweenObj = isBody ? new Element(YOM.browser.chrome ? document.body : document.documentElement) : new Element(el);
+			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el);
 			if(interval === 0) {
 				tweenObj.setProp('scrollTop', y);
 				return this;
@@ -1549,17 +1779,17 @@ define('yom/element', ['require'], function(require) {
 		
 		getOffsetParent: function() {
 			var el = this.get();
-			if(!el || Element.isBody(el)) {
+			if(!el || Elem.isBody(el)) {
 				return null;
 			}
-			return el.offsetParent && new Element(el.offsetParent);
+			return el.offsetParent && new Elem(el.offsetParent);
 		},
 		
 		getRect: function(relative) {
 			var el, rect, docScrolls, elScrolls, res;
 			el = this.get();
-			if(Element.isBody(el)) {
-				var bodySize = Element.getDocSize(el.ownerDocument);
+			if(Elem.isBody(el)) {
+				var bodySize = Elem.getDocSize(el.ownerDocument);
 				res = {
 					top: 0, left: 0,
 					width: bodySize.width,
@@ -1571,7 +1801,7 @@ define('yom/element', ['require'], function(require) {
 			}
 			rect = el.getBoundingClientRect && el.getBoundingClientRect();
 			relative = relative ? $query(relative).getRect() : {top: 0, left: 0};
-			docScrolls = Element.getViewRect(el.ownerDocument);
+			docScrolls = Elem.getViewRect(el.ownerDocument);
 			elScrolls = this.getScrolls();
 			if(rect) {
 				if(YOM.browser.ie && !YOM.browser.isQuirksMode() && (YOM.browser.v <= 7 || document.documentMode <= 7)) {
@@ -1599,8 +1829,8 @@ define('yom/element', ['require'], function(require) {
 				};
 				while(el.offsetParent) {
 					el = el.offsetParent;
-					res.top += el.offsetTop + (parseInt(new Element(el).getStyle('borderTopWidth')) || 0);
-					res.left += el.offsetLeft + (parseInt(new Element(el).getStyle('borderLeftWidth')) || 0);
+					res.top += el.offsetTop + (parseInt(new Elem(el).getStyle('borderTopWidth')) || 0);
+					res.left += el.offsetLeft + (parseInt(new Elem(el).getStyle('borderLeftWidth')) || 0);
 				}
 				res.bottom = res.top + res.height - relative.top;
 				res.right = res.left + res.width - relative.left;
@@ -1614,7 +1844,7 @@ define('yom/element', ['require'], function(require) {
 		},
 		
 		removeChild: function(el) {
-			if(!(el instanceof Element)) {
+			if(!(el instanceof Elem)) {
 				el = this.find(el);
 			}
 			el.each(function(child) {
@@ -1630,10 +1860,10 @@ define('yom/element', ['require'], function(require) {
 		
 		remove: function() {
 			var el = this.get();
-			if(!el || Element.isBody(el)) {
+			if(!el || Elem.isBody(el)) {
 				return null;
 			}
-			return new Element(el.parentNode.removeChild(el));
+			return new Elem(el.parentNode.removeChild(el));
 		},
 		
 		first: function() {
@@ -1642,7 +1872,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return res;
 			}
-			new Element(el.childNode || el.children).each(function(item) {
+			new Elem(el.childNode || el.children).each(function(item) {
 				if(_isElementNode(item)) {
 					res = item;
 					return false;
@@ -1657,7 +1887,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return null;
 			}
-			return el.nextElementSibling || Element.searchChain(el, 'nextSibling', function(el) {
+			return el.nextElementSibling || Elem.searchChain(el, 'nextSibling', function(el) {
 				return _isElementNode(el);
 			});
 		},
@@ -1667,7 +1897,7 @@ define('yom/element', ['require'], function(require) {
 			if(!el) {
 				return null;
 			}
-			return el.previousElementSibling || Element.searchChain(el, 'previousSibling', function(el) {
+			return el.previousElementSibling || Elem.searchChain(el, 'previousSibling', function(el) {
 				return _isElementNode(el);
 			});
 		},
@@ -1675,7 +1905,7 @@ define('yom/element', ['require'], function(require) {
 		head: function(tar) {
 			var firstChild = this.first();
 			if(firstChild) {
-				return new Element(this.get().insertBefore(tar, firstChild));
+				return new Elem(this.get().insertBefore(tar, firstChild));
 			} else {
 				return this.append(tar);
 			}
@@ -1685,7 +1915,7 @@ define('yom/element', ['require'], function(require) {
 			tar = $query(tar);
 			var firstChild = tar.first();
 			if(firstChild) {
-				return new Element(tar.get().insertBefore(this.get(), firstChild));
+				return new Elem(tar.get().insertBefore(this.get(), firstChild));
 			} else {
 				return tar.append(this.get());
 			}
@@ -1693,9 +1923,9 @@ define('yom/element', ['require'], function(require) {
 		
 		append: function(el) {
 			if(_isElementNode(el)) {
-				return new Element(this.get().appendChild(el));
-			} else if(el instanceof Element) {
-				return new Element(this.get().appendChild(el.get()));
+				return new Elem(this.get().appendChild(el));
+			} else if(el instanceof Elem) {
+				return new Elem(this.get().appendChild(el.get()));
 			}
 			return null;
 		},
@@ -1706,9 +1936,9 @@ define('yom/element', ['require'], function(require) {
 				return null;
 			}
 			if(_isElementNode(parent)) {
-				return new Element(parent.appendChild(child));
-			} else if(parent instanceof Element) {
-				return new Element(parent.append(child));
+				return new Elem(parent.appendChild(child));
+			} else if(parent instanceof Elem) {
+				return new Elem(parent.append(child));
 			}
 			return null;
 		},
@@ -1716,7 +1946,7 @@ define('yom/element', ['require'], function(require) {
 		before: function(target) {
 			var el = this.get();
 			target = $query(target).get();
-			if(!el || !target || Element.isBody(target)) {
+			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
 			target.parentNode.insertBefore(el, target);
@@ -1726,7 +1956,7 @@ define('yom/element', ['require'], function(require) {
 		after: function(target) {
 			var el = this.get();
 			target = $query(target).get();
-			if(!el || !target || Element.isBody(target)) {
+			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
 			if(target.nextSibling) {
@@ -1740,7 +1970,7 @@ define('yom/element', ['require'], function(require) {
 		clone: function(bool) {
 			var el = this.get();
 			if(el) {
-				return new Element(el.cloneNode(bool));
+				return new Elem(el.cloneNode(bool));
 			}
 			return null;
 		},
@@ -1768,7 +1998,7 @@ define('yom/element', ['require'], function(require) {
 		
 		toggle: function(callback) {
 			this.each(function(el) {
-				el = new Element(el);
+				el = new Elem(el);
 				if(el.getStyle('display') == 'none') {
 					el.show();
 					callback && callback.call(el, 'SHOW');
@@ -1781,23 +2011,21 @@ define('yom/element', ['require'], function(require) {
 		},
 		
 		addEventListener: function(eType, listener, bind) {
-			var Event = require('yom/event');
 			this.each(function(el) {
-				Event.addListener(el, eType, listener, bind || el);
+				YOM.Event.addListener(el, eType, listener, bind || el);
 			});
 			return this;
 		},
 		
 		removeEventListener: function(eType, listener) {
-			var Event = require('yom/event');
 			this.each(function(el) {
-				Event.removeListener(el, eType, listener);
+				YOM.Event.removeListener(el, eType, listener);
 			});
 			return this;
 		},
 		
 		concat: function(els) {
-			return new Element(this.getAll().concat(new Element(els).getAll()));
+			return new Elem(this.getAll().concat(new Elem(els).getAll()));
 		},
 		
 		removeItem: function(el) {
@@ -1818,11 +2046,9 @@ define('yom/element', ['require'], function(require) {
 		}
 	});
 	
-	Element._ID = 107;
+	Elem.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 	
-	Element.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
-	
-	Element.isBody = function(el) {
+	Elem.isBody = function(el) {
 		el = $query(el).get();
 		if(!el) {
 			return false;
@@ -1830,18 +2056,18 @@ define('yom/element', ['require'], function(require) {
 		return el.tagName == 'BODY' || el.tagName == 'HTML';
 	};
 
-	Element.create = function(name, attrs, style) {
-		var el = new Element(document.createElement(name));
+	Elem.create = function(name, attrs, style) {
+		var el = new Elem(document.createElement(name));
 		attrs && el.setAttr(attrs);
 		style && el.setStyle(style);
 		return el.get();
 	};
 	
-	Element.contains = function(a, b) {
+	Elem.contains = function(a, b) {
 		return (a.contains) ? (a != b && a.contains(b)) : !!(a.compareDocumentPosition(b) & 16);
 	};
 	
-	Element.searchChain = function(el, prop, validator) {
+	Elem.searchChain = function(el, prop, validator) {
 		var res;
 		while(el && el.nodeType) {
 			res = el[prop];
@@ -1853,7 +2079,7 @@ define('yom/element', ['require'], function(require) {
 		return null;
 	};
 	
-	Element.getViewRect = function(doc) {
+	Elem.getViewRect = function(doc) {
 		var res;
 		doc = doc || document;
 		res = {
@@ -1869,19 +2095,19 @@ define('yom/element', ['require'], function(require) {
 		return res;
 	};
 
-	Element.getFrameRect = function(maxBubble) {
+	Elem.getFrameRect = function(maxBubble) {
 		var res, rect;
 		var win = window;
 		var frame = win.frameElement;
 		var bubbleLeft = maxBubble;
 		if(!frame) {
-			return new Element(document.body).getRect();
+			return new Elem(document.body).getRect();
 		}
-		res = new Element(frame).getRect();
+		res = new Elem(frame).getRect();
 		win = win.parent;
 		frame = win.frameElement;
 		while(frame && (!maxBubble || --bubbleLeft > 0)) {
-			rect = new Element(frame).getRect();
+			rect = new Elem(frame).getRect();
 			res.left += rect.left;
 			res.right += rect.left;
 			res.top += rect.top;
@@ -1892,7 +2118,7 @@ define('yom/element', ['require'], function(require) {
 		return res;
 	};
 	
-	Element.getDocSize = function(doc) {
+	Elem.getDocSize = function(doc) {
 		var w, h;
 		doc = doc || document;
 		if(YOM.browser.isQuirksMode()) {
@@ -1913,1518 +2139,7 @@ define('yom/element', ['require'], function(require) {
 		};
 	};
 	
-	return Element;
-});
-/**
- * YOM.Element FX extention, inspired by KISSY
- */
-define('yom/element-fx', ['require'], function(require) {
-	var YOM = {
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'Element': require('yom/element')
-	};
-	
-	$extend(YOM.Element.prototype, (function() {
-		var _DURATION = 300;
-		var _CONF = {
-			fxShow: {style: ['overflow', 'opacity', 'width', 'height'], isShow: 1},
-			fxHide: {style: ['overflow', 'opacity', 'width', 'height']},
-			fxToggle: {style: []},
-			fadeIn: {style: ['opacity'], isShow: 1},
-			fadeOut: {style: ['opacity']},
-			slideDown: {style: ['overflow', 'height'], isShow: 1},
-			slideUp: {style: ['overflow', 'height']}
-		};
-		
-		function _doFx(type, el, duration, complete) {
-			var Tween = require('yom/tween');
-			var conf, iStyle, oStyle, tStyle, isShow, width, height;
-			Tween.stopAllTween(el);
-			if(type == 'fxToggle') {
-				type = el.getStyle('display') == 'none' ? 'fxShow' : 'fxHide';
-			}
-			conf = _CONF[type];
-			iStyle = {};
-			oStyle = {};
-			tStyle = {};
-			isShow = conf.isShow;
-			isShow && el.show();
-			YOM.object.each(conf.style, function(prop) {
-				switch(prop) {
-				case 'overflow':
-					iStyle.overflow = el.getStyle('overflow');
-					oStyle.overflow = 'hidden';
-					break;
-				case 'opacity':
-					iStyle.opacity = 1;
-					if(isShow) {
-						oStyle.opacity = 0;
-						tStyle.opacity = 1;
-					} else {
-						tStyle.opacity = 0;
-					}
-					break;
-				case 'width':
-					width = el.getStyle('width');
-					iStyle.width = width;
-					width = width == 'auto' ? Math.max(el.getAttr('clientWidth'), el.getAttr('offsetWidth')) + 'px' : width;
-					if(isShow) {
-						oStyle.width = '0px';
-						tStyle.width = width;
-					} else {
-						oStyle.width = width;
-						tStyle.width = '0px';
-					}
-					break;
-				case 'height':
-					height = el.getStyle('height');
-					iStyle.height = height;
-					height = height == 'auto' ? Math.max(el.getAttr('clientHeight'), el.getAttr('offsetHeight')) + 'px' : height;
-					if(isShow) {
-						oStyle.height = '0px';
-						tStyle.height = height;
-					} else {
-						oStyle.height = height;
-						tStyle.height = '0px';
-					}
-					break;
-				default:
-				}
-			});
-			el.setStyle(oStyle);
-			new Tween(el, duration, {
-				target: {
-					style: tStyle
-				},
-				transition: 'easeOut',
-				prior: true,
-				complete: function() {
-					isShow || el.hide();
-					el.setStyle(iStyle);
-					complete && complete.call(el, isShow ? 'SHOW' : 'HIDE');
-				}
-			}).play();
-		};
-		
-		var fx = {
-			tween: function() {
-				var Tween = require('yom/tween');
-				var args = YOM.array.getArray(arguments);
-				this.each(function(el) {
-					Tween.apply(this, [el].concat(args)).play();
-				});
-				return this;
-			}
-		};
-		
-		YOM.object.each(['fxShow', 'fxHide', 'fxToggle', 'fadeIn', 'fadeOut', 'slideDown', 'slideUp'], function(type) {
-			fx[type] = function(duration, complete) {
-				if(!this.size()) {
-					return this;
-				}
-				var self = this;
-				duration = duration || _DURATION;
-				this.each(function(el) {
-					_doFx.call(self, type, new YOM.Element(el), duration, complete);
-				});
-				return this;
-			};
-		});
-		
-		return fx;
-	})(), true);
-	
-	return {};
-});
-/**
- * @class YOM.Observer
- */
-define('yom/observer', [], function() {
-	var Observer = function () {
-		this._subscribers = [];
-	};
-	
-	Observer.prototype = {
-		subscribe: function(subscriber, bind) {
-			subscriber = bind ? $bind(bind, subscriber) : subscriber;
-			for(var i = 0, l = this._subscribers.length; i < l; i++) {
-				if(subscriber == this._subscribers[i]) {
-					return null;
-				}
-			}
-			this._subscribers.push(subscriber);
-			return subscriber;
-		},
-		
-		remove: function(subscriber) {
-			var res = [];
-			if(subscriber) {
-				for(var i = this._subscribers.length - 1; i >= 0; i--) {
-					if(subscriber == this._subscribers[i]) {
-						res = res.concat(this._subscribers.splice(i, 1));
-					}
-				}
-			} else {
-				res = this._subscribers;
-				this._subscribers = [];
-			}
-			return res;
-		},
-		
-		dispatch: function(e, bind) {
-			var res, tmp, subscriber;
-			for(var i = this._subscribers.length - 1; i >= 0; i--) {
-				subscriber = this._subscribers[i];
-				if(!subscriber) {
-					continue;				
-				}
-				tmp = subscriber.call(bind, e);
-				res = tmp === false || res === false ? false : tmp;
-			}
-			return res;
-		},
-		
-		constructor: Observer
-	};
-	
-	Observer._ID = 111;
-	
-	return Observer;
-});
-/**
- * @class YOM.Event
- */
-define('yom/event', ['require'], function(require) {
-	var YOM = {
-		'Error': require('yom/error'),
-		'object': require('yom/object'),
-		'Observer': require('yom/observer')
-	};
-	
-	var _elRefCount = 0;
-	_customizedEventHash = {
-		
-	};
-	
-	function _getObserver(instance, type) {
-		if(!instance instanceof Event) {
-			throw new YOM.Error(YOM.Error.getCode(Event._ID, 1));
-		}
-		instance._observers = instance._observers || {};
-		instance._observers[type] = instance._observers[type] || new YOM.Observer();
-		return instance._observers[type];
-	};
-	
-	function _getObservers(instance) {
-		if(!instance instanceof Event) {
-			throw new YOM.Error(YOM.Error.getCode(Event._ID, 1));
-		}
-		instance._observers = instance._observers || {};
-		return instance._observers;
-	};
-	
-	function Event(observers) {
-		this._observers = $getClean(observers) || {};
-	};
-	
-	Event.prototype = {
-		addObservers: function(newObservers) {
-			var observers = _getObservers(this);
-			newObservers = $getClean(newObservers);
-			for(var type in newObservers) {
-				if(newObservers[type] instanceof YOM.Observer) {
-					observers[type] = newObservers[type];
-				}
-			}
-		},
-		
-		addEventListener: function(type, listener, bind) {
-			var observer = _getObserver(this, type);
-			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(Event._ID, 1));
-			}
-			return observer.subscribe(listener, bind);
-		},
-		
-		removeEventListener: function(type, listener) {
-			var observer = _getObserver(this, type);
-			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(Event._ID, 2));
-			}
-			return observer.remove(listener);
-		},
-		
-		dispatchEvent: function(e, asyn) {
-			if(typeof e == 'string') {
-				e = {type: e};
-			}
-			var self = this;
-			var observer = _getObserver(this, e.type);
-			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(Event._ID, 3));
-			}
-			if(asyn) {
-				setTimeout(function() {
-					observer.dispatch.call(observer, e, self);
-				}, 0);
-				return undefined;
-			} else {
-				return observer.dispatch.call(observer, e, self);
-			}
-		},
-		
-		createEvent: function(type, opt) {
-			var e = YOM.object.clone(opt) || {};
-			e.type = type;
-			return e;
-		},
-		
-		constructor: Event
-	};
-	
-	Event._ID = 108;
-	
-	Event.addListener = function(el, eType, listener, bind) {
-		var cEvent, cEventHandler;
-		eType = eType.toLowerCase();
-		listener = bind ? $bind(bind, listener) : listener;
-		cEvent = _customizedEventHash[eType];
-		if(cEvent) {
-			el.elEventRef = el.elEventRef || ++_elRefCount;
-			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef];
-			if(!cEventHandler) {
-				cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef] = new cEvent.Handler(el);
-			}
-			cEventHandler.addListener(listener);
-		} else if(el.addEventListener) {
-			el.addEventListener(eType, listener, false);
-		} else {
-			el.attachEvent('on' + eType, listener);
-		}
-		return listener;
-	};
-	
-	Event.removeListener = function(el, eType, listener) {
-		var cEvent, cEventHandler;
-		eType = eType.toLowerCase();
-		cEvent = _customizedEventHash[eType];
-		if(cEvent) {
-			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef];
-			if(cEventHandler) {
-				cEventHandler.removeListener(listener);
-			}
-		} else if(el.removeEventListener) {
-			el.removeEventListener(eType, listener, false);
-		} else {
-			el.detachEvent('on' + eType, listener);
-		}
-	};
-	
-	Event.addCustomizedEvent = function(type, Handler) {
-		_customizedEventHash[type] = {
-			Handler: Handler,
-			elEventRefHandlerHash: {}
-		};
-	};
-	
-	Event.removeCustomizedEventHandler = function(type, ref) {
-		var cEvent = _customizedEventHash[type];
-		if(cEvent) {
-			cEvent.elEventRefHandlerHash[ref] = null;
-		}
-	};
-	
-	Event.cancelBubble = function(e) {
-		if(e.stopPropagation) {
-			e.stopPropagation();
-		} else {
-			e.cancelBubble = true;
-		}
-	};
-	
-	Event.preventDefault = function(e) {
-		if(e.preventDefault) {
-			e.preventDefault();
-		} else {
-			e.returnValue = false;
-		}
-	};
-	
-	Event.getTarget = function(e) {
-		return e.target || e.srcElement;
-	};
-	
-	Event.getPageX = function(e) {
-		return e.pageX != undefined ? e.pageX : e.clientX + Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
-	};
-	
-	Event.getPageY = function(e) {
-		return e.pageY != undefined ? e.pageY : e.clientY + Math.max(document.documentElement.scrollTop, document.body.scrollTop);
-	};
-	
-	return Event;
-});
-/**
- * @class YOM.Event.Delegator
- */
-define('yom/event-delegator', ['require'], function(require) {
-	var YOM = {
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
-	};
-	
-	var _pageDelegator;
-	
-	/**
-	 * @class
-	 */
-	function Delegator(ele, opt) {
-		opt = opt || {};
-		this._ele = $query(ele);
-		this._delegatedTypes = {};
-		this._handlers = {};
-		this._eventHook = opt.eventHook;
-	};
-	
-	Delegator.getPageDelegator = function() {
-		_pageDelegator = _pageDelegator || new Delegator(document.body);
-		return _pageDelegator;
-	};
-	
-	Delegator.prototype = {
-		delegate: function(type, handlerName, handler, opt) {
-			type = type.toLowerCase();
-			opt = opt || {};
-			this._delegateEvent(type, opt.maxBubble >= 0 ? opt.maxBubble : 1983);
-			this._handlers[type][handlerName] = handler;
-			return this;
-		},
-		
-		remove: function(type, handlerName) {
-			if(!this._delegatedTypes[type]) {
-				return;
-			}
-			if(handlerName) {
-				delete this._handlers[type][handlerName];
-			} else {
-				this._ele.removeEventListener(type, this._delegatedTypes[type].listener);
-				delete this._handlers[type];
-				delete this._delegatedTypes[type];
-			}
-		},
-		
-		_delegateEvent: function(type, maxBubble) {
-			var flag = this._delegatedTypes[type];
-			if(flag) {
-				flag.maxBubble = Math.max(flag.maxBubble, maxBubble);
-				return;
-			} else {
-				var listener = $bind(this, this._eventListener);
-				this._ele.addEventListener(type, listener);
-				this._handlers[type] = {};
-				this._delegatedTypes[type] = {maxBubble: maxBubble, listener: listener};
-			}
-		},
-		
-		_eventListener: function(evt) {
-			var target, $target, type, flag, handler, maxBubble, bubbleTimes;
-			target = YOM.Event.getTarget(evt);
-			type = evt.type.toLowerCase();
-			if(this._eventHook && this._eventHook(target, evt, type) === false) {
-				return;
-			}
-			maxBubble = this._delegatedTypes[type].maxBubble;
-			bubbleTimes = 0;
-			while(target && target != this._ele) {
-				$target = new YOM.Element(target);
-				if(target.disabled || $target.getAttr('disabled')) {
-					return;
-				}
-				flag = $target.getDatasetVal('yom-' + type);
-				if(flag) {
-					flag = flag.split(' ');
-					handler = this._handlers[type][flag.shift()];
-					flag.unshift(evt);
-					if(handler && handler.apply(target, flag) === false) {
-						break;
-					}
-				}
-				if(bubbleTimes >= maxBubble) {
-					break;
-				}
-				target = target.parentNode;
-				bubbleTimes++;
-			}
-		},
-		
-		constructor: Delegator
-	};
-	
-	return Delegator;
-});
-/**
- * @class YOM.Event.VirtualEventHandler
- */
-define('yom/event-virtual-handler', ['require'], function(require) {
-	var YOM = {
-		'object': require('yom/object'),
-		'Event': require('yom/event')
-	};
-	
-	var VirtualEventHandler = function(el) {
-		this._delegateEl = el;
-		this._targetEl = null;
-		this._listenerPool = [];
-		this._listenerCount = 0;
-	};
-	
-	VirtualEventHandler.prototype = {
-		_destroy: function() {
-			YOM.Event.removeCustomizedEventHandler(this.name, this._delegateEl.elEventRef);
-		},
-		
-		_dispatch: function(e) {
-			YOM.object.each(this._listenerPool, function(listener) {
-				listener(e);
-			});
-		},
-		
-		addListener: function(listener) {
-			var found;
-			if(!listener) {
-				return null;
-			}
-			YOM.object.each(this._listenerPool, function(item) {
-				if(listener == item) {
-					found = 1;
-					return false;
-				}
-				return true;
-			});
-			if(found) {
-				return null;
-			}
-			this._listenerCount++;
-			return this._listenerPool.push(listener);
-		},
-		
-		removeListener: function(listener) {
-			var found = null;
-			var self = this;
-			YOM.object.each(this._listenerPool, function(item, i) {
-				if(listener == item) {
-					found = item;
-					self._listenerPool.splice(i, 1);
-					this._listenerCount--;
-					return false;
-				}
-				return true;
-			});
-			if(!this._listenerCount) {
-				this._destroy();
-			}
-			return found;
-		},
-		
-		constructor: VirtualEventHandler
-	};
-	
-	return VirtualEventHandler;
-});
-/**
- * @class YOM.Event.MouseenterEventHandler
- */
-define('yom/event-mouseenter', ['require'], function(require) {
-	var YOM = {
-		'browser': require('yom/browser'),
-		'Class': require('yom/class'),
-		'array': require('yom/array'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
-	};
-	YOM.Event.VirtualEventHandler = require('yom/event-virtual-handler');
-	
-	var MouseenterEventHandler = function(el) {
-		this.name = 'mouseenter';
-		MouseenterEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
-		this._bound = {
-			mouseover: $bind(this, this._mouseover)
-		};
-		YOM.Event.addListener(this._delegateEl, 'mouseover', this._bound.mouseover);
-	};
-	
-	YOM.Class.extend(MouseenterEventHandler, YOM.Event.VirtualEventHandler);
-	
-	MouseenterEventHandler.prototype._destroy = function() {
-		YOM.Event.removeListener(this._delegateEl, 'mouseover', this._bound.mouseover);
-		MouseenterEventHandler.superClass._destroy.apply(this, YOM.array.getArray(arguments));
-	};
-		
-	MouseenterEventHandler.prototype._mouseover = function(e) {
-		if(!YOM.Element.contains(this._delegateEl, e.relatedTarget)) {
-			e.cType = this.name;
-			this._dispatch(e);
-		}
-	};
-	
-	YOM.browser.ie || YOM.Event.addCustomizedEvent('mouseenter', MouseenterEventHandler);
-	
-	return MouseenterEventHandler;
-});
-/**
- * @class YOM.Event.MouseleaveEventHandler
- */
-define('yom/event-mouseleave', ['require'], function(require) {
-	var YOM = {
-		'browser': require('yom/browser'),
-		'Class': require('yom/class'),
-		'array': require('yom/array'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
-	};
-	YOM.Event.VirtualEventHandler = require('yom/event-virtual-handler');
-	
-	var MouseleaveEventHandler = function(el) {
-		this.name = 'mouseleave';
-		MouseleaveEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
-		this._bound = {
-			mouseout: $bind(this, this._mouseout)
-		};
-		YOM.Event.addListener(this._delegateEl, 'mouseout', this._bound.mouseout);
-	};
-	
-	YOM.Class.extend(MouseleaveEventHandler, YOM.Event.VirtualEventHandler);
-	
-	MouseleaveEventHandler.prototype._destroy = function() {
-		YOM.Event.removeListener(this._delegateEl, 'mouseout', this._bound.mouseout);
-		MouseleaveEventHandler.superClass._destroy.apply(this, YOM.array.getArray(arguments));
-	};
-		
-	MouseleaveEventHandler.prototype._mouseout = function(e) {
-		if(!YOM.Element.contains(this._delegateEl, e.relatedTarget)) {
-			e.cType = this.name;
-			this._dispatch(e);
-		}
-	};
-	
-	YOM.browser.ie || YOM.Event.addCustomizedEvent('mouseleave', MouseleaveEventHandler);
-	
-	return MouseleaveEventHandler;
-});
-/**
- * @namespace YOM.cookie
- */
-define('yom/cookie', ['require'], function(require) {
-	var YOM = {
-		'config': require('yom/config')
-	};
-	
-	return {
-		_ID: 105,
-		
-		set: function(name, value, domain, path, hour) {
-			var expire;
-			if(hour) {
-				expire = new Date();
-				expire.setTime(expire.getTime() + 3600000 * hour);
-			}
-			document.cookie = (name + '=' + value + '; ') + (expire ? ('expires=' + expire.toGMTString() + '; ') : '') + ('path=' + (path || '/') + '; ') + ('domain=' + (domain || YOM.config.domain) + ';');
-		},
-		
-		get: function(name) {
-			var r = new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'), m = document.cookie.match(r);
-			return m && m[1] || '';
-		},
-		
-		del: function(name, domain, path) {
-			document.cookie = name + '=; expires=Mon, 26 Jul 1997 05:00:00 GMT; ' + ('path=' + (path || '/') + '; ') + ('domain=' + (domain || YOM.config.domain) + ';');
-		}
-	};
-});
-/**
- * @namespace YOM.Xhr
- */
-define('yom/xhr', ['require'], function(require) {
-	var YOM = {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'Class': require('yom/class'),
-		'object': require('yom/object'),
-		'InstanceManager': require('yom/instance-manager'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event')
-	};
-	
-	var _ID = 116;
-	var _STATUS = {
-		INIT: 0,
-		LOADING: 1,
-		LOADED: 2,
-		ABORTED: 3
-	};
-	
-	var _loading_count = 0;
-	var _im = new YOM.InstanceManager();
-	
- 	function Xhr(url, opt) {
-		opt = opt || {};
-		this._opt = opt;
-		this._method = (opt.method == 'GET' ? 'GET' : 'POST');
-		this._param = typeof opt.param == 'object' ? YOM.object.toQueryString(opt.param) : opt.param;
-		this._formData = opt.formData;
-		this._charset = opt.charset;
-		this._url = url + (opt.method == 'GET' && this._param ? '?' + this._param : '');
-		this._status = _STATUS.INIT;
-		this._onload = opt.load || $empty;
-		this._onabort = opt.abort || $empty;
-		this._onerror = opt.error || $empty;
-		this._oncomplete = opt.complete || $empty;
-		this._bind = opt.bind;
-		this._xhr = null;
-		this._gid = opt.gid;//group id
-		this._id = _im.add(this);
-	};
-	
-	YOM.Class.extend(Xhr, YOM.Event);
-	YOM.Class.genericize(Xhr, ['addObservers', 'addEventListener', 'removeEventListener', 'dispatchEvent', 'createEvent'], {bind: Xhr});
-	Xhr.addObservers({
-		start: new YOM.Observer(),
-		complete: new YOM.Observer(),
-		allcomplete: new YOM.Observer()
-	});
-	
-	Xhr._im = _im;
-	
-	Xhr.RET = {
-		SUCC: 0,
-		ABORTED: -1,
-		ERROR: 1	
-	};
-	
-	Xhr.abortAll = function(gid) {
-		var noGid = typeof gid == 'undefined';
-		_im.each(function(inst) {
-			if(noGid || inst.getGid() == gid) {
-				inst.abort();
-			}
-		});
-	};
-	
-	Xhr.isUrlLoading = function(url, fullMatch) {
-		var res = false;
-		if(!url) {
-			return res;
-		}
-		_im.each(function(inst) {
-			if(fullMatch && url == inst._url || inst._url.indexOf(url) === 0) {
-				res = true;
-				return false;
-			}
-			return true;
-		});
-		return res;
-	};
-	
-	Xhr.isAnyLoading = function() {
-		return _loading_count > 0;
-	};
-	
-	_onReadyStateChange = function() {
-		if(this._xhr.readyState !== 4 || this._status == _STATUS.ABORTED) {
-			return;
-		}
-		this._status = _STATUS.LOADED;
-		if(this._xhr.status >= 200 && this._xhr.status < 300) {
-			this._complete(Xhr.RET.SUCC);
-			this._onload.call(this._bind, this._xhr.responseText, this._xhr.responseXML);
-		} else {
-			this._complete(Xhr.RET.ERROR);
-			this._onerror.call(this._bind, new YOM.Error(YOM.Error.getCode(_ID, 1), 'Xhr request failed.'));
-		}
-	};
-	
-	Xhr.prototype._complete = function(ret) {
-		this._opt.silent || _loading_count > 0 && _loading_count--;
-		_im.remove(this.getId());
-		try {
-			_loading_count === 0 && Xhr.dispatchEvent(Xhr.createEvent('allcomplete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
-			Xhr.dispatchEvent(Xhr.createEvent('complete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
-		} catch(e) {
-			if(YOM.config.debug) {
-				throw new YOM.Error(YOM.Error.getCode(_ID, 2));
-			}
-		}
-		this._oncomplete.call(this._bind, ret);
-	};
-	
-	Xhr.prototype.getId = function() {
-		return this._id;
-	};
-	
-	Xhr.prototype.getGid = function() {
-		return this._gid;
-	};
-	
-	Xhr.prototype.send = function() {
-		if(this._status != _STATUS.INIT) {
-			return 1;
-		}
-		try {
-			this._xhr = new XMLHttpRequest();
-		} catch(e) {
-			this._xhr = new ActiveXObject('MSXML2.XMLHTTP');
-		}
-		this._xhr.open(this._method, this._url, this._opt.isAsync === false ? false : true);
-		if(this._method == 'GET') {
-			if(this._opt.noCache) {
-				this._xhr.setRequestHeader('If-Modified-Since', 'Sun, 27 Mar 1983 00:00:00 GMT');
-				this._xhr.setRequestHeader('Cache-Control', 'no-cache');
-			}
-		} else if(!this._formData) {
-			this._xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded' + (this._charset ? '; charset=' + this._charset : ''));
-		}
-		if(this._opt.withCredentials) {
-			this._xhr.withCredentials = true;
-		}
-		this._xhr.onreadystatechange = $bind(this, _onReadyStateChange);
-		this._status = _STATUS.LOADING;
-		this._opt.silent || _loading_count++;
-		this._xhr.send(this._method == 'POST' ? (this._formData || this._param) : null);
-		Xhr.dispatchEvent(Xhr.createEvent('start', {url: this._url, method: this._method, opt: this._opt}));
-		return 0;
-	};
-	
-	Xhr.prototype.abort = function () {
-		if(this._status != _STATUS.LOADING) {
-			return 1;
-		}
-		this._xhr.abort();
-		this._status = _STATUS.ABORTED;
-		this._complete(Xhr.RET.ABORTED);
-		this._onabort.call(this._bind);
-		return 0;
-	};
-	
-	Xhr.prototype.getXhrObj = function () {
-		return this._xhr;
-	};
-	
-	return Xhr;
-});
-/**
- * @class YOM.CrossDomainPoster
- */
-define('yom/cross-domain-poster', ['require'], function(require) {
-	var YOM = {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'Class': require('yom/class'),
-		'InstanceManager': require('yom/instance-manager'),
-		'json': require('yom/json'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
-	};
-	
-	var _ID = 125;
-	var _STATUS = {
-		INIT: 0,
-		LOADING: 1,
-		LOADED: 2,
-		ABORTED: 3
-	};
-	var _PROXY = require.toUrl('./cdp-proxy.html', true);
-	var _CROSS_SITE_PROXY = require.toUrl('./cdp-cs-proxy.html', true);
-	
-	var _sameSiteTester = new RegExp(':\\/\\/(?:[^\\.]+\\.)*' + YOM.config.domain + '\\/');
-	var _im = new YOM.InstanceManager();
-	var _loading_count = 0;
-	
-	var CrossDomainPoster = function(url, opt) {
-		opt = opt || {};
-		this._opt = opt;
-		this._url = url;
-		this._charset = (opt.charset || 'utf-8').toLowerCase();
-		this._data = opt.data || {};
-		this._onload = opt.load || $empty;
-		this._onerror = opt.error || $empty;
-		this._oncomplete = opt.complete || $empty;
-		this._onabort = opt.abort || $empty;
-		this._bind = opt.bind;
-		this._crossSite = !_sameSiteTester.test(url);//cross top level domain
-		this._proxy = opt.proxy || _PROXY;
-		this._crossSiteProxy = opt.crossSiteProxy || _CROSS_SITE_PROXY;
-		this._proxyParamName = opt.proxyParamName || '_response_url_';
-		this._frameEl = null;
-		this._frameOnLoadListener = null;
-		this._status = _STATUS.INIT;
-		this._id = _im.add(this);
-	};
-	
-	YOM.Class.extend(CrossDomainPoster, YOM.Event);
-	YOM.Class.genericize(CrossDomainPoster, ['addObservers', 'addEventListener', 'removeEventListener', 'dispatchEvent', 'createEvent'], {bind: CrossDomainPoster});
-	CrossDomainPoster.addObservers({
-		start: new YOM.Observer(),
-		complete: new YOM.Observer(),
-		allcomplete: new YOM.Observer()
-	});
-	
-	CrossDomainPoster._im = _im;
-	
-	CrossDomainPoster.RET = {
-		SUCC: 0,
-		ABORTED: -1,
-		ERROR: 1	
-	};
-	
-	CrossDomainPoster.isUrlLoading = function(url, fullMatch) {
-		var res = false;
-		if(!url) {
-			return res;
-		}
-		_im.each(function(inst) {
-			if(fullMatch && url == inst._url || inst._url.indexOf(url) === 0) {
-				res = true;
-				return false;
-			}
-			return true;
-		});
-		return res;
-	};
-	
-	CrossDomainPoster.isAnyLoading = function() {
-		return _loading_count > 0;
-	};
-	
-	CrossDomainPoster.getInstance = function(id) {
-		return _im.get(id);
-	};
-	
-	CrossDomainPoster.prototype._complete = function(ret) {
-		_loading_count > 0 && _loading_count--;
-		this._clear();
-		try {
-			_loading_count === 0 && CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('allcomplete', {url: this._url, opt: this._opt}));
-		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
-		} catch(e) {
-			if(YOM.config.debug) {
-				throw new YOM.Error(YOM.Error.getCode(_ID, 1));
-			}
-		}
-		this._oncomplete.call(this._bind, ret);
-	};
-	
-	CrossDomainPoster.prototype._frameOnLoad = function() {
-		if(this._crossSite) {
-			if(this._status != _STATUS.LOADING) {
-				return;
-			}
-			this._status = _STATUS.LOADED;
-			var data;
-			var parseError = false;
-			try {
-				data = YOM.json.parse(this._frameEl.contentWindow.name);
-			} catch(e) {
-				parseError = true;
-			}
-			if(parseError) {
-				this._complete(CrossDomainPoster.RET.ERROR);
-				this._onerror.call(this._bind);
-				if(YOM.config.debug) {
-					throw new YOM.Error(YOM.Error.getCode(_ID, 1));
-				}
-			} else {
-				this._complete(CrossDomainPoster.RET.SUCC);
-				this._onload.call(this._bind, data);
-			}
-		} else {
-			if(this._frameEl) {
-				this._complete(CrossDomainPoster.RET.ERROR);
-				this._onerror.call(this._bind);
-			}
-		}
-	};
-	
-	CrossDomainPoster.prototype._clear = function() {
-		if(!this._frameEl) {
-			return;
-		}
-		YOM.Event.removeListener(this._frameEl, 'load', this._frameOnLoadListener);
-		document.body.removeChild(this._frameEl);
-		this._frameEl = null;
-		_im.remove(this.getId());
-	};
-		
-	CrossDomainPoster.prototype.getId = function() {
-		return this._id;
-	};
-		
-	CrossDomainPoster.prototype.post = function() {
-		if(this._status != _STATUS.INIT) {
-			return 1;
-		}
-		this._frameEl = YOM.Element.create('iframe', {src: this._proxy}, {display: 'none'});
-		this._frameEl.instanceId = this.getId();
-		this._frameEl.callback = $bind(this, function(o) {
-			if(this._status != _STATUS.LOADING) {
-				return;
-			}
-			this._status = _STATUS.LOADED;
-			this._complete(CrossDomainPoster.RET.SUCC);
-			this._onload.call(this._bind, o);
-		});
-		this._frameOnLoadListener = $bind(this, this._frameOnLoad);
-		YOM.Event.addListener(this._frameEl, 'load', this._frameOnLoadListener);
-		this._frameEl = document.body.appendChild(this._frameEl);
-		this._status = _STATUS.LOADING;
-		_loading_count++;
-		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('start', {url: this._url, opt: this._opt}));
-		return 0;
-	};
-	
-	CrossDomainPoster.prototype.abort = function() {
-		if(this._status != _STATUS.LOADING) {
-			return 1;
-		}
-		this._status = _STATUS.ABORTED;
-		this._complete(CrossDomainPoster.RET.ABORTED);
-		this._onabort.call(this._bind);
-		return 0;
-	};
-	
-	return CrossDomainPoster;
-});
-/**
- * @namespace YOM.pos
- */
-define('yom/pos', ['require'], function(require) {
-	var YOM = {
-		'object': require('yom/object')
-	};
-	
-	return {
-		_ID: 112,
-		
-		getPos: function(onSuccess, onFail) {
-			if(navigator.geolocation && navigator.geolocation.getCurrentPosition) {
-				navigator.geolocation.getCurrentPosition(function (position) {
-					if(YOM.object.isFunction(onSuccess)) {
-						onSuccess.call(position, position.coords.latitude, position.coords.longitude);
-					}
-				}, onFail);
-			} else {
-				onFail({
-					code: 0,
-					message: 'Not Supported'
-				});
-			}
-		},
-		
-		watchPos: function(onSuccess, onFail) {
-			if(navigator.geolocation && navigator.geolocation.watchPosition) {
-				return navigator.geolocation.watchPosition(function (position) {
-					if(YOM.object.isFunction(onSuccess)) {
-						onSuccess.call(position, position.coords.latitude, position.coords.longitude);
-					}
-				}, onFail);
-			} else {
-				onFail({
-					code: 0,
-					message: 'Not Supported'
-				});
-				return null;
-			}
-		},
-		
-		clearWatch: function(watchHandler) {
-			if(watchHandler && navigator.geolocation && navigator.geolocation.clearWatch) {
-				navigator.geolocation.clearWatch(watchHandler);
-			}
-		}
-	};
-});
-/**
- * @namespace YOM.util
- */
-define('yom/util', ['require'], function(require) {
-	var YOM = {
-		'object': require('yom/object')
-	};
-	
-	return {
-		_ID: 115,
-		
-		getUrlParam: function(name, loc) {
-			loc = loc || window.location;
-			var r = new RegExp('(\\?|#|&)' + name + '=(.*?)(&|#|$)');
-			var m = (loc.href || '').match(r);
-			return (m ? m[2] : '');
-		},
-		
-		getUrlParams: function(loc) {
-			loc = loc || window.location;
-			var raw = loc.search, res = {}, p, i;
-			if(raw) {
-				raw = raw.slice(1);
-				raw = raw.split('&');
-				for(i = 0, l = raw.length; i < l; i++) {
-					p = raw[i].split('=');
-					res[p[0]] = p[1] || '';
-				}
-			}
-			raw = loc.hash;
-			if(raw) {
-				raw = raw.slice(1);
-				raw = raw.split('&');
-				for(i = 0, l = raw.length; i < l; i++) {
-					p = raw[i].split('=');
-					res[p[0]] = res[p[0]] || p[1] || '';
-				}
-			}
-			return res;
-		},
-		
-		appendQueryString: function(url, param, isHashMode) {
-			if(typeof param == 'object') {
-				param = YOM.object.toQueryString(param);
-			} else if(typeof param == 'string') {
-				param = param.replace(/^&/, '');
-			} else {
-				param = '';
-			}
-			if(!param) {
-				return url;
-			}
-			if(isHashMode) {
-				if(url.indexOf('#') == -1) {
-					url += '#' + param;
-				} else {
-					url += '&' + param;
-				}
-			} else {
-				if(url.indexOf('#') == -1) {
-					if(url.indexOf('?') == -1) {
-						url += '?' + param;
-					} else {
-						url += '&' + param;
-					}
-				} else {
-					var tmp = url.split('#');
-					if(tmp[0].indexOf('?') == -1) {
-						url = tmp[0] + '?' + param + '#' + (tmp[1] || '');
-					} else {
-						url = tmp[0] + '&' + param + '#' + (tmp[1] || '');
-					}
-				}
-			}
-			return url;
-		}
-	};
-});
-/**
- * @class YOM.JsLoader
- */
-define('yom/js-loader', ['require'], function(require) {
-	var YOM = {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'browser': require('yom/browser'),
-		'object': require('yom/object'),
-		'Class': require('yom/class'),
-		'array': require('yom/array'),
-		'InstanceManager': require('yom/instance-manager'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element'),
-		'util': require('yom/util')
-	};
-	
-	var _TIMEOUT = 60000;
-	var _STATUS = {
-		INIT: 0,
-		LOADING: 1,
-		LOADED: 2,
-		ABORTED: 3,
-		TIMEOUT: 4
-	};
-	
-	var _callbackQueueHash = {};
-	var _callbackLoadingHash = {};
-	var _loading_count = 0;
-	var _im = new YOM.InstanceManager();
-	
-	var JsLoader = function(src, opt) {
-		opt = opt || {};
-		this._rawSrc = src;
-		this._src = YOM.util.appendQueryString(src, opt.param);
-		this._opt = opt;
-		this._charset = opt.charset;
-		this._callback = opt.callback;
-		this._callbackName = opt.callbackName || '$JsLoaderCallback';
-		this._onload = opt.load || $empty;
-		this._onabort = opt.abort || $empty;
-		this._onerror = opt.error;
-		this._oncomplete = opt.complete || $empty;
-		this._bind = opt.bind;
-		this._random = opt.random;
-		this._jsEl = null;
-		this._status = _STATUS.INIT;
-		this._callbacked = false;
-		this._gid = opt.gid;//group id
-		this._bound = {
-			onloadHandler: YOM.object.bind(this, this._onloadHandler),
-			onerrorHandler: YOM.object.bind(this, this._onerrorHandler),
-			ieOnloadHandler: YOM.object.bind(this, this._ieOnloadHandler)
-		};
-		this._id = _im.add(this);
-	};
-	
-	JsLoader._ID = 109;
-	
-	JsLoader._im = _im;
-	
-	YOM.Class.extend(JsLoader, YOM.Event);
-	YOM.Class.genericize(JsLoader, ['addObservers', 'addEventListener', 'removeEventListener', 'dispatchEvent', 'createEvent'], {bind: JsLoader});
-	JsLoader.addObservers({
-		start: new YOM.Observer(),
-		complete: new YOM.Observer(),
-		allcomplete: new YOM.Observer()
-	});
-	
-	JsLoader.RET = {
-		SUCC: 0,
-		ABORTED: -1,
-		ERROR: 1,
-		TIMEOUT: 2
-	};
-	
-	JsLoader.abortAll = function(gid) {
-		var noGid = typeof gid == 'undefined';
-		_im.each(function(inst) {
-			inst.abort();
-			if(noGid || inst.getGid() == gid) {
-				inst.abort();
-			}
-		});
-	};
-	
-	JsLoader.isUrlLoading = function(url, fullMatch) {
-		var res = false;
-		if(!url) {
-			return res;
-		}
-		_im.each(function(inst) {
-			if(fullMatch && url == inst._src || inst._src.indexOf(url) === 0) {
-				res = true;
-				return false;
-			}
-			return true;
-		});
-		return res;
-	};
-	
-	JsLoader.isAnyLoading = function() {
-		return _loading_count > 0;
-	};
-	
-	JsLoader.prototype._clear = function() {
-		_im.remove(this.getId());
-		if(!this._jsEl) {
-			return;
-		}
-		if(this._jsEl.addEventListener) {
-			this._jsEl.removeEventListener('load', this._bound.onloadHandler, false);
-			this._jsEl.removeEventListener('error', this._bound.onerrorHandler, false);
-		} else {
-			this._jsEl.detachEvent('onreadystatechange', this._bound.ieOnloadHandler);
-		}
-		this._jsEl.parentNode.removeChild(this._jsEl);
-		this._jsEl = null;
-		if(this._callback) {
-			_callbackLoadingHash[this._callbackName] = 0;
-			if(_callbackQueueHash[this._callbackName] && _callbackQueueHash[this._callbackName].length) {
-				_callbackQueueHash[this._callbackName].shift().load();
-			}
-		}
-	};
-	
-	JsLoader.prototype._dealError = function(code) {
-		if(this._onerror) {
-			this._onerror.call(this._bind, code);
-		} else {
-			throw new YOM.Error(code);
-		}
-	};
-	
-	JsLoader.prototype._complete = function(ret) {
-		this._opt.silent || _loading_count > 0 && _loading_count--;
-		this._clear();
-		try {
-			_loading_count === 0 && JsLoader.dispatchEvent(JsLoader.createEvent('allcomplete', {src: this._src, opt: this._opt, ret: ret}));
-			JsLoader.dispatchEvent(JsLoader.createEvent('complete', {src: this._src, opt: this._opt, ret: ret}));
-		} catch(e) {
-			if(YOM.config.debug) {
-				throw new YOM.Error(YOM.Error.getCode(JsLoader._ID, 2));
-			}
-		}
-		this._oncomplete.call(this._bind, ret);
-	};
-	
-	JsLoader.prototype.getId = function() {
-		return this._id;
-	};
-	
-	JsLoader.prototype.getGid = function() {
-		return this._gid;
-	};
-	
-	JsLoader.prototype._onloadHandler = function() {
-		if(this._status != _STATUS.LOADING) {
-			return;
-		}
-		this._status = _STATUS.LOADED;
-		this._complete(JsLoader.RET.SUCC);
-		if(this._callback && !this._callbacked) {
-			this._dealError(YOM.Error.getCode(JsLoader._ID, 1));
-		}
-		this._onload.call(this._bind);
-	};
-	
-	JsLoader.prototype._onerrorHandler = function() {
-		if(this._status != _STATUS.LOADING) {
-			return;
-		}
-		this._status = _STATUS.LOADED;
-		this._complete(JsLoader.RET.ERROR);
-		this._dealError(YOM.Error.getCode(JsLoader._ID, 0));
-	};
-	
-	JsLoader.prototype._ieOnloadHandler = function() {
-		if(this._jsEl && (this._jsEl.readyState == 'loaded' || this._jsEl.readyState == 'complete')) {
-			this._onloadHandler();
-		}
-	};
-	
-	JsLoader.prototype.load = function() {
-		if(this._status != _STATUS.INIT) {
-			return 1;
-		}
-		var self = this;
-		if(this._callback) {
-			if(_callbackLoadingHash[this._callbackName]) {
-				_callbackQueueHash[this._callbackName] = _callbackQueueHash[this._callbackName] || [];
-				_callbackQueueHash[this._callbackName].push(this);
-				return -1;
-			}
-			_callbackLoadingHash[this._callbackName] = 1;
-			window[this._callbackName] = $bind(this, function() {
-				this._callbacked = true;
-				if(this._status != _STATUS.LOADING) {
-					return;
-				}
-				this._callback.apply(this._bind || this, YOM.array.getArray(arguments));
-				window[this._callbackName] = null;
-			});
-		}
-		this._jsEl = document.createElement('script');
-		if(this._jsEl.addEventListener) {
-			this._jsEl.addEventListener('load', this._bound.onloadHandler, false);
-			this._jsEl.addEventListener('error', this._bound.onerrorHandler, false);
-		} else {
-			this._jsEl.attachEvent('onreadystatechange', this._bound.ieOnloadHandler);
-		}
-		if(this._charset) {
-			this._jsEl.charset = this._charset;
-		}
-		this._jsEl.type = 'text/javascript';
-		this._jsEl.async = 'async';
-		this._jsEl.src = this._src;
-		this._status = _STATUS.LOADING;
-		this._opt.silent || _loading_count++;
-		this._jsEl = YOM.Element.head.insertBefore(this._jsEl, YOM.Element.head.firstChild);
-		setTimeout(function() {
-			if(self._status != _STATUS.LOADING) {
-				return;
-			}
-			self._status = _STATUS.TIMEOUT;
-			self._complete(JsLoader.RET.TIMEOUT);
-			self._dealError(YOM.Error.getCode(JsLoader._ID, 2));
-		}, this._opt.timeout || _TIMEOUT);
-		JsLoader.dispatchEvent(JsLoader.createEvent('start', {src: this._src, opt: this._opt}));
-		return 0;
-	};
-	
-	JsLoader.prototype.abort = function() {
-		if(this._status != _STATUS.LOADING) {
-			return 1;
-		}
-		this._status = _STATUS.ABORTED;
-		this._complete(JsLoader.RET.ABORTED);
-		this._onabort.call(this._bind);
-		return 0;
-	};
-	
-	return JsLoader;
-});
-/**
- * @namespace YOM.css
- */
-define('yom/css', ['require'], function(require) {
-	var YOM = {
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'Class': require('yom/class'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element')
-	};
-	
-	var _linkCount = 0;
-	var _href_id_hash = {};
-	
-	function load(href, force) {
-		var id, el;
-		if(YOM.array.isArray(href)) {
-			id = [];
-			YOM.object.each(href, function(item) {
-				id.push(load(item, force));
-			});
-			return id;
-		}
-		id = _href_id_hash[href];
-		el = $id(id);
-		if(id && el) {
-			if(force) {
-				unload(href);
-			} else {
-				return id;
-			}
-		}
-		id = $getUniqueId();
-		el = YOM.Element.create('link', {
-			id: id,
-			rel: 'stylesheet',
-			type: 'text/css',
-			media: 'screen',
-			href: href
-		});
-		YOM.Element.head.insertBefore(el, YOM.Element.head.firstChild);
-		return _href_id_hash[href] = id;
-	};
-	
-	function unload(href) {
-		var el;
-		if(YOM.array.isArray(href)) {
-			el = [];
-			YOM.object.each(href, function(item) {
-				el.push(unload(item));
-			});
-			return el;
-		}
-		el = $id(_href_id_hash[href]);
-		if(el) {
-			delete _href_id_hash[href];
-			return el.parentNode.removeChild(el);
-		}
-		return null;
-	};
-	
-	var Css = function() {
-		Css.superClass.constructor.apply(this, YOM.array.getArray(arguments));
-	};
-	YOM.Class.extend(Css, YOM.Event);
-	
-	return $extend(new Css({
-	}), {
-		_ID: 106,
-		load: load,
-		unload: unload
-	});
-});
-/**
- * @namespace YOM.tmpl
- */
-define('yom/tmpl', ['require'], function(require) {
-	var YOM = {
-		'browser': require('yom/browser'),
-		'string': require('yom/string'),
-		'object': require('yom/object')
-	};
-	
-	var _cache = {};
-	var _useArrayJoin = YOM.browser.ie;
-	
-	function _getMixinTmplStr(rawStr, mixinTmpl) {
-		if(mixinTmpl) {
-			YOM.object.each(mixinTmpl, function(val, key) {
-				var r = new RegExp('<%#' + key + '%>', 'g');
-				rawStr = rawStr.replace(r, val);
-			});
-		}
-		return rawStr;
-	};
-	
-	function render(str, data, opt) {
-		var strict, key, fn;
-		str += '';
-		data = data || {};
-		opt = opt || {};
-		strict = opt.strict;
-		key = opt.key;
-		if(key) {
-			fn = _cache[key];
-			if(fn) {
-				return fn(data);
-			}
-		}
-		if(opt.mixinTmpl) {
-			str = _getMixinTmplStr(str, opt.mixinTmpl);
-		}
-		fn = _useArrayJoin ? 
-		new Function("$data", "var YOM=this,_$out_=[],$print=function(str){_$out_.push(str);};" + (strict ? "" : "with($data){") + "_$out_.push('" + str
-			.replace(/[\r\t\n]/g, " ")
-			.split("<%").join("\t")
-			.replace(/(?:^|%>).*?(?:\t|$)/g, function($0) {
-				return $0.replace(/('|\\)/g, '\\$1');
-			})
-			.replace(/\t==(.*?)%>/g, "',YOM.string.encodeHtml($1),'")
-			.replace(/\t=(.*?)%>/g, "',$1,'")
-			.split("\t").join("');")
-			.split("%>").join("_$out_.push('")
-		+ "');" + (strict ? "" : "}") + "return _$out_.join('');") : 
-		new Function("$data", "var YOM=this,_$out_='',$print=function(str){_$out_+=str;};" + (strict ? "" : "with($data){") + "_$out_+='" + str
-			.replace(/[\r\t\n]/g, " ")
-			.split("<%").join("\t")
-			.replace(/(?:^|%>).*?(?:\t|$)/g, function($0) {
-				return $0.replace(/('|\\)/g, '\\$1');
-			})
-			.replace(/\t==(.*?)%>/g, "'+YOM.string.encodeHtml($1)+'")
-			.replace(/\t=(.*?)%>/g, "'+($1)+'")
-			.split("\t").join("';")
-			.split("%>").join("_$out_+='")
-		+ "';" + (strict ? "" : "}") + "return _$out_;");
-		if(key) {
-			_cache[key] = fn;
-		}
-		return fn.call(YOM, data);
-	};
-	
-	function renderId(id, data, opt) {
-		data = data || {};
-		opt = opt || {};
-		var key = opt.key = opt.key || id;
-		var fn = _cache[key];
-		if(fn) {
-			return fn(data);
-		}
-		return render($id(id).innerHTML, data, opt);
-	};
-	
-	return {
-		_ID: 114,
-		render: render,
-		renderId: renderId
-	};
+	return Elem;
 });
 /**
  * Inspired by KISSY
@@ -3591,13 +2306,13 @@ define('yom/transition', [], function() {
  * Inspired by KISSY
  * @class YOM.Tween
  */
-define('yom/tween', ['require'], function(require) {
+define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/element', 'yom/transition'], function(browser, object, InstanceManager, Elem, transition) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'object': require('yom/object'),
-		'InstanceManager': require('yom/instance-manager'),
-		'Element': require('yom/element'),
-		'transition': require('yom/transition')
+		'browser': browser,
+		'object': object,
+		'InstanceManager': InstanceManager,
+		'Element': Elem,
+		'transition': transition
 	};
 	
 	var _ID = 120;
@@ -3965,12 +2680,1294 @@ define('yom/tween', ['require'], function(require) {
 	return Tween;
 });
 /**
+ * YOM.Element FX extention, inspired by KISSY
+ */
+define('yom/element-fx', ['yom/object', 'yom/array', 'yom/element', 'yom/tween'], function(object, array, Elem, Tween) {
+	var YOM = {
+		'object': object,
+		'array': array,
+		'Element': Elem,
+		'Tween': Tween
+	};
+	
+	$extend(YOM.Element.prototype, (function() {
+		var _DURATION = 300;
+		var _CONF = {
+			fxShow: {style: ['overflow', 'opacity', 'width', 'height'], isShow: 1},
+			fxHide: {style: ['overflow', 'opacity', 'width', 'height']},
+			fxToggle: {style: []},
+			fadeIn: {style: ['opacity'], isShow: 1},
+			fadeOut: {style: ['opacity']},
+			slideDown: {style: ['overflow', 'height'], isShow: 1},
+			slideUp: {style: ['overflow', 'height']}
+		};
+		
+		function _doFx(type, el, duration, complete) {
+			var conf, iStyle, oStyle, tStyle, isShow, width, height;
+			YOM.Tween.stopAllTween(el);
+			if(type == 'fxToggle') {
+				type = el.getStyle('display') == 'none' ? 'fxShow' : 'fxHide';
+			}
+			conf = _CONF[type];
+			iStyle = {};
+			oStyle = {};
+			tStyle = {};
+			isShow = conf.isShow;
+			isShow && el.show();
+			YOM.object.each(conf.style, function(prop) {
+				switch(prop) {
+				case 'overflow':
+					iStyle.overflow = el.getStyle('overflow');
+					oStyle.overflow = 'hidden';
+					break;
+				case 'opacity':
+					iStyle.opacity = 1;
+					if(isShow) {
+						oStyle.opacity = 0;
+						tStyle.opacity = 1;
+					} else {
+						tStyle.opacity = 0;
+					}
+					break;
+				case 'width':
+					width = el.getStyle('width');
+					iStyle.width = width;
+					width = width == 'auto' ? Math.max(el.getAttr('clientWidth'), el.getAttr('offsetWidth')) + 'px' : width;
+					if(isShow) {
+						oStyle.width = '0px';
+						tStyle.width = width;
+					} else {
+						oStyle.width = width;
+						tStyle.width = '0px';
+					}
+					break;
+				case 'height':
+					height = el.getStyle('height');
+					iStyle.height = height;
+					height = height == 'auto' ? Math.max(el.getAttr('clientHeight'), el.getAttr('offsetHeight')) + 'px' : height;
+					if(isShow) {
+						oStyle.height = '0px';
+						tStyle.height = height;
+					} else {
+						oStyle.height = height;
+						tStyle.height = '0px';
+					}
+					break;
+				default:
+				}
+			});
+			el.setStyle(oStyle);
+			new YOM.Tween(el, duration, {
+				target: {
+					style: tStyle
+				},
+				transition: 'easeOut',
+				prior: true,
+				complete: function() {
+					isShow || el.hide();
+					el.setStyle(iStyle);
+					complete && complete.call(el, isShow ? 'SHOW' : 'HIDE');
+				}
+			}).play();
+		};
+		
+		var fx = {
+			tween: function() {
+				var args = YOM.array.getArray(arguments);
+				this.each(function(el) {
+					YOM.Tween.apply(this, [el].concat(args)).play();
+				});
+				return this;
+			}
+		};
+		
+		YOM.object.each(['fxShow', 'fxHide', 'fxToggle', 'fadeIn', 'fadeOut', 'slideDown', 'slideUp'], function(type) {
+			fx[type] = function(duration, complete) {
+				if(!this.size()) {
+					return this;
+				}
+				var self = this;
+				duration = duration || _DURATION;
+				this.each(function(el) {
+					_doFx.call(self, type, new YOM.Element(el), duration, complete);
+				});
+				return this;
+			};
+		});
+		
+		return fx;
+	})(), true);
+	
+	return {};
+});
+/**
+ * @class YOM.Event.Delegator
+ */
+define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) {
+	var YOM = {
+		'Event': Evt,
+		'Element': Elem
+	};
+	
+	var _pageDelegator;
+	
+	/**
+	 * @class
+	 */
+	function Delegator(ele, opt) {
+		opt = opt || {};
+		this._ele = $query(ele);
+		this._delegatedTypes = {};
+		this._handlers = {};
+		this._eventHook = opt.eventHook;
+	};
+	
+	Delegator.getPageDelegator = function() {
+		_pageDelegator = _pageDelegator || new Delegator(document.body);
+		return _pageDelegator;
+	};
+	
+	Delegator.prototype = {
+		delegate: function(type, handlerName, handler, opt) {
+			type = type.toLowerCase();
+			opt = opt || {};
+			this._delegateEvent(type, opt.maxBubble >= 0 ? opt.maxBubble : 1983);
+			this._handlers[type][handlerName] = handler;
+			return this;
+		},
+		
+		remove: function(type, handlerName) {
+			if(!this._delegatedTypes[type]) {
+				return;
+			}
+			if(handlerName) {
+				delete this._handlers[type][handlerName];
+			} else {
+				this._ele.removeEventListener(type, this._delegatedTypes[type].listener);
+				delete this._handlers[type];
+				delete this._delegatedTypes[type];
+			}
+		},
+		
+		_delegateEvent: function(type, maxBubble) {
+			var flag = this._delegatedTypes[type];
+			if(flag) {
+				flag.maxBubble = Math.max(flag.maxBubble, maxBubble);
+				return;
+			} else {
+				var listener = $bind(this, this._eventListener);
+				this._ele.addEventListener(type, listener);
+				this._handlers[type] = {};
+				this._delegatedTypes[type] = {maxBubble: maxBubble, listener: listener};
+			}
+		},
+		
+		_eventListener: function(evt) {
+			var target, $target, type, flag, handler, maxBubble, bubbleTimes;
+			target = YOM.Event.getTarget(evt);
+			type = evt.type.toLowerCase();
+			if(this._eventHook && this._eventHook(target, evt, type) === false) {
+				return;
+			}
+			maxBubble = this._delegatedTypes[type].maxBubble;
+			bubbleTimes = 0;
+			while(target && target != this._ele) {
+				$target = new YOM.Element(target);
+				if(target.disabled || $target.getAttr('disabled')) {
+					return;
+				}
+				flag = $target.getDatasetVal('yom-' + type);
+				if(flag) {
+					flag = flag.split(' ');
+					handler = this._handlers[type][flag.shift()];
+					flag.unshift(evt);
+					if(handler && handler.apply(target, flag) === false) {
+						break;
+					}
+				}
+				if(bubbleTimes >= maxBubble) {
+					break;
+				}
+				target = target.parentNode;
+				bubbleTimes++;
+			}
+		},
+		
+		constructor: Delegator
+	};
+	
+	return Delegator;
+});
+/**
+ * @class YOM.Event.VirtualEventHandler
+ */
+define('yom/event-virtual-handler', ['yom/object', 'yom/event'], function(object, Evt) {
+	var YOM = {
+		'object': object,
+		'Event': Evt
+	};
+	
+	var VirtualEventHandler = function(el) {
+		this._delegateEl = el;
+		this._targetEl = null;
+		this._listenerPool = [];
+		this._listenerCount = 0;
+	};
+	
+	VirtualEventHandler.prototype = {
+		_destroy: function() {
+			YOM.Event.removeCustomizedEventHandler(this.name, this._delegateEl.elEventRef);
+		},
+		
+		_dispatch: function(e) {
+			YOM.object.each(this._listenerPool, function(listener) {
+				listener(e);
+			});
+		},
+		
+		addListener: function(listener) {
+			var found;
+			if(!listener) {
+				return null;
+			}
+			YOM.object.each(this._listenerPool, function(item) {
+				if(listener == item) {
+					found = 1;
+					return false;
+				}
+				return true;
+			});
+			if(found) {
+				return null;
+			}
+			this._listenerCount++;
+			return this._listenerPool.push(listener);
+		},
+		
+		removeListener: function(listener) {
+			var found = null;
+			var self = this;
+			YOM.object.each(this._listenerPool, function(item, i) {
+				if(listener == item) {
+					found = item;
+					self._listenerPool.splice(i, 1);
+					this._listenerCount--;
+					return false;
+				}
+				return true;
+			});
+			if(!this._listenerCount) {
+				this._destroy();
+			}
+			return found;
+		},
+		
+		constructor: VirtualEventHandler
+	};
+	
+	return VirtualEventHandler;
+});
+/**
+ * @class YOM.Event.MouseenterEventHandler
+ */
+define('yom/event-mouseenter', ['yom/browser', 'yom/class', 'yom/array', 'yom/event', 'yom/element', 'yom/event-virtual-handler'], function(browser, Class, array, Evt, Elem, VirtualEventHandler) {
+	var YOM = {
+		'browser': browser,
+		'Class': Class,
+		'array': array,
+		'Event': Evt,
+		'Element': Elem
+	};
+	YOM.Event.VirtualEventHandler = VirtualEventHandler;
+	
+	var MouseenterEventHandler = function(el) {
+		this.name = 'mouseenter';
+		MouseenterEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
+		this._bound = {
+			mouseover: $bind(this, this._mouseover)
+		};
+		YOM.Event.addListener(this._delegateEl, 'mouseover', this._bound.mouseover);
+	};
+	
+	YOM.Class.extend(MouseenterEventHandler, YOM.Event.VirtualEventHandler);
+	
+	MouseenterEventHandler.prototype._destroy = function() {
+		YOM.Event.removeListener(this._delegateEl, 'mouseover', this._bound.mouseover);
+		MouseenterEventHandler.superClass._destroy.apply(this, YOM.array.getArray(arguments));
+	};
+		
+	MouseenterEventHandler.prototype._mouseover = function(e) {
+		if(!YOM.Element.contains(this._delegateEl, e.relatedTarget)) {
+			e.cType = this.name;
+			this._dispatch(e);
+		}
+	};
+	
+	YOM.browser.ie || YOM.Event.addCustomizedEvent('mouseenter', MouseenterEventHandler);
+	
+	return MouseenterEventHandler;
+});
+/**
+ * @class YOM.Event.MouseleaveEventHandler
+ */
+define('yom/event-mouseleave', ['yom/browser', 'yom/class', 'yom/array', 'yom/event', 'yom/element', 'yom/event-virtual-handler'], function(browser, Class, array, Evt, Elem, VirtualEventHandler) {
+	var YOM = {
+		'browser': browser,
+		'Class': Class,
+		'array': array,
+		'Event': Evt,
+		'Element': Elem
+	};
+	YOM.Event.VirtualEventHandler = VirtualEventHandler;
+	
+	var MouseleaveEventHandler = function(el) {
+		this.name = 'mouseleave';
+		MouseleaveEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
+		this._bound = {
+			mouseout: $bind(this, this._mouseout)
+		};
+		YOM.Event.addListener(this._delegateEl, 'mouseout', this._bound.mouseout);
+	};
+	
+	YOM.Class.extend(MouseleaveEventHandler, YOM.Event.VirtualEventHandler);
+	
+	MouseleaveEventHandler.prototype._destroy = function() {
+		YOM.Event.removeListener(this._delegateEl, 'mouseout', this._bound.mouseout);
+		MouseleaveEventHandler.superClass._destroy.apply(this, YOM.array.getArray(arguments));
+	};
+		
+	MouseleaveEventHandler.prototype._mouseout = function(e) {
+		if(!YOM.Element.contains(this._delegateEl, e.relatedTarget)) {
+			e.cType = this.name;
+			this._dispatch(e);
+		}
+	};
+	
+	YOM.browser.ie || YOM.Event.addCustomizedEvent('mouseleave', MouseleaveEventHandler);
+	
+	return MouseleaveEventHandler;
+});
+/**
+ * @namespace YOM.cookie
+ */
+define('yom/cookie', ['yom/config'], function(config) {
+	var YOM = {
+		'config': config
+	};
+	
+	return {
+		_ID: 105,
+		
+		set: function(name, value, domain, path, hour) {
+			var expire;
+			if(hour) {
+				expire = new Date();
+				expire.setTime(expire.getTime() + 3600000 * hour);
+			}
+			document.cookie = (name + '=' + value + '; ') + (expire ? ('expires=' + expire.toGMTString() + '; ') : '') + ('path=' + (path || '/') + '; ') + ('domain=' + (domain || YOM.config.domain) + ';');
+		},
+		
+		get: function(name) {
+			var r = new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'), m = document.cookie.match(r);
+			return m && m[1] || '';
+		},
+		
+		del: function(name, domain, path) {
+			document.cookie = name + '=; expires=Mon, 26 Jul 1997 05:00:00 GMT; ' + ('path=' + (path || '/') + '; ') + ('domain=' + (domain || YOM.config.domain) + ';');
+		}
+	};
+});
+/**
+ * @namespace YOM.Xhr
+ */
+define('yom/xhr', ['yom/config', 'yom/error', 'yom/class', 'yom/object', 'yom/instance-manager', 'yom/observer', 'yom/event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
+	var YOM = {
+		'config': config,
+		'Error': Err,
+		'Class': Class,
+		'object': object,
+		'InstanceManager': InstanceManager,
+		'Observer': Observer,
+		'Event': Evt
+	};
+	
+	var _ID = 116;
+	var _STATUS = {
+		INIT: 0,
+		LOADING: 1,
+		LOADED: 2,
+		ABORTED: 3
+	};
+	
+	var _loading_count = 0;
+	var _im = new YOM.InstanceManager();
+	
+ 	function Xhr(url, opt) {
+		opt = opt || {};
+		this._opt = opt;
+		this._method = (opt.method == 'GET' ? 'GET' : 'POST');
+		this._param = typeof opt.param == 'object' ? YOM.object.toQueryString(opt.param) : opt.param;
+		this._formData = opt.formData;
+		this._charset = opt.charset;
+		this._url = url + (opt.method == 'GET' && this._param ? '?' + this._param : '');
+		this._status = _STATUS.INIT;
+		this._onload = opt.load || $empty;
+		this._onabort = opt.abort || $empty;
+		this._onerror = opt.error || $empty;
+		this._oncomplete = opt.complete || $empty;
+		this._bind = opt.bind;
+		this._xhr = null;
+		this._gid = opt.gid;//group id
+		this._id = _im.add(this);
+	};
+	
+	YOM.Class.extend(Xhr, YOM.Event);
+	YOM.Class.genericize(Xhr, ['addObservers', 'addEventListener', 'removeEventListener', 'dispatchEvent', 'createEvent'], {bind: Xhr});
+	Xhr.addObservers({
+		start: new YOM.Observer(),
+		complete: new YOM.Observer(),
+		allcomplete: new YOM.Observer()
+	});
+	
+	Xhr._im = _im;
+	
+	Xhr.RET = {
+		SUCC: 0,
+		ABORTED: -1,
+		ERROR: 1	
+	};
+	
+	Xhr.abortAll = function(gid) {
+		var noGid = typeof gid == 'undefined';
+		_im.each(function(inst) {
+			if(noGid || inst.getGid() == gid) {
+				inst.abort();
+			}
+		});
+	};
+	
+	Xhr.isUrlLoading = function(url, fullMatch) {
+		var res = false;
+		if(!url) {
+			return res;
+		}
+		_im.each(function(inst) {
+			if(fullMatch && url == inst._url || inst._url.indexOf(url) === 0) {
+				res = true;
+				return false;
+			}
+			return true;
+		});
+		return res;
+	};
+	
+	Xhr.isAnyLoading = function() {
+		return _loading_count > 0;
+	};
+	
+	_onReadyStateChange = function() {
+		if(this._xhr.readyState !== 4 || this._status == _STATUS.ABORTED) {
+			return;
+		}
+		this._status = _STATUS.LOADED;
+		if(this._xhr.status >= 200 && this._xhr.status < 300) {
+			this._complete(Xhr.RET.SUCC);
+			this._onload.call(this._bind, this._xhr.responseText, this._xhr.responseXML);
+		} else {
+			this._complete(Xhr.RET.ERROR);
+			this._onerror.call(this._bind, new YOM.Error(YOM.Error.getCode(_ID, 1), 'Xhr request failed.'));
+		}
+	};
+	
+	Xhr.prototype._complete = function(ret) {
+		this._opt.silent || _loading_count > 0 && _loading_count--;
+		_im.remove(this.getId());
+		try {
+			_loading_count === 0 && Xhr.dispatchEvent(Xhr.createEvent('allcomplete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
+			Xhr.dispatchEvent(Xhr.createEvent('complete', {url: this._url, method: this._method, opt: this._opt, ret: ret}));
+		} catch(e) {
+			if(YOM.config.debug) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 2));
+			}
+		}
+		this._oncomplete.call(this._bind, ret);
+	};
+	
+	Xhr.prototype.getId = function() {
+		return this._id;
+	};
+	
+	Xhr.prototype.getGid = function() {
+		return this._gid;
+	};
+	
+	Xhr.prototype.send = function() {
+		if(this._status != _STATUS.INIT) {
+			return 1;
+		}
+		try {
+			this._xhr = new XMLHttpRequest();
+		} catch(e) {
+			this._xhr = new ActiveXObject('MSXML2.XMLHTTP');
+		}
+		this._xhr.open(this._method, this._url, this._opt.isAsync === false ? false : true);
+		if(this._method == 'GET') {
+			if(this._opt.noCache) {
+				this._xhr.setRequestHeader('If-Modified-Since', 'Sun, 27 Mar 1983 00:00:00 GMT');
+				this._xhr.setRequestHeader('Cache-Control', 'no-cache');
+			}
+		} else if(!this._formData) {
+			this._xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded' + (this._charset ? '; charset=' + this._charset : ''));
+		}
+		if(this._opt.withCredentials) {
+			this._xhr.withCredentials = true;
+		}
+		this._xhr.onreadystatechange = $bind(this, _onReadyStateChange);
+		this._status = _STATUS.LOADING;
+		this._opt.silent || _loading_count++;
+		this._xhr.send(this._method == 'POST' ? (this._formData || this._param) : null);
+		Xhr.dispatchEvent(Xhr.createEvent('start', {url: this._url, method: this._method, opt: this._opt}));
+		return 0;
+	};
+	
+	Xhr.prototype.abort = function () {
+		if(this._status != _STATUS.LOADING) {
+			return 1;
+		}
+		this._xhr.abort();
+		this._status = _STATUS.ABORTED;
+		this._complete(Xhr.RET.ABORTED);
+		this._onabort.call(this._bind);
+		return 0;
+	};
+	
+	Xhr.prototype.getXhrObj = function () {
+		return this._xhr;
+	};
+	
+	return Xhr;
+});
+/**
+ * @class YOM.CrossDomainPoster
+ */
+define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/class', 'yom/instance-manager', 'yom/json', 'yom/observer', 'yom/event', 'yom/element'], function(require, config, Err, Class, InstanceManager, json, Observer, Evt, Elem) {
+	var YOM = {
+		'config': config,
+		'Error': Err,
+		'Class': Class,
+		'InstanceManager': InstanceManager,
+		'json': json,
+		'Observer': Observer,
+		'Event': Evt,
+		'Element': Elem
+	};
+	
+	var _ID = 125;
+	var _STATUS = {
+		INIT: 0,
+		LOADING: 1,
+		LOADED: 2,
+		ABORTED: 3
+	};
+	var _PROXY = require.toUrl('./cdp-proxy.html', true);
+	var _CROSS_SITE_PROXY = require.toUrl('./cdp-cs-proxy.html', true);
+	
+	var _sameSiteTester = new RegExp(':\\/\\/(?:[^\\.]+\\.)*' + YOM.config.domain + '\\/');
+	var _im = new YOM.InstanceManager();
+	var _loading_count = 0;
+	
+	var CrossDomainPoster = function(url, opt) {
+		opt = opt || {};
+		this._opt = opt;
+		this._url = url;
+		this._charset = (opt.charset || 'utf-8').toLowerCase();
+		this._data = opt.data || {};
+		this._onload = opt.load || $empty;
+		this._onerror = opt.error || $empty;
+		this._oncomplete = opt.complete || $empty;
+		this._onabort = opt.abort || $empty;
+		this._bind = opt.bind;
+		this._crossSite = !_sameSiteTester.test(url);//cross top level domain
+		this._proxy = opt.proxy || _PROXY;
+		this._crossSiteProxy = opt.crossSiteProxy || _CROSS_SITE_PROXY;
+		this._proxyParamName = opt.proxyParamName || '_response_url_';
+		this._frameEl = null;
+		this._frameOnLoadListener = null;
+		this._status = _STATUS.INIT;
+		this._id = _im.add(this);
+	};
+	
+	YOM.Class.extend(CrossDomainPoster, YOM.Event);
+	YOM.Class.genericize(CrossDomainPoster, ['addObservers', 'addEventListener', 'removeEventListener', 'dispatchEvent', 'createEvent'], {bind: CrossDomainPoster});
+	CrossDomainPoster.addObservers({
+		start: new YOM.Observer(),
+		complete: new YOM.Observer(),
+		allcomplete: new YOM.Observer()
+	});
+	
+	CrossDomainPoster._im = _im;
+	
+	CrossDomainPoster.RET = {
+		SUCC: 0,
+		ABORTED: -1,
+		ERROR: 1	
+	};
+	
+	CrossDomainPoster.isUrlLoading = function(url, fullMatch) {
+		var res = false;
+		if(!url) {
+			return res;
+		}
+		_im.each(function(inst) {
+			if(fullMatch && url == inst._url || inst._url.indexOf(url) === 0) {
+				res = true;
+				return false;
+			}
+			return true;
+		});
+		return res;
+	};
+	
+	CrossDomainPoster.isAnyLoading = function() {
+		return _loading_count > 0;
+	};
+	
+	CrossDomainPoster.getInstance = function(id) {
+		return _im.get(id);
+	};
+	
+	CrossDomainPoster.prototype._complete = function(ret) {
+		_loading_count > 0 && _loading_count--;
+		this._clear();
+		try {
+			_loading_count === 0 && CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('allcomplete', {url: this._url, opt: this._opt}));
+		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
+		} catch(e) {
+			if(YOM.config.debug) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 1));
+			}
+		}
+		this._oncomplete.call(this._bind, ret);
+	};
+	
+	CrossDomainPoster.prototype._frameOnLoad = function() {
+		if(this._crossSite) {
+			if(this._status != _STATUS.LOADING) {
+				return;
+			}
+			this._status = _STATUS.LOADED;
+			var data;
+			var parseError = false;
+			try {
+				data = YOM.json.parse(this._frameEl.contentWindow.name);
+			} catch(e) {
+				parseError = true;
+			}
+			if(parseError) {
+				this._complete(CrossDomainPoster.RET.ERROR);
+				this._onerror.call(this._bind);
+				if(YOM.config.debug) {
+					throw new YOM.Error(YOM.Error.getCode(_ID, 1));
+				}
+			} else {
+				this._complete(CrossDomainPoster.RET.SUCC);
+				this._onload.call(this._bind, data);
+			}
+		} else {
+			if(this._frameEl) {
+				this._complete(CrossDomainPoster.RET.ERROR);
+				this._onerror.call(this._bind);
+			}
+		}
+	};
+	
+	CrossDomainPoster.prototype._clear = function() {
+		if(!this._frameEl) {
+			return;
+		}
+		YOM.Event.removeListener(this._frameEl, 'load', this._frameOnLoadListener);
+		document.body.removeChild(this._frameEl);
+		this._frameEl = null;
+		_im.remove(this.getId());
+	};
+		
+	CrossDomainPoster.prototype.getId = function() {
+		return this._id;
+	};
+		
+	CrossDomainPoster.prototype.post = function() {
+		if(this._status != _STATUS.INIT) {
+			return 1;
+		}
+		this._frameEl = YOM.Element.create('iframe', {src: this._proxy}, {display: 'none'});
+		this._frameEl.instanceId = this.getId();
+		this._frameEl.callback = $bind(this, function(o) {
+			if(this._status != _STATUS.LOADING) {
+				return;
+			}
+			this._status = _STATUS.LOADED;
+			this._complete(CrossDomainPoster.RET.SUCC);
+			this._onload.call(this._bind, o);
+		});
+		this._frameOnLoadListener = $bind(this, this._frameOnLoad);
+		YOM.Event.addListener(this._frameEl, 'load', this._frameOnLoadListener);
+		this._frameEl = document.body.appendChild(this._frameEl);
+		this._status = _STATUS.LOADING;
+		_loading_count++;
+		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('start', {url: this._url, opt: this._opt}));
+		return 0;
+	};
+	
+	CrossDomainPoster.prototype.abort = function() {
+		if(this._status != _STATUS.LOADING) {
+			return 1;
+		}
+		this._status = _STATUS.ABORTED;
+		this._complete(CrossDomainPoster.RET.ABORTED);
+		this._onabort.call(this._bind);
+		return 0;
+	};
+	
+	return CrossDomainPoster;
+});
+/**
+ * @namespace YOM.pos
+ */
+define('yom/pos', ['yom/object'], function(object) {
+	var YOM = {
+		'object': object
+	};
+	
+	return {
+		_ID: 112,
+		
+		getPos: function(onSuccess, onFail) {
+			if(navigator.geolocation && navigator.geolocation.getCurrentPosition) {
+				navigator.geolocation.getCurrentPosition(function (position) {
+					if(YOM.object.isFunction(onSuccess)) {
+						onSuccess.call(position, position.coords.latitude, position.coords.longitude);
+					}
+				}, onFail);
+			} else {
+				onFail({
+					code: 0,
+					message: 'Not Supported'
+				});
+			}
+		},
+		
+		watchPos: function(onSuccess, onFail) {
+			if(navigator.geolocation && navigator.geolocation.watchPosition) {
+				return navigator.geolocation.watchPosition(function (position) {
+					if(YOM.object.isFunction(onSuccess)) {
+						onSuccess.call(position, position.coords.latitude, position.coords.longitude);
+					}
+				}, onFail);
+			} else {
+				onFail({
+					code: 0,
+					message: 'Not Supported'
+				});
+				return null;
+			}
+		},
+		
+		clearWatch: function(watchHandler) {
+			if(watchHandler && navigator.geolocation && navigator.geolocation.clearWatch) {
+				navigator.geolocation.clearWatch(watchHandler);
+			}
+		}
+	};
+});
+/**
+ * @namespace YOM.util
+ */
+define('yom/util', ['yom/object'], function(object) {
+	var YOM = {
+		'object': object
+	};
+	
+	return {
+		_ID: 115,
+		
+		getUrlParam: function(name, loc) {
+			loc = loc || window.location;
+			var r = new RegExp('(\\?|#|&)' + name + '=(.*?)(&|#|$)');
+			var m = (loc.href || '').match(r);
+			return (m ? m[2] : '');
+		},
+		
+		getUrlParams: function(loc) {
+			loc = loc || window.location;
+			var raw = loc.search, res = {}, p, i;
+			if(raw) {
+				raw = raw.slice(1);
+				raw = raw.split('&');
+				for(i = 0, l = raw.length; i < l; i++) {
+					p = raw[i].split('=');
+					res[p[0]] = p[1] || '';
+				}
+			}
+			raw = loc.hash;
+			if(raw) {
+				raw = raw.slice(1);
+				raw = raw.split('&');
+				for(i = 0, l = raw.length; i < l; i++) {
+					p = raw[i].split('=');
+					res[p[0]] = res[p[0]] || p[1] || '';
+				}
+			}
+			return res;
+		},
+		
+		appendQueryString: function(url, param, isHashMode) {
+			if(typeof param == 'object') {
+				param = YOM.object.toQueryString(param);
+			} else if(typeof param == 'string') {
+				param = param.replace(/^&/, '');
+			} else {
+				param = '';
+			}
+			if(!param) {
+				return url;
+			}
+			if(isHashMode) {
+				if(url.indexOf('#') == -1) {
+					url += '#' + param;
+				} else {
+					url += '&' + param;
+				}
+			} else {
+				if(url.indexOf('#') == -1) {
+					if(url.indexOf('?') == -1) {
+						url += '?' + param;
+					} else {
+						url += '&' + param;
+					}
+				} else {
+					var tmp = url.split('#');
+					if(tmp[0].indexOf('?') == -1) {
+						url = tmp[0] + '?' + param + '#' + (tmp[1] || '');
+					} else {
+						url = tmp[0] + '&' + param + '#' + (tmp[1] || '');
+					}
+				}
+			}
+			return url;
+		}
+	};
+});
+/**
+ * @class YOM.JsLoader
+ */
+define('yom/js-loader', ['yom/config', 'yom/error', 'yom/browser', 'yom/object', 'yom/class', 'yom/array', 'yom/instance-manager', 'yom/observer', 'yom/event', 'yom/element', 'yom/util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
+	var YOM = {
+		'config': config,
+		'Error': Err,
+		'browser': browser,
+		'object': object,
+		'Class': Class,
+		'array': array,
+		'InstanceManager': InstanceManager,
+		'Observer': Observer,
+		'Event': Evt,
+		'Element': Elem,
+		'util': util
+	};
+	
+	var _TIMEOUT = 60000;
+	var _STATUS = {
+		INIT: 0,
+		LOADING: 1,
+		LOADED: 2,
+		ABORTED: 3,
+		TIMEOUT: 4
+	};
+	
+	var _callbackQueueHash = {};
+	var _callbackLoadingHash = {};
+	var _loading_count = 0;
+	var _im = new YOM.InstanceManager();
+	
+	var JsLoader = function(src, opt) {
+		opt = opt || {};
+		this._rawSrc = src;
+		this._src = YOM.util.appendQueryString(src, opt.param);
+		this._opt = opt;
+		this._charset = opt.charset;
+		this._callback = opt.callback;
+		this._callbackName = opt.callbackName || '$JsLoaderCallback';
+		this._onload = opt.load || $empty;
+		this._onabort = opt.abort || $empty;
+		this._onerror = opt.error;
+		this._oncomplete = opt.complete || $empty;
+		this._bind = opt.bind;
+		this._random = opt.random;
+		this._jsEl = null;
+		this._status = _STATUS.INIT;
+		this._callbacked = false;
+		this._gid = opt.gid;//group id
+		this._bound = {
+			onloadHandler: YOM.object.bind(this, this._onloadHandler),
+			onerrorHandler: YOM.object.bind(this, this._onerrorHandler),
+			ieOnloadHandler: YOM.object.bind(this, this._ieOnloadHandler)
+		};
+		this._id = _im.add(this);
+	};
+	
+	JsLoader._ID = 109;
+	
+	JsLoader._im = _im;
+	
+	YOM.Class.extend(JsLoader, YOM.Event);
+	YOM.Class.genericize(JsLoader, ['addObservers', 'addEventListener', 'removeEventListener', 'dispatchEvent', 'createEvent'], {bind: JsLoader});
+	JsLoader.addObservers({
+		start: new YOM.Observer(),
+		complete: new YOM.Observer(),
+		allcomplete: new YOM.Observer()
+	});
+	
+	JsLoader.RET = {
+		SUCC: 0,
+		ABORTED: -1,
+		ERROR: 1,
+		TIMEOUT: 2
+	};
+	
+	JsLoader.abortAll = function(gid) {
+		var noGid = typeof gid == 'undefined';
+		_im.each(function(inst) {
+			inst.abort();
+			if(noGid || inst.getGid() == gid) {
+				inst.abort();
+			}
+		});
+	};
+	
+	JsLoader.isUrlLoading = function(url, fullMatch) {
+		var res = false;
+		if(!url) {
+			return res;
+		}
+		_im.each(function(inst) {
+			if(fullMatch && url == inst._src || inst._src.indexOf(url) === 0) {
+				res = true;
+				return false;
+			}
+			return true;
+		});
+		return res;
+	};
+	
+	JsLoader.isAnyLoading = function() {
+		return _loading_count > 0;
+	};
+	
+	JsLoader.prototype._clear = function() {
+		_im.remove(this.getId());
+		if(!this._jsEl) {
+			return;
+		}
+		if(this._jsEl.addEventListener) {
+			this._jsEl.removeEventListener('load', this._bound.onloadHandler, false);
+			this._jsEl.removeEventListener('error', this._bound.onerrorHandler, false);
+		} else {
+			this._jsEl.detachEvent('onreadystatechange', this._bound.ieOnloadHandler);
+		}
+		this._jsEl.parentNode.removeChild(this._jsEl);
+		this._jsEl = null;
+		if(this._callback) {
+			_callbackLoadingHash[this._callbackName] = 0;
+			if(_callbackQueueHash[this._callbackName] && _callbackQueueHash[this._callbackName].length) {
+				_callbackQueueHash[this._callbackName].shift().load();
+			}
+		}
+	};
+	
+	JsLoader.prototype._dealError = function(code) {
+		if(this._onerror) {
+			this._onerror.call(this._bind, code);
+		} else {
+			throw new YOM.Error(code);
+		}
+	};
+	
+	JsLoader.prototype._complete = function(ret) {
+		this._opt.silent || _loading_count > 0 && _loading_count--;
+		this._clear();
+		try {
+			_loading_count === 0 && JsLoader.dispatchEvent(JsLoader.createEvent('allcomplete', {src: this._src, opt: this._opt, ret: ret}));
+			JsLoader.dispatchEvent(JsLoader.createEvent('complete', {src: this._src, opt: this._opt, ret: ret}));
+		} catch(e) {
+			if(YOM.config.debug) {
+				throw new YOM.Error(YOM.Error.getCode(JsLoader._ID, 2));
+			}
+		}
+		this._oncomplete.call(this._bind, ret);
+	};
+	
+	JsLoader.prototype.getId = function() {
+		return this._id;
+	};
+	
+	JsLoader.prototype.getGid = function() {
+		return this._gid;
+	};
+	
+	JsLoader.prototype._onloadHandler = function() {
+		if(this._status != _STATUS.LOADING) {
+			return;
+		}
+		this._status = _STATUS.LOADED;
+		this._complete(JsLoader.RET.SUCC);
+		if(this._callback && !this._callbacked) {
+			this._dealError(YOM.Error.getCode(JsLoader._ID, 1));
+		}
+		this._onload.call(this._bind);
+	};
+	
+	JsLoader.prototype._onerrorHandler = function() {
+		if(this._status != _STATUS.LOADING) {
+			return;
+		}
+		this._status = _STATUS.LOADED;
+		this._complete(JsLoader.RET.ERROR);
+		this._dealError(YOM.Error.getCode(JsLoader._ID, 0));
+	};
+	
+	JsLoader.prototype._ieOnloadHandler = function() {
+		if(this._jsEl && (this._jsEl.readyState == 'loaded' || this._jsEl.readyState == 'complete')) {
+			this._onloadHandler();
+		}
+	};
+	
+	JsLoader.prototype.load = function() {
+		if(this._status != _STATUS.INIT) {
+			return 1;
+		}
+		var self = this;
+		if(this._callback) {
+			if(_callbackLoadingHash[this._callbackName]) {
+				_callbackQueueHash[this._callbackName] = _callbackQueueHash[this._callbackName] || [];
+				_callbackQueueHash[this._callbackName].push(this);
+				return -1;
+			}
+			_callbackLoadingHash[this._callbackName] = 1;
+			window[this._callbackName] = $bind(this, function() {
+				this._callbacked = true;
+				if(this._status != _STATUS.LOADING) {
+					return;
+				}
+				this._callback.apply(this._bind || this, YOM.array.getArray(arguments));
+				window[this._callbackName] = null;
+			});
+		}
+		this._jsEl = document.createElement('script');
+		if(this._jsEl.addEventListener) {
+			this._jsEl.addEventListener('load', this._bound.onloadHandler, false);
+			this._jsEl.addEventListener('error', this._bound.onerrorHandler, false);
+		} else {
+			this._jsEl.attachEvent('onreadystatechange', this._bound.ieOnloadHandler);
+		}
+		if(this._charset) {
+			this._jsEl.charset = this._charset;
+		}
+		this._jsEl.type = 'text/javascript';
+		this._jsEl.async = 'async';
+		this._jsEl.src = this._src;
+		this._status = _STATUS.LOADING;
+		this._opt.silent || _loading_count++;
+		this._jsEl = YOM.Element.head.insertBefore(this._jsEl, YOM.Element.head.firstChild);
+		setTimeout(function() {
+			if(self._status != _STATUS.LOADING) {
+				return;
+			}
+			self._status = _STATUS.TIMEOUT;
+			self._complete(JsLoader.RET.TIMEOUT);
+			self._dealError(YOM.Error.getCode(JsLoader._ID, 2));
+		}, this._opt.timeout || _TIMEOUT);
+		JsLoader.dispatchEvent(JsLoader.createEvent('start', {src: this._src, opt: this._opt}));
+		return 0;
+	};
+	
+	JsLoader.prototype.abort = function() {
+		if(this._status != _STATUS.LOADING) {
+			return 1;
+		}
+		this._status = _STATUS.ABORTED;
+		this._complete(JsLoader.RET.ABORTED);
+		this._onabort.call(this._bind);
+		return 0;
+	};
+	
+	return JsLoader;
+});
+/**
+ * @namespace YOM.css
+ */
+define('yom/css', ['yom/object', 'yom/array', 'yom/class', 'yom/event', 'yom/element'], function(object, array, Class, Evt, Elem) {
+	var YOM = {
+		'object': object,
+		'array': array,
+		'Class': Class,
+		'Event': Evt,
+		'Element': Elem
+	};
+	
+	var _linkCount = 0;
+	var _href_id_hash = {};
+	
+	function load(href, force) {
+		var id, el;
+		if(YOM.array.isArray(href)) {
+			id = [];
+			YOM.object.each(href, function(item) {
+				id.push(load(item, force));
+			});
+			return id;
+		}
+		id = _href_id_hash[href];
+		el = $id(id);
+		if(id && el) {
+			if(force) {
+				unload(href);
+			} else {
+				return id;
+			}
+		}
+		id = $getUniqueId();
+		el = YOM.Element.create('link', {
+			id: id,
+			rel: 'stylesheet',
+			type: 'text/css',
+			media: 'screen',
+			href: href
+		});
+		YOM.Element.head.insertBefore(el, YOM.Element.head.firstChild);
+		return _href_id_hash[href] = id;
+	};
+	
+	function unload(href) {
+		var el;
+		if(YOM.array.isArray(href)) {
+			el = [];
+			YOM.object.each(href, function(item) {
+				el.push(unload(item));
+			});
+			return el;
+		}
+		el = $id(_href_id_hash[href]);
+		if(el) {
+			delete _href_id_hash[href];
+			return el.parentNode.removeChild(el);
+		}
+		return null;
+	};
+	
+	var Css = function() {
+		Css.superClass.constructor.apply(this, YOM.array.getArray(arguments));
+	};
+	YOM.Class.extend(Css, YOM.Event);
+	
+	return $extend(new Css({
+	}), {
+		_ID: 106,
+		load: load,
+		unload: unload
+	});
+});
+/**
+ * @namespace YOM.tmpl
+ */
+define('yom/tmpl', ['yom/browser', 'yom/string', 'yom/object'], function(browser, string, object) {
+	var YOM = {
+		'browser': browser,
+		'string': string,
+		'object': object
+	};
+	
+	var _cache = {};
+	var _useArrayJoin = YOM.browser.ie;
+	
+	function _getMixinTmplStr(rawStr, mixinTmpl) {
+		if(mixinTmpl) {
+			YOM.object.each(mixinTmpl, function(val, key) {
+				var r = new RegExp('<%#' + key + '%>', 'g');
+				rawStr = rawStr.replace(r, val);
+			});
+		}
+		return rawStr;
+	};
+	
+	function render(str, data, opt) {
+		var strict, key, fn;
+		str += '';
+		data = data || {};
+		opt = opt || {};
+		strict = opt.strict;
+		key = opt.key;
+		if(key) {
+			fn = _cache[key];
+			if(fn) {
+				return fn(data);
+			}
+		}
+		if(opt.mixinTmpl) {
+			str = _getMixinTmplStr(str, opt.mixinTmpl);
+		}
+		fn = _useArrayJoin ? 
+		new Function("$data", "var YOM=this,_$out_=[],$print=function(str){_$out_.push(str);};" + (strict ? "" : "with($data){") + "_$out_.push('" + str
+			.replace(/[\r\t\n]/g, " ")
+			.split("<%").join("\t")
+			.replace(/(?:^|%>).*?(?:\t|$)/g, function($0) {
+				return $0.replace(/('|\\)/g, '\\$1');
+			})
+			.replace(/\t==(.*?)%>/g, "',YOM.string.encodeHtml($1),'")
+			.replace(/\t=(.*?)%>/g, "',$1,'")
+			.split("\t").join("');")
+			.split("%>").join("_$out_.push('")
+		+ "');" + (strict ? "" : "}") + "return _$out_.join('');") : 
+		new Function("$data", "var YOM=this,_$out_='',$print=function(str){_$out_+=str;};" + (strict ? "" : "with($data){") + "_$out_+='" + str
+			.replace(/[\r\t\n]/g, " ")
+			.split("<%").join("\t")
+			.replace(/(?:^|%>).*?(?:\t|$)/g, function($0) {
+				return $0.replace(/('|\\)/g, '\\$1');
+			})
+			.replace(/\t==(.*?)%>/g, "'+YOM.string.encodeHtml($1)+'")
+			.replace(/\t=(.*?)%>/g, "'+($1)+'")
+			.split("\t").join("';")
+			.split("%>").join("_$out_+='")
+		+ "';" + (strict ? "" : "}") + "return _$out_;");
+		if(key) {
+			_cache[key] = fn;
+		}
+		return fn.call(YOM, data);
+	};
+	
+	function renderId(id, data, opt) {
+		data = data || {};
+		opt = opt || {};
+		var key = opt.key = opt.key || id;
+		var fn = _cache[key];
+		if(fn) {
+			return fn(data);
+		}
+		return render($id(id).innerHTML, data, opt);
+	};
+	
+	return {
+		_ID: 114,
+		render: render,
+		renderId: renderId
+	};
+});
+/**
  * @namespace YOM.flash
  */
-define('yom/flash', ['require'], function(require) {
+define('yom/flash', ['yom/browser', 'yom/object'], function(browser, object) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'object': require('yom/object')
+		'browser': browser,
+		'object': object
 	};
 	
 	var _ID = 129;
@@ -4090,6 +4087,8 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 		'Observer': require('yom/observer'),
 		'Event': require('yom/event'),
 		'Element': require('yom/element'),
+		'transition': require('yom/transition'),
+		'Tween': require('yom/tween'),
 		'cookie': require('yom/cookie'),
 		'Xhr': require('yom/xhr'),
 		'CrossDomainPoster': require('yom/cross-domain-poster'),
@@ -4099,8 +4098,6 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 		'css': require('yom/css'),
 		'tmpl': require('yom/tmpl'),
 		'console': require('yom/console'),
-		'transition': require('yom/transition'),
-		'Tween': require('yom/tween'),
 		'flash': require('yom/flash'),
 		'widget': require('yom/widget')
 	});

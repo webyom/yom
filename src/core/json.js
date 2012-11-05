@@ -1,12 +1,12 @@
 /**
  * @namespace YOM.json
  */
-define('yom/json', ['require'], function(require) {
+define('yom/json', ['yom/error', 'yom/object', 'yom/array', 'yom/json-sans-eval'], function(Err, object, array, jsonParse) {
 	var YOM = {
-		'Error': require('yom/error'),
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'jsonParse': require('yom/json-sans-eval')
+		'Error': Err,
+		'object': object,
+		'array': array,
+		'jsonParse': jsonParse
 	};
 	
 	var _ID = 126;

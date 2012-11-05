@@ -1,10 +1,10 @@
 /**
  * @namespace YOM.flash
  */
-define('yom/flash', ['require'], function(require) {
+define('yom/flash', ['yom/browser', 'yom/object'], function(browser, object) {
 	var YOM = {
-		'browser': require('yom/browser'),
-		'object': require('yom/object')
+		'browser': browser,
+		'object': object
 	};
 	
 	var _ID = 129;
