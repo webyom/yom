@@ -162,12 +162,7 @@ var define, require;
 	};
 	
 	new Def('require', _gcfg, {}, {}, function(context) {
-		var base = context.base;
-		var moduleFullUrl;
-		if(base) {
-			moduleFullUrl = _getFullUrl(base.nrmId, base.baseUrl);	
-		}
-		return _makeRequire({config: context.config, moduleFullUrl: moduleFullUrl});
+		return _makeRequire({config: context.config, base: context.base});
 	});
 	new Def('exports', _gcfg, {}, {}, function(context) {
 		return {};
@@ -394,17 +389,22 @@ var define, require;
 		map[depReverseUrl] = 1;
 	};
 	
-	function _hasCircularDep(depReverseUrl, url) {
+	function _hasCircularDep(depReverseUrl, url, _checkedUrls) {
 		var depMap = _getDepReverseMap(depReverseUrl);
 		var p;
+		_checkedUrls = _checkedUrls || {};
+		if(_checkedUrls[depReverseUrl]) {
+			return false;
+		}
 		if(url == depReverseUrl || depMap[url]) {
 			return true;
 		}
+		_checkedUrls[depReverseUrl] = 1;
 		for(p in depMap) {
 			if(!_hasOwnProperty(depMap, p)) {
 				continue;
 			}
-			if(_hasCircularDep(p, url)) {
+			if(_hasCircularDep(p, url, _checkedUrls)) {
 				return true;
 			}
 		}
@@ -833,15 +833,15 @@ var define, require;
 			}
 			conf = _extendConfig(['charset', 'baseUrl', 'path', 'shim', 'urlArgs'], config, sourceConf);
 			nrmId = _normalizeId(id, context.base, conf.path);
+			def = _getDefined(nrmId, conf.baseUrl);
 			fullUrl = _getFullUrl(nrmId, conf.baseUrl);
 			if(context.base) {
 				baseFullUrl = _getFullUrl(context.base.nrmId, context.base.baseUrl);
 				_setDepReverseMap(fullUrl, baseFullUrl);
-				if(_hasCircularDep(baseFullUrl, fullUrl)) {//cirular dependency
+				if(!def && _hasCircularDep(baseFullUrl, fullUrl)) {//cirular dependency
 					return {};
 				}
 			}
-			def = _getDefined(nrmId, conf.baseUrl);
 			if(def) {
 				return {inst: def};
 			} else {
@@ -967,9 +967,8 @@ var define, require;
 			return config;
 		};
 		req.toUrl = function(url, onlyPath) {
-			var moduleFullUrl = context.moduleFullUrl;
-			if(moduleFullUrl) {
-				url = _getRelativePath(moduleFullUrl, url);
+			if(context.base) {
+				url = _getRelativePath(_getFullUrl(context.base.nrmId, context.base.baseUrl), url);
 			} else {
 				url = _getRelativePath(config.baseUrl + '/', url);
 			}
