@@ -1,10 +1,11 @@
 /**
  * @class YOM.CrossDomainPoster
  */
-define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/class', 'yom/instance-manager', 'yom/json', 'yom/observer', 'yom/event', 'yom/element'], function(require, config, Err, Class, InstanceManager, json, Observer, Evt, Elem) {
+define('./cross-domain-poster', ['require', './config', './error', './object', './class', './instance-manager', './json', './observer', './event', './element'], function(require, config, Err, object, Class, InstanceManager, json, Observer, Evt, Elem) {
 	var YOM = {
 		'config': config,
 		'Error': Err,
+		'object': object,
 		'Class': Class,
 		'InstanceManager': InstanceManager,
 		'json': json,
@@ -157,7 +158,7 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 		}
 		this._frameEl = YOM.Element.create('iframe', {src: this._proxy}, {display: 'none'});
 		this._frameEl.instanceId = this.getId();
-		this._frameEl.callback = $bind(this, function(o) {
+		this._frameEl.callback = YOM.object.bind(this, function(o) {
 			if(this._status != _STATUS.LOADING) {
 				return;
 			}
@@ -165,7 +166,7 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 			this._complete(CrossDomainPoster.RET.SUCC);
 			this._onload.call(this._bind, o);
 		});
-		this._frameOnLoadListener = $bind(this, this._frameOnLoad);
+		this._frameOnLoadListener = YOM.object.bind(this, this._frameOnLoad);
 		YOM.Event.addListener(this._frameEl, 'load', this._frameOnLoadListener);
 		this._frameEl = document.body.appendChild(this._frameEl);
 		this._status = _STATUS.LOADING;

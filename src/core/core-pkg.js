@@ -1,52 +1,55 @@
 /**
  * @namespace
  */
-define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(require, Sizzle) {
+define(['require', document.querySelectorAll ? '' : './inc/sizzle'], function(require, Sizzle) {
 	var YOM = function(sel, context) {
-		return $query(sel, context);
+		return Elem.query(sel, context);
 	};
+	
+	var object = require('./object');
+	var Elem = require('./element');
 	
 	YOM._ID = 100;
 	YOM.debugMode = 0;
 	
-	YOM = $extend(YOM, {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'browser': require('yom/browser'),
-		'string': require('yom/string'),
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'Chunker': require('yom/chunker'),
-		'Class': require('yom/class'),
-		'HashArray': require('yom/hash-array'),
-		'InstanceManager': require('yom/instance-manager'),
-		'json': require('yom/json'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element'),
-		'transition': require('yom/transition'),
-		'Tween': require('yom/tween'),
-		'cookie': require('yom/cookie'),
-		'Xhr': require('yom/xhr'),
-		'CrossDomainPoster': require('yom/cross-domain-poster'),
-		'pos': require('yom/pos'),
-		'util': require('yom/util'),
-		'JsLoader': require('yom/js-loader'),
-		'css': require('yom/css'),
-		'tmpl': require('yom/tmpl'),
-		'console': require('yom/console'),
-		'flash': require('yom/flash'),
-		'widget': require('yom/widget')
+	YOM = object.extend(YOM, {
+		'config': require('./config'),
+		'Error': require('./error'),
+		'browser': require('./browser'),
+		'string': require('./string'),
+		'object': object,
+		'array': require('./array'),
+		'Chunker': require('./chunker'),
+		'Class': require('./class'),
+		'HashArray': require('./hash-array'),
+		'InstanceManager': require('./instance-manager'),
+		'json': require('./json'),
+		'Observer': require('./observer'),
+		'Event': require('./event'),
+		'Element': Elem,
+		'transition': require('./transition'),
+		'Tween': require('./tween'),
+		'cookie': require('./cookie'),
+		'Xhr': require('./xhr'),
+		'CrossDomainPoster': require('./cross-domain-poster'),
+		'pos': require('./pos'),
+		'util': require('./util'),
+		'JsLoader': require('./js-loader'),
+		'css': require('./css'),
+		'tmpl': require('./tmpl'),
+		'console': require('./console'),
+		'flash': require('./flash'),
+		'widget': require('./widget')
 	});
 	
-	YOM.Event = $extend(YOM.Event, {
-		'Delegator': require('yom/event-delegator'),
-		'VirtualEventHandler': require('yom/event-virtual-handler'),
-		'MouseenterEventHandler': require('yom/event-mouseenter'),
-		'MouseleaveEventHandler': require('yom/event-mouseleave')
+	YOM.Event = object.extend(YOM.Event, {
+		'Delegator': require('./event-delegator'),
+		'VirtualEventHandler': require('./event-virtual-handler'),
+		'MouseenterEventHandler': require('./event-mouseenter'),
+		'MouseleaveEventHandler': require('./event-mouseleave')
 	});
 	
-	require('yom/element-fx');
+	require('./element-fx');
 	
 	return YOM;
 });
@@ -57,38 +60,12 @@ function $id(id) {
 
 function $query(sel, context) {
 	var Element = require('yom/element');
-	var res;
-	if(sel instanceof Element) {
-		return sel;
-	} else if(typeof sel == 'string') {
-		if(context) {
-			context = new Element(typeof context == 'string' ? (document.querySelectorAll ? document.querySelectorAll(context) : Sizzle(context)) : context);
-			res = context.find(sel);
-		} else {
-			res = new Element(document.querySelectorAll ? document.querySelectorAll(sel) : Sizzle(sel));
-		}
-	} else {
-		res = new Element(sel);
-	}
-	return res;
+	return Element.query(sel, context);
 };
 
 function $getClean(obj) {
 	var object = require('yom/object');
-	var cleaned;
-	if(obj && obj.getClean) {
-		cleaned = obj.getClean();
-	} else if(typeof obj == 'object') {
-		cleaned = {};
-		for(var p in obj) {
-			if(object.hasOwnProperty(obj, p)) {
-				cleaned[p] = obj[p];
-			}
-		}
-	} else {
-		cleaned = obj;
-	}
-	return cleaned;
+	return object.getClean(obj);
 };
 
 function $extend(origin, extend, check) {
@@ -97,14 +74,8 @@ function $extend(origin, extend, check) {
 };
 
 function $bind(that, fn) {
-	var array = require('yom/array');
-	if(fn.bind) {
-		return fn.bind(that);
-	} else {
-		return function() {
-			return fn.apply(that, array.getArray(arguments));
-		};
-	}
+	var object = require('yom/object');
+	return object.bind(that, fn);
 };
 
 function $now() {

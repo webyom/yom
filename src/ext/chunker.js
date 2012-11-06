@@ -1,7 +1,7 @@
 /**
  * @class YOM.Chunker
  */
-define('yom/chunker', ['yom/core-pkg'], function(YOM) {
+define('./chunker', ['./core-pkg'], function(YOM) {
 	var Chunker = function(processer, opt) {
 		opt = opt || {};
 		this._bind = opt.bind;

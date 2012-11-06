@@ -2,7 +2,7 @@
  * Inspired by KISSY
  * @class YOM.Tween
  */
-define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/element', 'yom/transition'], function(browser, object, InstanceManager, Elem, transition) {
+define('./tween', ['./browser', './object', './instance-manager', './element', './transition'], function(browser, object, InstanceManager, Elem, transition) {
 	var YOM = {
 		'browser': browser,
 		'object': object,
@@ -175,7 +175,7 @@ define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/e
 		opt.origin = opt.origin || {};
 		opt.target = opt.target || {};
 		this._opt = opt;
-		this._el = $query(el);
+		this._el = YOM.Element.query(el);
 		this._duration = duration;
 		this._css = opt.css && !opt.target.prop && Tween.getCssTransitionName();
 		this._targetStyle = _getStyle(opt.target.style);
@@ -238,7 +238,7 @@ define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/e
 	};
 
 	Tween.stopAllTween = function(el) {
-		$query(el).each(function(el) {
+		YOM.Element.query(el).each(function(el) {
 			var tweenObj = _im.get(new YOM.Element(el).getDatasetVal('yom-tween-oid'));
 			tweenObj && tweenObj.stop();
 		});

@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.tmpl
  */
-define('yom/tmpl', ['yom/browser', 'yom/string', 'yom/object'], function(browser, string, object) {
+define('./tmpl', ['./browser', './string', './object'], function(browser, string, object) {
 	var YOM = {
 		'browser': browser,
 		'string': string,

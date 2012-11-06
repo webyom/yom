@@ -1,8 +1,9 @@
 /**
  * @class YOM.Event.Delegator
  */
-define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) {
+define('./event-delegator', ['./object', './event', './element'], function(object, Evt, Elem) {
 	var YOM = {
+		'object': object,
 		'Event': Evt,
 		'Element': Elem
 	};
@@ -14,7 +15,7 @@ define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) 
 	 */
 	function Delegator(ele, opt) {
 		opt = opt || {};
-		this._ele = $query(ele);
+		this._ele = YOM.Element.query(ele);
 		this._delegatedTypes = {};
 		this._handlers = {};
 		this._eventHook = opt.eventHook;
@@ -53,7 +54,7 @@ define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) 
 				flag.maxBubble = Math.max(flag.maxBubble, maxBubble);
 				return;
 			} else {
-				var listener = $bind(this, this._eventListener);
+				var listener = YOM.object.bind(this, this._eventListener);
 				this._ele.addEventListener(type, listener);
 				this._handlers[type] = {};
 				this._delegatedTypes[type] = {maxBubble: maxBubble, listener: listener};

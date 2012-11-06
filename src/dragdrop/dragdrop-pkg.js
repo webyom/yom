@@ -3,9 +3,9 @@
  */
 define(function(require) {
 	return {
-		'Draggable': require('yom/draggable'),
-		'Droppable': require('yom/droppable'),
-		'Sortable': require('yom/sortable'),
-		'Resizeable': require('yom/resizeable')
+		'Draggable': require('./draggable'),
+		'Droppable': require('./droppable'),
+		'Sortable': require('./sortable'),
+		'Resizeable': require('./resizeable')
 	};
 });

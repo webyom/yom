@@ -47,7 +47,7 @@ ID LIST:
 /**
  * @namespace YOM.config
  */
-define('yom/config', [], function() {
+define('./config', [], function() {
 	var t = document.domain.split('.'), l = t.length;
 	return {
 		debug: location.href.indexOf('yom-debug=1') > 0,

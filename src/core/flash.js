@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.flash
  */
-define('yom/flash', ['yom/browser', 'yom/object'], function(browser, object) {
+define('./flash', ['./browser', './object'], function(browser, object) {
 	var YOM = {
 		'browser': browser,
 		'object': object

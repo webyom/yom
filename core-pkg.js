@@ -47,7 +47,7 @@ ID LIST:
 /**
  * @namespace YOM.config
  */
-define('yom/config', [], function() {
+define('./config', [], function() {
 	var t = document.domain.split('.'), l = t.length;
 	return {
 		debug: location.href.indexOf('yom-debug=1') > 0,
@@ -67,7 +67,7 @@ YOM.JsLoader
 YOM.Xhr
 	10401: onerror
 */
-define('yom/error', [], function() {
+define('./error', [], function() {
 	var YomError = function(code, opt) {
 		if(typeof opt == 'string') {
 			opt = {message: opt};
@@ -106,7 +106,7 @@ define('yom/error', [], function() {
 /**
  * @namespace YOM.browser
  */
-define('yom/browser', [], function() {
+define('./browser', [], function() {
 	var _ua = navigator.userAgent.toLowerCase();
 	
 	return {
@@ -129,7 +129,7 @@ define('yom/browser', [], function() {
 /**
  * @namespace YOM.string
  */
-define('yom/string', [], {
+define('./string', [], {
 	_ID: 117,
 	
 	getByteLength: function(str) {
@@ -181,7 +181,7 @@ define('yom/string', [], {
 /**
  * @namespace YOM.object
  */
-define('yom/object', ['require'], function(require) {
+define('./object', ['require'], function(require) {
 	return {
 		_ID: 110,
 		
@@ -192,10 +192,8 @@ define('yom/object', ['require'], function(require) {
 		},
 		
 		isArray: function(obj) {
-			var YOM = {
-				'array': require('yom/array')
-			};
-			return YOM.array.isArray(obj);
+			var array = require('./array');
+			return array.isArray(obj);
 		},
 		
 		isFunction: function(obj) {
@@ -207,12 +205,10 @@ define('yom/object', ['require'], function(require) {
 		},
 		
 		each: function(obj, fn, bind) {
-			var YOM = {
-				'array': require('yom/array')
-			};
+			var array = require('./array');
 			var val;
-			if(YOM.array.isArray(obj)) {
-				YOM.array.each(obj, fn, bind);
+			if(array.isArray(obj)) {
+				array.each(obj, fn, bind);
 			} else {
 				for(var p in obj) {
 					if(this.hasOwnProperty(obj, p)) {
@@ -240,13 +236,18 @@ define('yom/object', ['require'], function(require) {
 		},
 		
 		bind: function(obj, fn) {
-			return $bind(obj, fn);
+			var array = require('./array');
+			if(fn.bind) {
+				return fn.bind(obj);
+			} else {
+				return function() {
+					return fn.apply(obj, array.getArray(arguments));
+				};
+			}
 		},
 
 		clone: function(obj, deep, _level) {
-			var YOM = {
-				'array': require('yom/array')
-			};
+			var array = require('./array');
 			var res = obj;
 			var i, j, p;
 			deep = deep || 0;
@@ -255,7 +256,7 @@ define('yom/object', ['require'], function(require) {
 				return res;
 			}
 			if(typeof obj == 'object' && obj) {
-				if(YOM.array.isArray(obj)) {
+				if(array.isArray(obj)) {
 					res = [];
 					for(i = 0, l = obj.length; i < l; i++) {
 						res.push(obj[i]);
@@ -270,6 +271,23 @@ define('yom/object', ['require'], function(require) {
 				}
 			}
 			return res;
+		},
+		
+		getClean: function(obj) {
+			var cleaned;
+			if(obj && obj.getClean) {
+				cleaned = obj.getClean();
+			} else if(typeof obj == 'object') {
+				cleaned = {};
+				for(var p in obj) {
+					if(this.hasOwnProperty(obj, p)) {
+						cleaned[p] = obj[p];
+					}
+				}
+			} else {
+				cleaned = obj;
+			}
+			return cleaned;
 		},
 		
 		toQueryString: function(obj) {
@@ -298,7 +316,7 @@ define('yom/object', ['require'], function(require) {
 /**
  * @namespace YOM.array
  */
-define('yom/array', ['yom/object'], function(object) {
+define('./array', ['./object'], function(object) {
 	var YOM = {
 		'object': object
 	};
@@ -355,7 +373,7 @@ define('yom/array', ['yom/object'], function(object) {
 /**
  * @class YOM.Class
  */
-define('yom/class', ['yom/error', 'yom/object', 'yom/array'], function(Err, object, array) {
+define('./class', ['./error', './object', './array'], function(Err, object, array) {
 	var YOM = {
 		'Error': Err,
 		'object': object,
@@ -402,7 +420,7 @@ define('yom/class', ['yom/error', 'yom/object', 'yom/array'], function(Err, obje
 /**
  * @class YOM.HashArray
  */
-define('yom/hash-array', [], function() {
+define('./hash-array', [], function() {
 	var HashArray = function() {
 		this._items = [];
 		this._k2i = {};
@@ -593,7 +611,7 @@ define('yom/hash-array', [], function() {
 /**
  * @class YOM.InstanceManager
  */
-define('yom/instance-manager', ['yom/object', 'yom/array'], function(object, array) {
+define('./instance-manager', ['./object', './array'], function(object, array) {
 	var YOM = {
 		'object': object,
 		'array': array
@@ -716,7 +734,7 @@ define('yom/instance-manager', ['yom/object', 'yom/array'], function(object, arr
  * @return {Object|Array}
  * @author Mike Samuel <mikesamuel@gmail.com>
  */
-define('yom/json-sans-eval', [], function() {
+define('./json-sans-eval', [], function() {
 var jsonParse = (function () {
   var number
       = '(?:-?\\b(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b)';
@@ -904,7 +922,7 @@ return jsonParse;
 /**
  * @namespace YOM.json
  */
-define('yom/json', ['yom/error', 'yom/object', 'yom/array', 'yom/json-sans-eval'], function(Err, object, array, jsonParse) {
+define('./json', ['./error', './object', './array', './json-sans-eval'], function(Err, object, array, jsonParse) {
 	var YOM = {
 		'Error': Err,
 		'object': object,
@@ -1012,14 +1030,14 @@ define('yom/json', ['yom/error', 'yom/object', 'yom/array', 'yom/json-sans-eval'
 /**
  * @class YOM.Observer
  */
-define('yom/observer', [], function() {
+define('./observer', ['./object'], function(object) {
 	var Observer = function () {
 		this._subscribers = [];
 	};
 	
 	Observer.prototype = {
 		subscribe: function(subscriber, bind) {
-			subscriber = bind ? $bind(bind, subscriber) : subscriber;
+			subscriber = bind ? object.bind(bind, subscriber) : subscriber;
 			for(var i = 0, l = this._subscribers.length; i < l; i++) {
 				if(subscriber == this._subscribers[i]) {
 					return null;
@@ -1067,7 +1085,7 @@ define('yom/observer', [], function() {
 /**
  * @class YOM.Event
  */
-define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, object, Observer) {
+define('./event', ['./error', './object', './observer'], function(Err, object, Observer) {
 	var YOM = {
 		'Error': Err,
 		'object': object,
@@ -1082,7 +1100,7 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 	};
 	
 	function _getObserver(instance, type) {
-		if(!instance instanceof Event) {
+		if(!instance instanceof Evt) {
 			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		instance._observers = instance._observers || {};
@@ -1091,21 +1109,21 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 	};
 	
 	function _getObservers(instance) {
-		if(!instance instanceof Event) {
+		if(!instance instanceof Evt) {
 			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		instance._observers = instance._observers || {};
 		return instance._observers;
 	};
 	
-	function Event(observers) {
-		this._observers = $getClean(observers) || {};
+	function Evt(observers) {
+		this._observers = YOM.object.getClean(observers) || {};
 	};
 	
-	Event.prototype = {
+	Evt.prototype = {
 		addObservers: function(newObservers) {
 			var observers = _getObservers(this);
-			newObservers = $getClean(newObservers);
+			newObservers = YOM.object.getClean(newObservers);
 			for(var type in newObservers) {
 				if(newObservers[type] instanceof YOM.Observer) {
 					observers[type] = newObservers[type];
@@ -1154,13 +1172,13 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 			return e;
 		},
 		
-		constructor: Event
+		constructor: Evt
 	};
 	
-	Event.addListener = function(el, eType, listener, bind) {
+	Evt.addListener = function(el, eType, listener, bind) {
 		var cEvent, cEventHandler;
 		eType = eType.toLowerCase();
-		listener = bind ? $bind(bind, listener) : listener;
+		listener = bind ? YOM.object.bind(bind, listener) : listener;
 		cEvent = _customizedEventHash[eType];
 		if(cEvent) {
 			el.elEventRef = el.elEventRef || ++_elRefCount;
@@ -1177,7 +1195,7 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		return listener;
 	};
 	
-	Event.removeListener = function(el, eType, listener) {
+	Evt.removeListener = function(el, eType, listener) {
 		var cEvent, cEventHandler;
 		eType = eType.toLowerCase();
 		cEvent = _customizedEventHash[eType];
@@ -1193,21 +1211,21 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		}
 	};
 	
-	Event.addCustomizedEvent = function(type, Handler) {
+	Evt.addCustomizedEvent = function(type, Handler) {
 		_customizedEventHash[type] = {
 			Handler: Handler,
 			elEventRefHandlerHash: {}
 		};
 	};
 	
-	Event.removeCustomizedEventHandler = function(type, ref) {
+	Evt.removeCustomizedEventHandler = function(type, ref) {
 		var cEvent = _customizedEventHash[type];
 		if(cEvent) {
 			cEvent.elEventRefHandlerHash[ref] = null;
 		}
 	};
 	
-	Event.cancelBubble = function(e) {
+	Evt.cancelBubble = function(e) {
 		if(e.stopPropagation) {
 			e.stopPropagation();
 		} else {
@@ -1215,7 +1233,7 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		}
 	};
 	
-	Event.preventDefault = function(e) {
+	Evt.preventDefault = function(e) {
 		if(e.preventDefault) {
 			e.preventDefault();
 		} else {
@@ -1223,24 +1241,24 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		}
 	};
 	
-	Event.getTarget = function(e) {
+	Evt.getTarget = function(e) {
 		return e.target || e.srcElement;
 	};
 	
-	Event.getPageX = function(e) {
+	Evt.getPageX = function(e) {
 		return e.pageX != undefined ? e.pageX : e.clientX + Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
 	};
 	
-	Event.getPageY = function(e) {
+	Evt.getPageY = function(e) {
 		return e.pageY != undefined ? e.pageY : e.clientY + Math.max(document.documentElement.scrollTop, document.body.scrollTop);
 	};
 	
-	return Event;
+	return Evt;
 });
 /**
  * @class YOM.Element
  */
-define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', 'yom/event'], function(browser, string, object, array, Evt) {
+define('./element', ['./browser', './string', './object', './array', './event'], function(browser, string, object, array, Evt) {
 	var YOM = {
 		'browser': browser,
 		'string': string,
@@ -1264,7 +1282,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		this._styleStorage = {};
 	};
 	
-	$extend(Item.prototype, {
+	YOM.object.extend(Item.prototype, {
 		get: function() {
 			return this._el;
 		},
@@ -1389,7 +1407,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		return this;
 	};
 
-	$extend(Elem.prototype, {
+	YOM.object.extend(Elem.prototype, {
 		_getItem: function(i) {
 			if(typeof i == 'undefined') {
 				return this._items[0];
@@ -1800,7 +1818,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 				return res;
 			}
 			rect = el.getBoundingClientRect && el.getBoundingClientRect();
-			relative = relative ? $query(relative).getRect() : {top: 0, left: 0};
+			relative = relative ? Elem.query(relative).getRect() : {top: 0, left: 0};
 			docScrolls = Elem.getViewRect(el.ownerDocument);
 			elScrolls = this.getScrolls();
 			if(rect) {
@@ -1912,7 +1930,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		},
 		
 		headTo: function(tar) {
-			tar = $query(tar);
+			tar = Elem.query(tar);
 			var firstChild = tar.first();
 			if(firstChild) {
 				return new Elem(tar.get().insertBefore(this.get(), firstChild));
@@ -1945,7 +1963,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		
 		before: function(target) {
 			var el = this.get();
-			target = $query(target).get();
+			target = Elem.query(target).get();
 			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
@@ -1955,7 +1973,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		
 		after: function(target) {
 			var el = this.get();
-			target = $query(target).get();
+			target = Elem.query(target).get();
 			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
@@ -2048,8 +2066,25 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 	
 	Elem.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 	
+	Elem.query = function(sel, context) {
+		var res;
+		if(sel instanceof Elem) {
+			return sel;
+		} else if(typeof sel == 'string') {
+			if(context) {
+				context = new Elem(typeof context == 'string' ? (document.querySelectorAll ? document.querySelectorAll(context) : Sizzle(context)) : context);
+				res = context.find(sel);
+			} else {
+				res = new Elem(document.querySelectorAll ? document.querySelectorAll(sel) : Sizzle(sel));
+			}
+		} else {
+			res = new Elem(sel);
+		}
+		return res;
+	};
+	
 	Elem.isBody = function(el) {
-		el = $query(el).get();
+		el = Elem.query(el).get();
 		if(!el) {
 			return false;
 		}
@@ -2145,7 +2180,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
  * Inspired by KISSY
  * @namespace YOM.transition
  */
-define('yom/transition', [], function() {
+define('./transition', [], function() {
 	var _BACK_CONST = 1.70158;
 	return {
 		css: {
@@ -2306,7 +2341,7 @@ define('yom/transition', [], function() {
  * Inspired by KISSY
  * @class YOM.Tween
  */
-define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/element', 'yom/transition'], function(browser, object, InstanceManager, Elem, transition) {
+define('./tween', ['./browser', './object', './instance-manager', './element', './transition'], function(browser, object, InstanceManager, Elem, transition) {
 	var YOM = {
 		'browser': browser,
 		'object': object,
@@ -2479,7 +2514,7 @@ define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/e
 		opt.origin = opt.origin || {};
 		opt.target = opt.target || {};
 		this._opt = opt;
-		this._el = $query(el);
+		this._el = YOM.Element.query(el);
 		this._duration = duration;
 		this._css = opt.css && !opt.target.prop && Tween.getCssTransitionName();
 		this._targetStyle = _getStyle(opt.target.style);
@@ -2542,7 +2577,7 @@ define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/e
 	};
 
 	Tween.stopAllTween = function(el) {
-		$query(el).each(function(el) {
+		YOM.Element.query(el).each(function(el) {
 			var tweenObj = _im.get(new YOM.Element(el).getDatasetVal('yom-tween-oid'));
 			tweenObj && tweenObj.stop();
 		});
@@ -2682,7 +2717,7 @@ define('yom/tween', ['yom/browser', 'yom/object', 'yom/instance-manager', 'yom/e
 /**
  * YOM.Element FX extention, inspired by KISSY
  */
-define('yom/element-fx', ['yom/object', 'yom/array', 'yom/element', 'yom/tween'], function(object, array, Elem, Tween) {
+define('./element-fx', ['./object', './array', './element', './tween'], function(object, array, Elem, Tween) {
 	var YOM = {
 		'object': object,
 		'array': array,
@@ -2690,7 +2725,7 @@ define('yom/element-fx', ['yom/object', 'yom/array', 'yom/element', 'yom/tween']
 		'Tween': Tween
 	};
 	
-	$extend(YOM.Element.prototype, (function() {
+	YOM.object.extend(YOM.Element.prototype, (function() {
 		var _DURATION = 300;
 		var _CONF = {
 			fxShow: {style: ['overflow', 'opacity', 'width', 'height'], isShow: 1},
@@ -2803,8 +2838,9 @@ define('yom/element-fx', ['yom/object', 'yom/array', 'yom/element', 'yom/tween']
 /**
  * @class YOM.Event.Delegator
  */
-define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) {
+define('./event-delegator', ['./object', './event', './element'], function(object, Evt, Elem) {
 	var YOM = {
+		'object': object,
 		'Event': Evt,
 		'Element': Elem
 	};
@@ -2816,7 +2852,7 @@ define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) 
 	 */
 	function Delegator(ele, opt) {
 		opt = opt || {};
-		this._ele = $query(ele);
+		this._ele = YOM.Element.query(ele);
 		this._delegatedTypes = {};
 		this._handlers = {};
 		this._eventHook = opt.eventHook;
@@ -2855,7 +2891,7 @@ define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) 
 				flag.maxBubble = Math.max(flag.maxBubble, maxBubble);
 				return;
 			} else {
-				var listener = $bind(this, this._eventListener);
+				var listener = YOM.object.bind(this, this._eventListener);
 				this._ele.addEventListener(type, listener);
 				this._handlers[type] = {};
 				this._delegatedTypes[type] = {maxBubble: maxBubble, listener: listener};
@@ -2901,7 +2937,7 @@ define('yom/event-delegator', ['yom/event', 'yom/element'], function(Evt, Elem) 
 /**
  * @class YOM.Event.VirtualEventHandler
  */
-define('yom/event-virtual-handler', ['yom/object', 'yom/event'], function(object, Evt) {
+define('./event-virtual-handler', ['./object', './event'], function(object, Evt) {
 	var YOM = {
 		'object': object,
 		'Event': Evt
@@ -2970,11 +3006,12 @@ define('yom/event-virtual-handler', ['yom/object', 'yom/event'], function(object
 /**
  * @class YOM.Event.MouseenterEventHandler
  */
-define('yom/event-mouseenter', ['yom/browser', 'yom/class', 'yom/array', 'yom/event', 'yom/element', 'yom/event-virtual-handler'], function(browser, Class, array, Evt, Elem, VirtualEventHandler) {
+define('./event-mouseenter', ['./browser', './object', './array', './class', './event', './element', './event-virtual-handler'], function(browser, object, array, Class, Evt, Elem, VirtualEventHandler) {
 	var YOM = {
 		'browser': browser,
-		'Class': Class,
+		'object': object,
 		'array': array,
+		'Class': Class,
 		'Event': Evt,
 		'Element': Elem
 	};
@@ -2984,7 +3021,7 @@ define('yom/event-mouseenter', ['yom/browser', 'yom/class', 'yom/array', 'yom/ev
 		this.name = 'mouseenter';
 		MouseenterEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
 		this._bound = {
-			mouseover: $bind(this, this._mouseover)
+			mouseover: YOM.object.bind(this, this._mouseover)
 		};
 		YOM.Event.addListener(this._delegateEl, 'mouseover', this._bound.mouseover);
 	};
@@ -3010,11 +3047,12 @@ define('yom/event-mouseenter', ['yom/browser', 'yom/class', 'yom/array', 'yom/ev
 /**
  * @class YOM.Event.MouseleaveEventHandler
  */
-define('yom/event-mouseleave', ['yom/browser', 'yom/class', 'yom/array', 'yom/event', 'yom/element', 'yom/event-virtual-handler'], function(browser, Class, array, Evt, Elem, VirtualEventHandler) {
+define('./event-mouseleave', ['./browser', './object', './array', './class', './event', './element', './event-virtual-handler'], function(browser, object, array, Class, Evt, Elem, VirtualEventHandler) {
 	var YOM = {
 		'browser': browser,
-		'Class': Class,
+		'object': object,
 		'array': array,
+		'Class': Class,
 		'Event': Evt,
 		'Element': Elem
 	};
@@ -3024,7 +3062,7 @@ define('yom/event-mouseleave', ['yom/browser', 'yom/class', 'yom/array', 'yom/ev
 		this.name = 'mouseleave';
 		MouseleaveEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
 		this._bound = {
-			mouseout: $bind(this, this._mouseout)
+			mouseout: YOM.object.bind(this, this._mouseout)
 		};
 		YOM.Event.addListener(this._delegateEl, 'mouseout', this._bound.mouseout);
 	};
@@ -3050,7 +3088,7 @@ define('yom/event-mouseleave', ['yom/browser', 'yom/class', 'yom/array', 'yom/ev
 /**
  * @namespace YOM.cookie
  */
-define('yom/cookie', ['yom/config'], function(config) {
+define('./cookie', ['./config'], function(config) {
 	var YOM = {
 		'config': config
 	};
@@ -3080,7 +3118,7 @@ define('yom/cookie', ['yom/config'], function(config) {
 /**
  * @namespace YOM.Xhr
  */
-define('yom/xhr', ['yom/config', 'yom/error', 'yom/class', 'yom/object', 'yom/instance-manager', 'yom/observer', 'yom/event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
+define('./xhr', ['./config', './error', './class', './object', './instance-manager', './observer', './event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
 	var YOM = {
 		'config': config,
 		'Error': Err,
@@ -3222,7 +3260,7 @@ define('yom/xhr', ['yom/config', 'yom/error', 'yom/class', 'yom/object', 'yom/in
 		if(this._opt.withCredentials) {
 			this._xhr.withCredentials = true;
 		}
-		this._xhr.onreadystatechange = $bind(this, _onReadyStateChange);
+		this._xhr.onreadystatechange = YOM.object.bind(this, _onReadyStateChange);
 		this._status = _STATUS.LOADING;
 		this._opt.silent || _loading_count++;
 		this._xhr.send(this._method == 'POST' ? (this._formData || this._param) : null);
@@ -3250,10 +3288,11 @@ define('yom/xhr', ['yom/config', 'yom/error', 'yom/class', 'yom/object', 'yom/in
 /**
  * @class YOM.CrossDomainPoster
  */
-define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/class', 'yom/instance-manager', 'yom/json', 'yom/observer', 'yom/event', 'yom/element'], function(require, config, Err, Class, InstanceManager, json, Observer, Evt, Elem) {
+define('./cross-domain-poster', ['require', './config', './error', './object', './class', './instance-manager', './json', './observer', './event', './element'], function(require, config, Err, object, Class, InstanceManager, json, Observer, Evt, Elem) {
 	var YOM = {
 		'config': config,
 		'Error': Err,
+		'object': object,
 		'Class': Class,
 		'InstanceManager': InstanceManager,
 		'json': json,
@@ -3406,7 +3445,7 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 		}
 		this._frameEl = YOM.Element.create('iframe', {src: this._proxy}, {display: 'none'});
 		this._frameEl.instanceId = this.getId();
-		this._frameEl.callback = $bind(this, function(o) {
+		this._frameEl.callback = YOM.object.bind(this, function(o) {
 			if(this._status != _STATUS.LOADING) {
 				return;
 			}
@@ -3414,7 +3453,7 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 			this._complete(CrossDomainPoster.RET.SUCC);
 			this._onload.call(this._bind, o);
 		});
-		this._frameOnLoadListener = $bind(this, this._frameOnLoad);
+		this._frameOnLoadListener = YOM.object.bind(this, this._frameOnLoad);
 		YOM.Event.addListener(this._frameEl, 'load', this._frameOnLoadListener);
 		this._frameEl = document.body.appendChild(this._frameEl);
 		this._status = _STATUS.LOADING;
@@ -3438,7 +3477,7 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 /**
  * @namespace YOM.pos
  */
-define('yom/pos', ['yom/object'], function(object) {
+define('./pos', ['./object'], function(object) {
 	var YOM = {
 		'object': object
 	};
@@ -3487,7 +3526,7 @@ define('yom/pos', ['yom/object'], function(object) {
 /**
  * @namespace YOM.util
  */
-define('yom/util', ['yom/object'], function(object) {
+define('./util', ['./object'], function(object) {
 	var YOM = {
 		'object': object
 	};
@@ -3565,7 +3604,7 @@ define('yom/util', ['yom/object'], function(object) {
 /**
  * @class YOM.JsLoader
  */
-define('yom/js-loader', ['yom/config', 'yom/error', 'yom/browser', 'yom/object', 'yom/class', 'yom/array', 'yom/instance-manager', 'yom/observer', 'yom/event', 'yom/element', 'yom/util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
+define('./js-loader', ['./config', './error', './browser', './object', './class', './array', './instance-manager', './observer', './event', './element', './util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
 	var YOM = {
 		'config': config,
 		'Error': Err,
@@ -3758,7 +3797,7 @@ define('yom/js-loader', ['yom/config', 'yom/error', 'yom/browser', 'yom/object',
 				return -1;
 			}
 			_callbackLoadingHash[this._callbackName] = 1;
-			window[this._callbackName] = $bind(this, function() {
+			window[this._callbackName] = YOM.object.bind(this, function() {
 				this._callbacked = true;
 				if(this._status != _STATUS.LOADING) {
 					return;
@@ -3810,7 +3849,7 @@ define('yom/js-loader', ['yom/config', 'yom/error', 'yom/browser', 'yom/object',
 /**
  * @namespace YOM.css
  */
-define('yom/css', ['yom/object', 'yom/array', 'yom/class', 'yom/event', 'yom/element'], function(object, array, Class, Evt, Elem) {
+define('./css', ['./object', './array', './class', './event', './element'], function(object, array, Class, Evt, Elem) {
 	var YOM = {
 		'object': object,
 		'array': array,
@@ -3874,7 +3913,7 @@ define('yom/css', ['yom/object', 'yom/array', 'yom/class', 'yom/event', 'yom/ele
 	};
 	YOM.Class.extend(Css, YOM.Event);
 	
-	return $extend(new Css({
+	return YOM.object.extend(new Css({
 	}), {
 		_ID: 106,
 		load: load,
@@ -3884,7 +3923,7 @@ define('yom/css', ['yom/object', 'yom/array', 'yom/class', 'yom/event', 'yom/ele
 /**
  * @namespace YOM.tmpl
  */
-define('yom/tmpl', ['yom/browser', 'yom/string', 'yom/object'], function(browser, string, object) {
+define('./tmpl', ['./browser', './string', './object'], function(browser, string, object) {
 	var YOM = {
 		'browser': browser,
 		'string': string,
@@ -3969,7 +4008,7 @@ define('yom/tmpl', ['yom/browser', 'yom/string', 'yom/object'], function(browser
 /**
  * @namespace YOM.flash
  */
-define('yom/flash', ['yom/browser', 'yom/object'], function(browser, object) {
+define('./flash', ['./browser', './object'], function(browser, object) {
 	var YOM = {
 		'browser': browser,
 		'object': object
@@ -4063,58 +4102,61 @@ define('yom/flash', ['yom/browser', 'yom/object'], function(browser, object) {
 /**
  * @namespace
  */
-define('yom/widget', [], {
+define('./widget', [], {
 	_ID: 128
 });
 /**
  * @namespace
  */
-define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(require, Sizzle) {
+define(['require', document.querySelectorAll ? '' : './inc/sizzle'], function(require, Sizzle) {
 	var YOM = function(sel, context) {
-		return $query(sel, context);
+		return Elem.query(sel, context);
 	};
+	
+	var object = require('./object');
+	var Elem = require('./element');
 	
 	YOM._ID = 100;
 	YOM.debugMode = 0;
 	
-	YOM = $extend(YOM, {
-		'config': require('yom/config'),
-		'Error': require('yom/error'),
-		'browser': require('yom/browser'),
-		'string': require('yom/string'),
-		'object': require('yom/object'),
-		'array': require('yom/array'),
-		'Chunker': require('yom/chunker'),
-		'Class': require('yom/class'),
-		'HashArray': require('yom/hash-array'),
-		'InstanceManager': require('yom/instance-manager'),
-		'json': require('yom/json'),
-		'Observer': require('yom/observer'),
-		'Event': require('yom/event'),
-		'Element': require('yom/element'),
-		'transition': require('yom/transition'),
-		'Tween': require('yom/tween'),
-		'cookie': require('yom/cookie'),
-		'Xhr': require('yom/xhr'),
-		'CrossDomainPoster': require('yom/cross-domain-poster'),
-		'pos': require('yom/pos'),
-		'util': require('yom/util'),
-		'JsLoader': require('yom/js-loader'),
-		'css': require('yom/css'),
-		'tmpl': require('yom/tmpl'),
-		'console': require('yom/console'),
-		'flash': require('yom/flash'),
-		'widget': require('yom/widget')
+	YOM = object.extend(YOM, {
+		'config': require('./config'),
+		'Error': require('./error'),
+		'browser': require('./browser'),
+		'string': require('./string'),
+		'object': object,
+		'array': require('./array'),
+		'Chunker': require('./chunker'),
+		'Class': require('./class'),
+		'HashArray': require('./hash-array'),
+		'InstanceManager': require('./instance-manager'),
+		'json': require('./json'),
+		'Observer': require('./observer'),
+		'Event': require('./event'),
+		'Element': Elem,
+		'transition': require('./transition'),
+		'Tween': require('./tween'),
+		'cookie': require('./cookie'),
+		'Xhr': require('./xhr'),
+		'CrossDomainPoster': require('./cross-domain-poster'),
+		'pos': require('./pos'),
+		'util': require('./util'),
+		'JsLoader': require('./js-loader'),
+		'css': require('./css'),
+		'tmpl': require('./tmpl'),
+		'console': require('./console'),
+		'flash': require('./flash'),
+		'widget': require('./widget')
 	});
 	
-	YOM.Event = $extend(YOM.Event, {
-		'Delegator': require('yom/event-delegator'),
-		'VirtualEventHandler': require('yom/event-virtual-handler'),
-		'MouseenterEventHandler': require('yom/event-mouseenter'),
-		'MouseleaveEventHandler': require('yom/event-mouseleave')
+	YOM.Event = object.extend(YOM.Event, {
+		'Delegator': require('./event-delegator'),
+		'VirtualEventHandler': require('./event-virtual-handler'),
+		'MouseenterEventHandler': require('./event-mouseenter'),
+		'MouseleaveEventHandler': require('./event-mouseleave')
 	});
 	
-	require('yom/element-fx');
+	require('./element-fx');
 	
 	return YOM;
 });
@@ -4125,38 +4167,12 @@ function $id(id) {
 
 function $query(sel, context) {
 	var Element = require('yom/element');
-	var res;
-	if(sel instanceof Element) {
-		return sel;
-	} else if(typeof sel == 'string') {
-		if(context) {
-			context = new Element(typeof context == 'string' ? (document.querySelectorAll ? document.querySelectorAll(context) : Sizzle(context)) : context);
-			res = context.find(sel);
-		} else {
-			res = new Element(document.querySelectorAll ? document.querySelectorAll(sel) : Sizzle(sel));
-		}
-	} else {
-		res = new Element(sel);
-	}
-	return res;
+	return Element.query(sel, context);
 };
 
 function $getClean(obj) {
 	var object = require('yom/object');
-	var cleaned;
-	if(obj && obj.getClean) {
-		cleaned = obj.getClean();
-	} else if(typeof obj == 'object') {
-		cleaned = {};
-		for(var p in obj) {
-			if(object.hasOwnProperty(obj, p)) {
-				cleaned[p] = obj[p];
-			}
-		}
-	} else {
-		cleaned = obj;
-	}
-	return cleaned;
+	return object.getClean(obj);
 };
 
 function $extend(origin, extend, check) {
@@ -4165,14 +4181,8 @@ function $extend(origin, extend, check) {
 };
 
 function $bind(that, fn) {
-	var array = require('yom/array');
-	if(fn.bind) {
-		return fn.bind(that);
-	} else {
-		return function() {
-			return fn.apply(that, array.getArray(arguments));
-		};
-	}
+	var object = require('yom/object');
+	return object.bind(that, fn);
 };
 
 function $now() {

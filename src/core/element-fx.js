@@ -1,7 +1,7 @@
 /**
  * YOM.Element FX extention, inspired by KISSY
  */
-define('yom/element-fx', ['yom/object', 'yom/array', 'yom/element', 'yom/tween'], function(object, array, Elem, Tween) {
+define('./element-fx', ['./object', './array', './element', './tween'], function(object, array, Elem, Tween) {
 	var YOM = {
 		'object': object,
 		'array': array,
@@ -9,7 +9,7 @@ define('yom/element-fx', ['yom/object', 'yom/array', 'yom/element', 'yom/tween']
 		'Tween': Tween
 	};
 	
-	$extend(YOM.Element.prototype, (function() {
+	YOM.object.extend(YOM.Element.prototype, (function() {
 		var _DURATION = 300;
 		var _CONF = {
 			fxShow: {style: ['overflow', 'opacity', 'width', 'height'], isShow: 1},

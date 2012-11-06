@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.object
  */
-define('yom/object', ['require'], function(require) {
+define('./object', ['require'], function(require) {
 	return {
 		_ID: 110,
 		
@@ -12,10 +12,8 @@ define('yom/object', ['require'], function(require) {
 		},
 		
 		isArray: function(obj) {
-			var YOM = {
-				'array': require('yom/array')
-			};
-			return YOM.array.isArray(obj);
+			var array = require('./array');
+			return array.isArray(obj);
 		},
 		
 		isFunction: function(obj) {
@@ -27,12 +25,10 @@ define('yom/object', ['require'], function(require) {
 		},
 		
 		each: function(obj, fn, bind) {
-			var YOM = {
-				'array': require('yom/array')
-			};
+			var array = require('./array');
 			var val;
-			if(YOM.array.isArray(obj)) {
-				YOM.array.each(obj, fn, bind);
+			if(array.isArray(obj)) {
+				array.each(obj, fn, bind);
 			} else {
 				for(var p in obj) {
 					if(this.hasOwnProperty(obj, p)) {
@@ -60,13 +56,18 @@ define('yom/object', ['require'], function(require) {
 		},
 		
 		bind: function(obj, fn) {
-			return $bind(obj, fn);
+			var array = require('./array');
+			if(fn.bind) {
+				return fn.bind(obj);
+			} else {
+				return function() {
+					return fn.apply(obj, array.getArray(arguments));
+				};
+			}
 		},
 
 		clone: function(obj, deep, _level) {
-			var YOM = {
-				'array': require('yom/array')
-			};
+			var array = require('./array');
 			var res = obj;
 			var i, j, p;
 			deep = deep || 0;
@@ -75,7 +76,7 @@ define('yom/object', ['require'], function(require) {
 				return res;
 			}
 			if(typeof obj == 'object' && obj) {
-				if(YOM.array.isArray(obj)) {
+				if(array.isArray(obj)) {
 					res = [];
 					for(i = 0, l = obj.length; i < l; i++) {
 						res.push(obj[i]);
@@ -90,6 +91,23 @@ define('yom/object', ['require'], function(require) {
 				}
 			}
 			return res;
+		},
+		
+		getClean: function(obj) {
+			var cleaned;
+			if(obj && obj.getClean) {
+				cleaned = obj.getClean();
+			} else if(typeof obj == 'object') {
+				cleaned = {};
+				for(var p in obj) {
+					if(this.hasOwnProperty(obj, p)) {
+						cleaned[p] = obj[p];
+					}
+				}
+			} else {
+				cleaned = obj;
+			}
+			return cleaned;
 		},
 		
 		toQueryString: function(obj) {

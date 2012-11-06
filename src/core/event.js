@@ -1,7 +1,7 @@
 /**
  * @class YOM.Event
  */
-define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, object, Observer) {
+define('./event', ['./error', './object', './observer'], function(Err, object, Observer) {
 	var YOM = {
 		'Error': Err,
 		'object': object,
@@ -16,7 +16,7 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 	};
 	
 	function _getObserver(instance, type) {
-		if(!instance instanceof Event) {
+		if(!instance instanceof Evt) {
 			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		instance._observers = instance._observers || {};
@@ -25,21 +25,21 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 	};
 	
 	function _getObservers(instance) {
-		if(!instance instanceof Event) {
+		if(!instance instanceof Evt) {
 			throw new YOM.Error(YOM.Error.getCode(_ID, 1));
 		}
 		instance._observers = instance._observers || {};
 		return instance._observers;
 	};
 	
-	function Event(observers) {
-		this._observers = $getClean(observers) || {};
+	function Evt(observers) {
+		this._observers = YOM.object.getClean(observers) || {};
 	};
 	
-	Event.prototype = {
+	Evt.prototype = {
 		addObservers: function(newObservers) {
 			var observers = _getObservers(this);
-			newObservers = $getClean(newObservers);
+			newObservers = YOM.object.getClean(newObservers);
 			for(var type in newObservers) {
 				if(newObservers[type] instanceof YOM.Observer) {
 					observers[type] = newObservers[type];
@@ -88,13 +88,13 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 			return e;
 		},
 		
-		constructor: Event
+		constructor: Evt
 	};
 	
-	Event.addListener = function(el, eType, listener, bind) {
+	Evt.addListener = function(el, eType, listener, bind) {
 		var cEvent, cEventHandler;
 		eType = eType.toLowerCase();
-		listener = bind ? $bind(bind, listener) : listener;
+		listener = bind ? YOM.object.bind(bind, listener) : listener;
 		cEvent = _customizedEventHash[eType];
 		if(cEvent) {
 			el.elEventRef = el.elEventRef || ++_elRefCount;
@@ -111,7 +111,7 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		return listener;
 	};
 	
-	Event.removeListener = function(el, eType, listener) {
+	Evt.removeListener = function(el, eType, listener) {
 		var cEvent, cEventHandler;
 		eType = eType.toLowerCase();
 		cEvent = _customizedEventHash[eType];
@@ -127,21 +127,21 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		}
 	};
 	
-	Event.addCustomizedEvent = function(type, Handler) {
+	Evt.addCustomizedEvent = function(type, Handler) {
 		_customizedEventHash[type] = {
 			Handler: Handler,
 			elEventRefHandlerHash: {}
 		};
 	};
 	
-	Event.removeCustomizedEventHandler = function(type, ref) {
+	Evt.removeCustomizedEventHandler = function(type, ref) {
 		var cEvent = _customizedEventHash[type];
 		if(cEvent) {
 			cEvent.elEventRefHandlerHash[ref] = null;
 		}
 	};
 	
-	Event.cancelBubble = function(e) {
+	Evt.cancelBubble = function(e) {
 		if(e.stopPropagation) {
 			e.stopPropagation();
 		} else {
@@ -149,7 +149,7 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		}
 	};
 	
-	Event.preventDefault = function(e) {
+	Evt.preventDefault = function(e) {
 		if(e.preventDefault) {
 			e.preventDefault();
 		} else {
@@ -157,17 +157,17 @@ define('yom/event', ['yom/error', 'yom/object', 'yom/observer'], function(Err, o
 		}
 	};
 	
-	Event.getTarget = function(e) {
+	Evt.getTarget = function(e) {
 		return e.target || e.srcElement;
 	};
 	
-	Event.getPageX = function(e) {
+	Evt.getPageX = function(e) {
 		return e.pageX != undefined ? e.pageX : e.clientX + Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
 	};
 	
-	Event.getPageY = function(e) {
+	Evt.getPageY = function(e) {
 		return e.pageY != undefined ? e.pageY : e.clientY + Math.max(document.documentElement.scrollTop, document.body.scrollTop);
 	};
 	
-	return Event;
+	return Evt;
 });

@@ -1,7 +1,7 @@
 /**
  * @class YOM.Event.VirtualEventHandler
  */
-define('yom/event-virtual-handler', ['yom/object', 'yom/event'], function(object, Evt) {
+define('./event-virtual-handler', ['./object', './event'], function(object, Evt) {
 	var YOM = {
 		'object': object,
 		'Event': Evt

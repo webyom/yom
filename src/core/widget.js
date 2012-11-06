@@ -1,6 +1,6 @@
 /**
  * @namespace
  */
-define('yom/widget', [], {
+define('./widget', [], {
 	_ID: 128
 });

@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.css
  */
-define('yom/css', ['yom/object', 'yom/array', 'yom/class', 'yom/event', 'yom/element'], function(object, array, Class, Evt, Elem) {
+define('./css', ['./object', './array', './class', './event', './element'], function(object, array, Class, Evt, Elem) {
 	var YOM = {
 		'object': object,
 		'array': array,
@@ -65,7 +65,7 @@ define('yom/css', ['yom/object', 'yom/array', 'yom/class', 'yom/event', 'yom/ele
 	};
 	YOM.Class.extend(Css, YOM.Event);
 	
-	return $extend(new Css({
+	return YOM.object.extend(new Css({
 	}), {
 		_ID: 106,
 		load: load,

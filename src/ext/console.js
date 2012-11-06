@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.console
  */
-define('yom/console', ['yom/core-pkg', 'yom/chunker'], function(YOM, Chunker) {
+define('./console', ['./core-pkg', './chunker'], function(YOM, Chunker) {
 	var _TMPL = [
 		'<div style="background: #555; padding: 2px; padding-top: 0; font-size: 12px; font-family: Courier New, Courier, monospace;">',
 			'<h2 style="margin: 0; font-size: 14px; line-height: 22px; color: #fff; padding: 2px; padding-top: 0;">',

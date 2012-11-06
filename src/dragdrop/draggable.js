@@ -1,7 +1,7 @@
 /**
  * @class YOM.dragdrop.Draggable
  */
-define('yom/draggable', ['yom/core-pkg'], function(YOM) {
+define('./draggable', ['./core-pkg'], function(YOM) {
 	function Draggable(el, opts) {
 		Draggable.superClass.constructor.call(this, {
 			dragmousedown: new YOM.Observer(),
@@ -37,7 +37,7 @@ define('yom/draggable', ['yom/core-pkg'], function(YOM) {
 	
 	YOM.Class.extend(Draggable, YOM.Event);
 	
-	Draggable.prototype = $extend(Draggable.prototype, {
+	Draggable.prototype = YOM.object.extend(Draggable.prototype, {
 		_mousedown: function(e) {
 			if(this._dragging) {
 				return;
@@ -114,7 +114,7 @@ define('yom/draggable', ['yom/core-pkg'], function(YOM) {
 				} else if(YOM(boundary).get()) {
 					boundary = YOM(boundary).getRect();
 				} else if(!isNaN(boundary.left) && !isNaN(boundary.top) && !isNaN(boundary.right) && !isNaN(boundary.bottom)) {
-					boundary = $extend(boundary, {width: boundary.right - boundary.left, height: boundary.bottom - boundary.top});
+					boundary = YOM.object.extend(boundary, {width: boundary.right - boundary.left, height: boundary.bottom - boundary.top});
 				} else {
 					boundary = null;
 				}

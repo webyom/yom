@@ -1,14 +1,14 @@
 /**
  * @class YOM.Observer
  */
-define('yom/observer', [], function() {
+define('./observer', ['./object'], function(object) {
 	var Observer = function () {
 		this._subscribers = [];
 	};
 	
 	Observer.prototype = {
 		subscribe: function(subscriber, bind) {
-			subscriber = bind ? $bind(bind, subscriber) : subscriber;
+			subscriber = bind ? object.bind(bind, subscriber) : subscriber;
 			for(var i = 0, l = this._subscribers.length; i < l; i++) {
 				if(subscriber == this._subscribers[i]) {
 					return null;

@@ -55,7 +55,7 @@
  * @return {Object|Array}
  * @author Mike Samuel <mikesamuel@gmail.com>
  */
-define('yom/json-sans-eval', [], function() {
+define('./json-sans-eval', [], function() {
 var jsonParse = (function () {
   var number
       = '(?:-?\\b(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b)';

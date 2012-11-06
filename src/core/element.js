@@ -1,7 +1,7 @@
 /**
  * @class YOM.Element
  */
-define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', 'yom/event'], function(browser, string, object, array, Evt) {
+define('./element', ['./browser', './string', './object', './array', './event'], function(browser, string, object, array, Evt) {
 	var YOM = {
 		'browser': browser,
 		'string': string,
@@ -25,7 +25,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		this._styleStorage = {};
 	};
 	
-	$extend(Item.prototype, {
+	YOM.object.extend(Item.prototype, {
 		get: function() {
 			return this._el;
 		},
@@ -150,7 +150,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		return this;
 	};
 
-	$extend(Elem.prototype, {
+	YOM.object.extend(Elem.prototype, {
 		_getItem: function(i) {
 			if(typeof i == 'undefined') {
 				return this._items[0];
@@ -561,7 +561,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 				return res;
 			}
 			rect = el.getBoundingClientRect && el.getBoundingClientRect();
-			relative = relative ? $query(relative).getRect() : {top: 0, left: 0};
+			relative = relative ? Elem.query(relative).getRect() : {top: 0, left: 0};
 			docScrolls = Elem.getViewRect(el.ownerDocument);
 			elScrolls = this.getScrolls();
 			if(rect) {
@@ -673,7 +673,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		},
 		
 		headTo: function(tar) {
-			tar = $query(tar);
+			tar = Elem.query(tar);
 			var firstChild = tar.first();
 			if(firstChild) {
 				return new Elem(tar.get().insertBefore(this.get(), firstChild));
@@ -706,7 +706,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		
 		before: function(target) {
 			var el = this.get();
-			target = $query(target).get();
+			target = Elem.query(target).get();
 			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
@@ -716,7 +716,7 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 		
 		after: function(target) {
 			var el = this.get();
-			target = $query(target).get();
+			target = Elem.query(target).get();
 			if(!el || !target || Elem.isBody(target)) {
 				return this;
 			}
@@ -809,8 +809,25 @@ define('yom/element', ['yom/browser', 'yom/string', 'yom/object', 'yom/array', '
 	
 	Elem.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 	
+	Elem.query = function(sel, context) {
+		var res;
+		if(sel instanceof Elem) {
+			return sel;
+		} else if(typeof sel == 'string') {
+			if(context) {
+				context = new Elem(typeof context == 'string' ? (document.querySelectorAll ? document.querySelectorAll(context) : Sizzle(context)) : context);
+				res = context.find(sel);
+			} else {
+				res = new Elem(document.querySelectorAll ? document.querySelectorAll(sel) : Sizzle(sel));
+			}
+		} else {
+			res = new Elem(sel);
+		}
+		return res;
+	};
+	
 	Elem.isBody = function(el) {
-		el = $query(el).get();
+		el = Elem.query(el).get();
 		if(!el) {
 			return false;
 		}

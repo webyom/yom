@@ -1,7 +1,7 @@
 /**
  * @class YOM.Class
  */
-define('yom/class', ['yom/error', 'yom/object', 'yom/array'], function(Err, object, array) {
+define('./class', ['./error', './object', './array'], function(Err, object, array) {
 	var YOM = {
 		'Error': Err,
 		'object': object,

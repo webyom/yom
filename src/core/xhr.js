@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.Xhr
  */
-define('yom/xhr', ['yom/config', 'yom/error', 'yom/class', 'yom/object', 'yom/instance-manager', 'yom/observer', 'yom/event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
+define('./xhr', ['./config', './error', './class', './object', './instance-manager', './observer', './event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
 	var YOM = {
 		'config': config,
 		'Error': Err,
@@ -143,7 +143,7 @@ define('yom/xhr', ['yom/config', 'yom/error', 'yom/class', 'yom/object', 'yom/in
 		if(this._opt.withCredentials) {
 			this._xhr.withCredentials = true;
 		}
-		this._xhr.onreadystatechange = $bind(this, _onReadyStateChange);
+		this._xhr.onreadystatechange = YOM.object.bind(this, _onReadyStateChange);
 		this._status = _STATUS.LOADING;
 		this._opt.silent || _loading_count++;
 		this._xhr.send(this._method == 'POST' ? (this._formData || this._param) : null);

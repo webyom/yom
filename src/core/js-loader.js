@@ -1,7 +1,7 @@
 /**
  * @class YOM.JsLoader
  */
-define('yom/js-loader', ['yom/config', 'yom/error', 'yom/browser', 'yom/object', 'yom/class', 'yom/array', 'yom/instance-manager', 'yom/observer', 'yom/event', 'yom/element', 'yom/util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
+define('./js-loader', ['./config', './error', './browser', './object', './class', './array', './instance-manager', './observer', './event', './element', './util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
 	var YOM = {
 		'config': config,
 		'Error': Err,
@@ -194,7 +194,7 @@ define('yom/js-loader', ['yom/config', 'yom/error', 'yom/browser', 'yom/object',
 				return -1;
 			}
 			_callbackLoadingHash[this._callbackName] = 1;
-			window[this._callbackName] = $bind(this, function() {
+			window[this._callbackName] = YOM.object.bind(this, function() {
 				this._callbacked = true;
 				if(this._status != _STATUS.LOADING) {
 					return;

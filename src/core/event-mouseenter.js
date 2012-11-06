@@ -1,11 +1,12 @@
 /**
  * @class YOM.Event.MouseenterEventHandler
  */
-define('yom/event-mouseenter', ['yom/browser', 'yom/class', 'yom/array', 'yom/event', 'yom/element', 'yom/event-virtual-handler'], function(browser, Class, array, Evt, Elem, VirtualEventHandler) {
+define('./event-mouseenter', ['./browser', './object', './array', './class', './event', './element', './event-virtual-handler'], function(browser, object, array, Class, Evt, Elem, VirtualEventHandler) {
 	var YOM = {
 		'browser': browser,
-		'Class': Class,
+		'object': object,
 		'array': array,
+		'Class': Class,
 		'Event': Evt,
 		'Element': Elem
 	};
@@ -15,7 +16,7 @@ define('yom/event-mouseenter', ['yom/browser', 'yom/class', 'yom/array', 'yom/ev
 		this.name = 'mouseenter';
 		MouseenterEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
 		this._bound = {
-			mouseover: $bind(this, this._mouseover)
+			mouseover: YOM.object.bind(this, this._mouseover)
 		};
 		YOM.Event.addListener(this._delegateEl, 'mouseover', this._bound.mouseover);
 	};

@@ -1,11 +1,12 @@
 /**
  * @class YOM.Event.MouseleaveEventHandler
  */
-define('yom/event-mouseleave', ['yom/browser', 'yom/class', 'yom/array', 'yom/event', 'yom/element', 'yom/event-virtual-handler'], function(browser, Class, array, Evt, Elem, VirtualEventHandler) {
+define('./event-mouseleave', ['./browser', './object', './array', './class', './event', './element', './event-virtual-handler'], function(browser, object, array, Class, Evt, Elem, VirtualEventHandler) {
 	var YOM = {
 		'browser': browser,
-		'Class': Class,
+		'object': object,
 		'array': array,
+		'Class': Class,
 		'Event': Evt,
 		'Element': Elem
 	};
@@ -15,7 +16,7 @@ define('yom/event-mouseleave', ['yom/browser', 'yom/class', 'yom/array', 'yom/ev
 		this.name = 'mouseleave';
 		MouseleaveEventHandler.superClass.constructor.apply(this, YOM.array.getArray(arguments));
 		this._bound = {
-			mouseout: $bind(this, this._mouseout)
+			mouseout: YOM.object.bind(this, this._mouseout)
 		};
 		YOM.Event.addListener(this._delegateEl, 'mouseout', this._bound.mouseout);
 	};

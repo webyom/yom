@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.string
  */
-define('yom/string', [], {
+define('./string', [], {
 	_ID: 117,
 	
 	getByteLength: function(str) {

@@ -1,7 +1,7 @@
 /**
  * @class YOM.dragdrop.Resizeable
  */
-define('yom/resizeable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Draggable) {
+define('./resizeable', ['./core-pkg', './draggable'], function(YOM, Draggable) {
 	YOM.dragdrop = YOM.dragdrop || {};
 	YOM.dragdrop.Draggable = Draggable;
 	
@@ -12,7 +12,7 @@ define('yom/resizeable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Dragga
 	
 	YOM.Class.extend(ResizeHandle, YOM.dragdrop.Draggable);
 	
-	ResizeHandle.prototype = $extend(ResizeHandle.prototype, {
+	ResizeHandle.prototype = YOM.object.extend(ResizeHandle.prototype, {
 		_mousedown: function(e) {
 			ResizeHandle.superClass._mousedown.call(this, e);
 			YOM.Event.cancelBubble(e);
@@ -82,11 +82,11 @@ define('yom/resizeable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Dragga
 	
 	YOM.Class.extend(Resizeable, YOM.Event);
 	
-	Resizeable.prototype = $extend(Resizeable.prototype, {
+	Resizeable.prototype = YOM.object.extend(Resizeable.prototype, {
 		_init: function() {
 			var attr = {'data-yom-type': 'resizeHandle'};
 			var extra = YOM.browser.isQuirksMode() && YOM.browser.ie ? 2 : 0;
-			var style = $extend({
+			var style = YOM.object.extend({
 				border: 'solid 1px #000',
 				width: 6 + extra + 'px',
 				height: 6 + extra + 'px',
@@ -110,7 +110,7 @@ define('yom/resizeable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Dragga
 			if(this._opts.handles) {
 				YOM.object.each(this._opts.handles, function(t) {
 					if(handleTypes[t]) {
-						resizeHandle = new ResizeHandle(this._el.append(YOM.Element.create('div', attr, $extend(style, handleTypes[t]))).setHtml('&nbsp'), {scrollContainer: this._opts.scrollContainer, handleType: t});
+						resizeHandle = new ResizeHandle(this._el.append(YOM.Element.create('div', attr, YOM.object.extend(style, handleTypes[t]))).setHtml('&nbsp'), {scrollContainer: this._opts.scrollContainer, handleType: t});
 						resizeHandle.addEventListener('dragmove', this.bound.move);
 						resizeHandle.addEventListener('dragmousedown', this.bound.mousedown);
 						this._resizeHandles.push(resizeHandle);
@@ -119,13 +119,13 @@ define('yom/resizeable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Dragga
 			} else {
 				if(this._el.getStyle('position') == 'absolute') {
 					YOM.object.each(handleTypes, function(s, t) {
-						resizeHandle = new ResizeHandle(this._el.append(YOM.Element.create('div', attr, $extend(style, s))).setHtml('&nbsp'), {scrollContainer: this._opts.scrollContainer, handleType: t});
+						resizeHandle = new ResizeHandle(this._el.append(YOM.Element.create('div', attr, YOM.object.extend(style, s))).setHtml('&nbsp'), {scrollContainer: this._opts.scrollContainer, handleType: t});
 						resizeHandle.addEventListener('dragmove', this.bound.move);
 						resizeHandle.addEventListener('dragmousedown', this.bound.mousedown);
 						this._resizeHandles.push(resizeHandle);
 					}, this);
 				} else {
-					resizeHandle = new ResizeHandle(this._el.append(YOM.Element.create('div', attr, $extend(style, handleTypes['RB']))).setHtml('&nbsp'), {scrollContainer: this._opts.scrollContainer, handleType: 'RB'});
+					resizeHandle = new ResizeHandle(this._el.append(YOM.Element.create('div', attr, YOM.object.extend(style, handleTypes['RB']))).setHtml('&nbsp'), {scrollContainer: this._opts.scrollContainer, handleType: 'RB'});
 					resizeHandle.addEventListener('dragmove', this.bound.move);
 					resizeHandle.addEventListener('dragmousedown', this.bound.mousedown);
 					this._resizeHandles.push(resizeHandle);
@@ -155,7 +155,7 @@ define('yom/resizeable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Dragga
 				} else if(YOM(boundary).get()) {
 					boundary = YOM(boundary).getRect();
 				} else if(!isNaN(parseInt(boundary.left)) && !isNaN(parseInt(boundary.top)) && !isNaN(parseInt(boundary.right)) && !isNaN(parseInt(boundary.bottom))) {
-					boundary = $extend(boundary, {width: boundary.right - boundary.left, height: boundary.bottom - boundary.top});
+					boundary = YOM.object.extend(boundary, {width: boundary.right - boundary.left, height: boundary.bottom - boundary.top});
 				} else {
 					boundary = null;
 				}

@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.array
  */
-define('yom/array', ['yom/object'], function(object) {
+define('./array', ['./object'], function(object) {
 	var YOM = {
 		'object': object
 	};

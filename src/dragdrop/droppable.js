@@ -1,7 +1,7 @@
 /**
  * @class YOM.dragdrop.Droppable
  */
-define('yom/droppable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Draggable) {
+define('./droppable', ['./core-pkg', './draggable'], function(YOM, Draggable) {
 	YOM.dragdrop = YOM.dragdrop || {};
 	YOM.dragdrop.Draggable = Draggable;
 	
@@ -27,7 +27,7 @@ define('yom/droppable', ['yom/core-pkg', 'yom/draggable'], function(YOM, Draggab
 	
 	YOM.Class.extend(Droppable, YOM.dragdrop.Draggable);
 	
-	Droppable.prototype = $extend(Droppable.prototype, {
+	Droppable.prototype = YOM.object.extend(Droppable.prototype, {
 		_clear: function() {
 			if(this._clone && this._el && this._el != this._oriEl) {
 				this._el.remove();
