@@ -3337,11 +3337,8 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 	};
 	
 	CrossDomainPoster.prototype._complete = function(ret) {
-		var self = this;
 		_loading_count > 0 && _loading_count--;
-		setTimeout(function() {
-			self._clear();
-		}, 0);
+		this._clear();
 		try {
 			_loading_count === 0 && CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('allcomplete', {url: this._url, opt: this._opt}));
 		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
@@ -3388,9 +3385,14 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 		if(!this._frameEl) {
 			return;
 		}
-		YOM.Event.removeListener(this._frameEl, 'load', this._frameOnLoadListener);
-		document.body.removeChild(this._frameEl);
+		var frameEl = this._frameEl;
 		this._frameEl = null;
+		YOM.Event.removeListener(frameEl, 'load', this._frameOnLoadListener);
+		//Chrome will not tirgger the exception throwed in callback after frame element removed
+		//so delay to remove it
+		setTimeout(function() {
+			document.body.removeChild(frameEl);
+		}, 0);
 		_im.remove(this.getId());
 	};
 		
