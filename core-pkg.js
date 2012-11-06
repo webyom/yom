@@ -3337,8 +3337,11 @@ define('yom/cross-domain-poster', ['require', 'yom/config', 'yom/error', 'yom/cl
 	};
 	
 	CrossDomainPoster.prototype._complete = function(ret) {
+		var self = this;
 		_loading_count > 0 && _loading_count--;
-		this._clear();
+		setTimeout(function() {
+			self._clear();
+		}, 0);
 		try {
 			_loading_count === 0 && CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('allcomplete', {url: this._url, opt: this._opt}));
 		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
