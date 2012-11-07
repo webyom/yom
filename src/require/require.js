@@ -127,13 +127,14 @@ var define, require;
 	var _scriptBeingInserted = null;
 	
 	var _hold = {};//loading or waiting dependencies
+	var _interactiveDefQueue = {};
 	var _defQueue = [];
+	var _postDefQueue = [];
 	var _defined = {};
 	var _plugin = {};
 	var _depReverseMap = {};
 	
-	function Def(nrmId, config, exports, module, getter, loader) {
-		var baseUrl = config.baseUrl;
+	function Def(nrmId, baseUrl, config, exports, module, getter, loader) {
 		this._nrmId = nrmId;
 		this._baseUrl = baseUrl;
 		this._config = config;
@@ -161,17 +162,17 @@ var define, require;
 		constructor: Def
 	};
 	
-	new Def('require', _gcfg, {}, {}, function(context) {
+	new Def('require', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
 		return _makeRequire({config: context.config, base: context.base});
 	});
-	new Def('exports', _gcfg, {}, {}, function(context) {
+	new Def('exports', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
 		return {};
 	});
-	new Def('module', _gcfg, {}, {}, function(context) {
+	new Def('module', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
 		return {};
 	});
-	new Def('global', _gcfg, global, {});
-	new Def('domReady', _gcfg, {}, {}, function(context) {
+	new Def('global', _gcfg.baseUrl, _gcfg, global, {});
+	new Def('domReady', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
 		return {};
 	}, (function() {
 		var _queue = [];
@@ -297,6 +298,7 @@ var define, require;
 		shimDefine: function() {
 			var hold = this;
 			var nrmId = this._nrmId;
+			var baseUrl = this._baseUrl;
 			var config = this._config;
 			var shim = this._shim;
 			var exports;
@@ -309,12 +311,12 @@ var define, require;
 					return false;
 				}
 			};
-			_makeRequire({config: config, base: {nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps || [], function() {
+			_makeRequire({config: config, base: {nrmId: nrmId, baseUrl: baseUrl}})(shim.deps || [], function() {
 				var args = _getArray(arguments);
 				if(shim.init) {
 					exports = shim.init.apply(global, args) || exports;
 				}
-				new Def(nrmId, config, exports, {});
+				new Def(nrmId, baseUrl, config, exports, {});
 				hold.dispatch(0);
 				hold.remove();
 			}, function(code, opt) {
@@ -377,6 +379,14 @@ var define, require;
 	
 	function _getPlugin(pluginName) {
 		return _plugin[pluginName];
+	};
+	
+	function _getInteractiveDefQueue(nrmId, baseUrl) {
+		var fullUrl = _getFullUrl(nrmId, baseUrl) || 'require';
+		_interactiveDefQueue[fullUrl] = _interactiveDefQueue[fullUrl] || {
+			defQueue: [], postDefQueue: []
+		};
+		return _interactiveDefQueue[fullUrl];
 	};
 	
 	function _getDepReverseMap(url) {
@@ -446,7 +456,7 @@ var define, require;
 			return id;
 		}
 		if(base && id.indexOf('.') === 0) {
-			return _getRelativePath(base.nrmId, id);
+			return _resolvePath(base.nrmId, id);
 		} else {
 			nrmId = id;
 		}
@@ -500,7 +510,7 @@ var define, require;
 		return location.origin || location.protocol + '//' +  location.host;
 	};
 	
-	function _getRelativePath(base, path) {
+	function _resolvePath(base, path) {
 		if(path.indexOf('.') !== 0) {
 			return path;
 		}
@@ -536,7 +546,7 @@ var define, require;
 				if(url.indexOf('/') === 0) {
 					url = _getOrigin() + _trimTailSlash(url);
 				} else {
-					url = _getOrigin() + _getRelativePath(location.path, _trimTailSlash(url));
+					url = _getOrigin() + _resolvePath(location.path, _trimTailSlash(url));
 				}
 			} else {
 				url = _trimTailSlash(url);
@@ -549,9 +559,9 @@ var define, require;
 		var url;
 		if(_RESERVED_NRM_ID[nrmId] || _isUnnormalId(nrmId)) {
 			url = nrmId;
-		} else if(nrmId.indexOf('.') === 0) {
-			url = _getRelativePath(baseUrl + '/', nrmId) + '.js';
-		} else {
+		} else if(nrmId && nrmId.indexOf('.') === 0) {
+			url = _resolvePath(baseUrl + '/', nrmId) + '.js';
+		} else if(nrmId && baseUrl) {
 			url = baseUrl + '/' + nrmId + '.js';
 		}
 		return url;
@@ -593,13 +603,27 @@ var define, require;
 	};
 	
 	function _processDefQueue(nrmId, baseUrl) {
-		var def = _defQueue.shift();
+		var def, queue, defQueue, postDefQueue;
+		if(_interactiveMode) {
+			queue = _getInteractiveDefQueue(nrmId, baseUrl);
+			defQueue = queue['defQueue'];
+			postDefQueue = queue['postDefQueue'];
+		} else {
+			defQueue = _defQueue;
+			postDefQueue = _postDefQueue;
+		}
+		def = defQueue.shift();
 		while(def) {
 			_defineCall(def.id, def.deps, def.factory, {
 				nrmId: nrmId || '',
 				baseUrl: baseUrl || ''
-			}, def.config);
-			def = _defQueue.shift();
+			}, def.config, postDefQueue);
+			def = defQueue.shift();
+		}
+		def = postDefQueue.shift();
+		while(def) {
+			_postDefineCall(def.base, def.deps, def.factory, def.hold, def.config);
+			def = postDefQueue.shift();
 		}
 	};
 	
@@ -635,6 +659,7 @@ var define, require;
 			if(jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
 				_endLoad(jsNode, _ieOnload);
 				jsNode = null;
+				_processDefQueue(nrmId, baseUrl);
 				_checkHoldDefine(hold);
 			}
 		};
@@ -713,7 +738,7 @@ var define, require;
 	/**
 	 * define
 	 */
-	function _defineCall(id, deps, factory, loadInfo, config) {
+	function _defineCall(id, deps, factory, loadInfo, config, postDefQueue) {
 		var nrmId, conf, loadHold, hold, depMap;
 		var baseUrl = loadInfo.baseUrl;
 		loadHold = _getHold(loadInfo.nrmId, baseUrl);
@@ -726,8 +751,20 @@ var define, require;
 			hold = new Hold(id, nrmId, loadHold && loadHold.getConfig() || config);
 			hold.defineCall();
 		}
-		conf = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], hold.getConfig(), config);
-		_makeRequire({config: conf, base: {nrmId: nrmId, baseUrl: baseUrl}})(deps, function() {
+		postDefQueue.push({
+			base: {
+				nrmId: nrmId,
+				baseUrl: baseUrl
+			},
+			deps: deps,
+			factory: factory,
+			hold: hold,
+			config: _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], hold.getConfig(), config)
+		});
+	};
+	
+	function _postDefineCall(base, deps, factory, hold, config) {
+		_makeRequire({config: config, base: base})(deps, function() {
 			var exports, module;
 			var args = _getArray(arguments);
 			exports = deps[1] == 'exports' ? args[1] : {};
@@ -737,7 +774,7 @@ var define, require;
 			} else {
 				exports = factory;
 			}
-			new Def(nrmId, conf, exports, module);
+			new Def(base.nrmId, base.baseUrl, config, exports, module);
 			hold.dispatch(0);
 			hold.remove();
 		}, function(code, opt) {
@@ -752,7 +789,7 @@ var define, require;
 		context.parentConfig = context.parentConfig || _gcfg;
 		config = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], context.parentConfig, context.config);
 		function def(id, deps, factory) {
-			var script, factoryStr, reqFnName;
+			var script, factoryStr, reqFnName, defQueue;
 			if(typeof id != 'string') {
 				factory = deps;
 				deps = id;
@@ -775,19 +812,17 @@ var define, require;
 			if(_interactiveMode) {
 				script = _scriptBeingInserted || _getInteractiveScript();
 				if(script) {
-					_defineCall(id, deps, factory, {
-						nrmId: script.getAttribute('data-nrm-id'),
-						baseUrl: script.getAttribute('data-base-url')
-					}, config);
+					defQueue = _getInteractiveDefQueue(script.getAttribute('data-nrm-id'), script.getAttribute('data-base-url'))['defQueue'];
 				}
 			} else {
-				_defQueue.push({
-					id: id,
-					deps: deps,
-					factory: factory,
-					config: config
-				});
+				defQueue = _defQueue;
 			}
+			defQueue.push({
+				id: id,
+				deps: deps,
+				factory: factory,
+				config: config
+			});
 			return def;
 		};
 		def.config = function(conf) {
@@ -962,9 +997,9 @@ var define, require;
 		};
 		req.toUrl = function(url, onlyPath) {
 			if(context.base) {
-				url = _getRelativePath(_getFullUrl(context.base.nrmId, context.base.baseUrl), url);
+				url = _resolvePath(_getFullUrl(context.base.nrmId, context.base.baseUrl), url);
 			} else {
-				url = _getRelativePath(config.baseUrl + '/', url);
+				url = _resolvePath(config.baseUrl + '/', url);
 			}
 			if(onlyPath) {
 				url = url.replace(/^https?:\/\/[^\/]*?\//, '/');
@@ -981,7 +1016,9 @@ var define, require;
 	
 	//debug
 	require._gcfg = _gcfg;
+	require._interactiveDefQueue = _interactiveDefQueue;
 	require._defQueue = _defQueue;
+	require._postDefQueue = _postDefQueue;
 	require._hold = _hold;
 	require._defined = _defined;
 	require._plugin = _plugin;
