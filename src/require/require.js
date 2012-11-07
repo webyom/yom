@@ -804,7 +804,7 @@ var define, require;
 				reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require'];
 				reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '');
 				factoryStr.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
-					.replace(new RegExp('[(=;:{}&|]\\s*' + reqFnName + '\\(\\s*["\']([^"\'\\s]+)["\']\\s*\\)', 'g'), function(m, dep) {//extract dependencies
+					.replace(new RegExp('\\b' + reqFnName + '\\s*\\(\\s*["\']([^"\'\\s]+)["\']\\s*\\)', 'g'), function(m, dep) {//extract dependencies
 						deps.push(dep);
 					});
 				deps = (factory.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps);
