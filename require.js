@@ -446,7 +446,7 @@ var define, require;
 			return id;
 		}
 		if(base && id.indexOf('.') === 0) {
-			nrmId = _getRelativePath(base.nrmId, id);
+			return _getRelativePath(base.nrmId, id);
 		} else {
 			nrmId = id;
 		}
