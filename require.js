@@ -456,6 +456,9 @@ var define, require;
 			return id;
 		}
 		if(base && id.indexOf('.') === 0) {
+			if(_isUnnormalId(base.nrmId)) {
+				id += 'js';
+			}
 			return _resolvePath(base.nrmId, id);
 		} else {
 			nrmId = id;
@@ -556,12 +559,13 @@ var define, require;
 	};
 	
 	function _getFullUrl(nrmId, baseUrl) {
-		var url;
+		var url = '';
+		baseUrl = baseUrl || _gcfg.baseUrl;
 		if(_RESERVED_NRM_ID[nrmId] || _isUnnormalId(nrmId)) {
 			url = nrmId;
 		} else if(nrmId && nrmId.indexOf('.') === 0) {
 			url = _resolvePath(baseUrl + '/', nrmId) + '.js';
-		} else if(nrmId && baseUrl) {
+		} else if(nrmId) {
 			url = baseUrl + '/' + nrmId + '.js';
 		}
 		return url;
@@ -591,7 +595,11 @@ var define, require;
 		if(_loadingCount === 0 && _gcfg.onLoadStart) {
 			try {
 				_gcfg.onLoadEnd();
-			} catch(e) {}
+			} catch(e) {
+				if(_gcfg.debug) {
+					throw e;
+				}
+			}
 		}
 	};
 	
@@ -653,7 +661,13 @@ var define, require;
 		_scriptBeingInserted = null;
 		_loadingCount++;
 		if(_loadingCount === 1 && _gcfg.onLoadStart) {
-			_gcfg.onLoadStart();
+			try {
+				_gcfg.onLoadStart();
+			} catch(e) {
+				if(_gcfg.debug) {
+					throw e;
+				}
+			}
 		}
 		function _ieOnload() {
 			if(jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
@@ -1015,12 +1029,14 @@ var define, require;
 	require._processDefQueue = _processDefQueue;//for modules built with require.js
 	
 	//debug
-	require._gcfg = _gcfg;
-	require._interactiveDefQueue = _interactiveDefQueue;
-	require._defQueue = _defQueue;
-	require._postDefQueue = _postDefQueue;
-	require._hold = _hold;
-	require._defined = _defined;
-	require._plugin = _plugin;
-	require._depReverseMap = _depReverseMap;
+	require._debug = {
+		gcfg: _gcfg,
+		interactiveDefQueue: _interactiveDefQueue,
+		defQueue: _defQueue,
+		postDefQueue: _postDefQueue,
+		hold: _hold,
+		defined: _defined,
+		plugin: _plugin,
+		depReverseMap: _depReverseMap
+	};
 })(this);
