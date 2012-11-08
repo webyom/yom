@@ -1,0 +1,60 @@
+{
+	"builds": [
+		{
+			"input": "src/core/core-pkg.js",
+			"output": "core-pkg.js"
+		},
+		{
+			"input": "src/ext/ext-pkg.js",
+			"output": "ext-pkg.js"
+		},
+		{
+			"input": "src/dragdrop/dragdrop-pkg.js",
+			"output": "dragdrop-pkg.js"
+		}
+	],
+	"combines": [
+		{
+			"inputs": ["src/require/require.js"],
+			"output": "require.js"
+		},
+		{
+			"inputs": ["require-plugin/src/jsonp/jsonp.js"],
+			"output": "require-plugin/jsonp.js"
+		},
+		{
+			"inputs": ["src/history/history.js"],
+			"output": "history.js"
+		},
+		{
+			"inputs": ["src/local-storage/local-storage.js"],
+			"output": "local-storage.js"
+		},
+		{
+			"inputs": ["widget/src/mask/mask.js"],
+			"output": "widget/mask.js"
+		},
+		{
+			"inputs": ["widget/src/dialog/dialog.js"],
+			"output": "widget/dialog.js"
+		},
+		{
+			"inputs": ["widget/src/tooltip/tooltip.js"],
+			"output": "widget/tooltip.js"
+		},
+		{
+			"inputs": ["widget/src/mod-odl/mod-odl.js"],
+			"output": "widget/mod-odl.js"
+		},
+		{
+			"inputs": ["widget/src/img-odl/img-odl.js"],
+			"output": "widget/img-odl.js"
+		}
+	],
+	"exclude": {
+		"./core-pkg": 1,
+		"../core-pkg": 1,
+		"./ext-pkg": 1,
+		"../ext-pkg": 1
+	}
+}

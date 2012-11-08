@@ -19,10 +19,10 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 		'string': require('./string'),
 		'object': object,
 		'array': require('./array'),
-		'Chunker': require('./chunker'),
 		'Class': require('./class'),
 		'HashArray': require('./hash-array'),
 		'InstanceManager': require('./instance-manager'),
+		'jsonSansEval': require('./json-sans-eval'),
 		'json': require('./json'),
 		'Observer': require('./observer'),
 		'Event': require('./event'),
@@ -37,7 +37,6 @@ define(['require', document.querySelectorAll ? '' : 'yom/inc/sizzle'], function(
 		'JsLoader': require('./js-loader'),
 		'css': require('./css'),
 		'tmpl': require('./tmpl'),
-		'console': require('./console'),
 		'flash': require('./flash'),
 		'widget': require('./widget')
 	});
