@@ -21,7 +21,7 @@ define('./error', [], function() {
 			this.name = code.name;
 			this.code = code.code;
 			this.message = code.message;
-		} else if(code instanceof Error) {
+		} else if(code instanceof Error || Object.prototype.toString.call(code) == '[object Error]') {
 			this.name = code.name;
 			this.code = 0;
 			this.message = code.message;
