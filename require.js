@@ -756,7 +756,7 @@ var define, require;
 		var nrmId, conf, loadHold, hold, depMap;
 		var baseUrl = loadInfo.baseUrl;
 		loadHold = _getHold(loadInfo.nrmId, baseUrl);
-		nrmId = _normalizeId(id, loadInfo, loadHold && loadHold.getConfig().path);
+		nrmId = _normalizeId(id, loadInfo, loadHold && loadHold.getConfig().path || config.path);
 		if(!nrmId || nrmId == loadInfo.nrmId) {
 			nrmId = loadInfo.nrmId;
 			hold = loadHold;
@@ -788,7 +788,7 @@ var define, require;
 			} else {
 				exports = factory;
 			}
-			new Def(base.nrmId, base.baseUrl, config, exports, module);
+			new Def(base.nrmId, base.baseUrl || config.baseUrl, config, exports, module);
 			hold.dispatch(0);
 			hold.remove();
 		}, function(code, opt) {
