@@ -19,12 +19,13 @@ process.on('uncaughtException', function(err) {
 });
 
 var startTime = new Date();
+var charset = 'utf-8';
 var buildFileName = process.argv[2] || 'build.json';
 var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName));
 var logs = [];
 
 function exit(code) {
-	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), 'utf-8');
+	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset);
 	process.exit(code);
 };
 
@@ -87,6 +88,35 @@ function getDeps(def, relative, exclude, globalExclude) {
 	return deps;
 };
 
+function compileTmpl(tmpl, depId) {
+	var strict = true;
+	var res = [
+		"define('" + depId + "', [], function() {",
+		"	function $encodeHtml(str) {",
+		"		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\x60/g, '&#96;').replace(/\x27/g, '&#39;').replace(/\x22/g, '&quot;');",
+		"	};",
+		"	return function($data, $util) {",
+		"		$data = $data || {};",
+		"		var _$out_= [];",
+		"		var $print = function(str) {_$out_.push(str);};",
+		"		" + (strict ? "" : "with($data) {"),
+		"		_$out_.push('" + tmpl
+				.replace(/[\r\t\n]/g, "")
+				.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
+					return $0.replace(/('|\\)/g, '\\$1');
+				})
+				.replace(/<%==(.*?)%>/g, "', $encodeHtml($1), '")
+				.replace(/<%=(.*?)%>/g, "', $1, '")
+				.split("<%").join("');" + os.EOL + "		")
+				.split("%>").join(os.EOL + "		_$out_.push('") + "');",
+		"		" + (strict ? "" : "}"),
+		"		return _$out_.join('');",
+		"	};",
+		"});"
+	].join(os.EOL);
+	return res;
+};
+
 function fixDefineParams(def, depId) {
 	var bodyDeps = getDeps(def);
 	def = def.replace(/\b(define\s*\()\s*(["'][^"'\s]+["']\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(m, d, id, deps) {
@@ -118,7 +148,7 @@ function buildOne(info, exclude, no, callback) {
 	if(!isLegalOutputDir(outputDir)) {
 		throw new Error('Output to src dir denied!');
 	}
-	fs.readFile(input, 'utf-8', function(err, content) {
+	fs.readFile(input, charset, function(err, content) {
 		if(err) {
 			throw err;
 		}
@@ -126,15 +156,21 @@ function buildOne(info, exclude, no, callback) {
 		var fileName, fileContent = [];
 		while(deps.length) {
 			depId = deps.shift();
-			fileName = path.resolve(inputDir, depId + '.js');
-			log('Merging: ' + fileName);
-			fileContent.push(fixDefineParams(fs.readFileSync(fileName, 'utf-8'), depId));
+			if(/.html$/.test(depId)) {
+				fileName = path.resolve(inputDir, depId);
+				log('Merging: ' + fileName);
+				fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId));
+			} else {
+				fileName = path.resolve(inputDir, depId + '.js');
+				log('Merging: ' + fileName);
+				fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId));
+			}
 		}
 		fileContent.push(fixDefineParams(content));
 		log('Merging: ' + input);
 		log('Writing: ' + output);
 		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), 'utf-8');
+			fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), charset);
 			log('Done!');
 			callback();
 		});
@@ -156,11 +192,11 @@ function combineOne(info, no, callback) {
 	while(info.inputs.length) {
 		fileName = path.resolve(buildDir, info.inputs.shift());
 		log('Merging: ' + fileName);
-		fileContent.push(fs.readFileSync(fileName, 'utf-8'));
+		fileContent.push(fs.readFileSync(fileName, charset));
 	}
 	log('Writing: ' + output);
 	mkdirs(outputDir, 0777, function() {
-		fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), 'utf-8');
+		fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), charset);
 		log('Done!');
 		callback();
 	});
@@ -168,7 +204,7 @@ function combineOne(info, no, callback) {
 
 printLine('+');
 log('Start! Time: ' + startTime);
-fs.readFile(buildFileName, 'utf-8', function(err, data) {
+fs.readFile(buildFileName, charset, function(err, data) {
 	if(err) {
 		throw err;
 	}
