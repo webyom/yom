@@ -89,7 +89,7 @@ function getDeps(def, relative, exclude, globalExclude) {
 };
 
 function compileTmpl(tmpl, depId) {
-	var strict = true;
+	var strict = /\$data\b/.test(tmpl);
 	var res = [
 		"define('" + depId + "', [], function() {",
 		"	function $encodeHtml(str) {",
