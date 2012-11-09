@@ -1,3 +1,10 @@
+/**
+ * YOM module builder
+ * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
+ * Under the MIT license
+ * https://github.com/webyom/yom
+ */
+
 var os = require('os');
 var fs = require('fs');
 var path = require('path');
