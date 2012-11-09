@@ -142,10 +142,7 @@ var define, require;
 		this._module = module;
 		this._getter = getter;
 		this._loader = loader;
-		this._fullUrl = _getFullUrl(nrmId, baseUrl);
-		this._module.id = this._nrmId;
-		this._module.uri = this._fullUrl;
-		_defined[this._fullUrl] = this;
+		_defined[module.uri] = this;
 	};
 	
 	Def.prototype = {
@@ -164,17 +161,17 @@ var define, require;
 		constructor: Def
 	};
 	
-	new Def('require', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
+	new Def('require', _gcfg.baseUrl, _gcfg, {}, {id: 'require', uri: 'require'}, function(context) {
 		return _makeRequire({config: context.config, base: context.base});
 	});
-	new Def('exports', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
+	new Def('exports', _gcfg.baseUrl, _gcfg, {}, {id: 'exports', uri: 'exports'}, function(context) {
 		return {};
 	});
-	new Def('module', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
+	new Def('module', _gcfg.baseUrl, _gcfg, {}, {id: 'module', uri: 'module'}, function(context) {
 		return {};
 	});
-	new Def('global', _gcfg.baseUrl, _gcfg, global, {});
-	new Def('domReady', _gcfg.baseUrl, _gcfg, {}, {}, function(context) {
+	new Def('global', _gcfg.baseUrl, _gcfg, global, {id: 'global', uri: 'global'});
+	new Def('domReady', _gcfg.baseUrl, _gcfg, {}, {id: 'domReady', uri: 'domReady'}, function(context) {
 		return {};
 	}, (function() {
 		var _queue = [];
@@ -234,8 +231,8 @@ var define, require;
 		this._defineCalled = false;
 		this._queue = [];
 		this._shim = config.shim[_removeIdPrefix(id)];
-		this._fullUrl = _getFullUrl(nrmId, baseUrl);
-		_hold[this._fullUrl] = this;
+		this._uri = _getFullUrl(nrmId, baseUrl);
+		_hold[this._uri] = this;
 	};
 	
 	Hold.prototype = {
@@ -261,7 +258,7 @@ var define, require;
 		},
 		
 		remove: function() {
-			delete _hold[this._fullUrl];
+			delete _hold[this._uri];
 		},
 		
 		dispatch: function(errCode, opt) {
@@ -269,7 +266,7 @@ var define, require;
 			while(this._queue.length) {
 				callback = this._queue.shift();
 				if(callback) {
-					callback(errCode, opt || {url: this._fullUrl});
+					callback(errCode, opt || {uri: this._uri});
 				}
 			}
 		},
@@ -318,7 +315,7 @@ var define, require;
 				if(shim.init) {
 					exports = shim.init.apply(global, args) || exports;
 				}
-				new Def(nrmId, baseUrl, config, exports, {});
+				new Def(nrmId, baseUrl, config, exports, {id: nrmId, uri: _getFullUrl(nrmId, baseUrl)});
 				hold.dispatch(0);
 				hold.remove();
 			}, function(code, opt) {
@@ -459,7 +456,7 @@ var define, require;
 		}
 		if(base && id.indexOf('.') === 0) {
 			if(_isUnnormalId(base.nrmId)) {
-				id += 'js';
+				id += '.js';
 			}
 			return _resolvePath(base.nrmId, id);
 		} else {
@@ -781,16 +778,23 @@ var define, require;
 	
 	function _postDefineCall(base, deps, factory, hold, config) {
 		_makeRequire({config: config, base: base})(deps, function() {
+			var nrmId = base.nrmId;
+			var baseUrl = base.baseUrl || config.baseUrl;
 			var exports, module;
 			var args = _getArray(arguments);
-			exports = deps[1] == 'exports' ? args[1] : {};
-			module = deps[2] == 'module' ? args[2] : {};
+			module = {
+				id: nrmId,
+				uri: _getFullUrl(nrmId, baseUrl)
+			};
+			if(deps[2] == 'module') {
+				args[2] = module;
+			}
 			if(_isFunction(factory)) {
 				exports = factory.apply(null, args) || exports;
 			} else {
 				exports = factory;
 			}
-			new Def(base.nrmId, base.baseUrl || config.baseUrl, config, exports, module);
+			new Def(nrmId, baseUrl, config, exports, module);
 			hold.dispatch(0);
 			hold.remove();
 		}, function(code, opt) {
