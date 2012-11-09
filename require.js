@@ -143,6 +143,8 @@ var define, require;
 		this._getter = getter;
 		this._loader = loader;
 		this._fullUrl = _getFullUrl(nrmId, baseUrl);
+		this._module.id = this._nrmId;
+		this._module.uri = this._fullUrl;
 		_defined[this._fullUrl] = this;
 	};
 	
