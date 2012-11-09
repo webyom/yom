@@ -91,7 +91,9 @@ function getDeps(def, relative, exclude, globalExclude) {
 function compileTmpl(tmpl, depId) {
 	var strict = /\$data\b/.test(tmpl);
 	var res = [
-		"define('" + depId + "', [], function() {",
+		depId ? 
+		"define('" + depId + "', [], function() {" :
+		"define(function() {",
 		"	function $encodeHtml(str) {",
 		"		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\x60/g, '&#96;').replace(/\x27/g, '&#39;').replace(/\x22/g, '&quot;');",
 		"	};",
@@ -152,21 +154,25 @@ function buildOne(info, exclude, no, callback) {
 		if(err) {
 			throw err;
 		}
-		var deps = getDeps(content, true, info.exclude, exclude);
-		var fileName, fileContent = [];
-		while(deps.length) {
-			depId = deps.shift();
-			if(/.html$/.test(depId)) {
-				fileName = path.resolve(inputDir, depId);
-				log('Merging: ' + fileName);
-				fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId));
-			} else {
-				fileName = path.resolve(inputDir, depId + '.js');
-				log('Merging: ' + fileName);
-				fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId));
+		var deps, fileName, fileContent = [];
+		if(/.html$/.test(input)) {
+			fileContent.push(compileTmpl(content));
+		} else {
+			deps = getDeps(content, true, info.exclude, exclude);
+			while(deps.length) {
+				depId = deps.shift();
+				if(/.html$/.test(depId)) {
+					fileName = path.resolve(inputDir, depId);
+					log('Merging: ' + fileName);
+					fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId));
+				} else {
+					fileName = path.resolve(inputDir, depId + '.js');
+					log('Merging: ' + fileName);
+					fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId));
+				}
 			}
+			fileContent.push(fixDefineParams(content));
 		}
-		fileContent.push(fixDefineParams(content));
 		log('Merging: ' + input);
 		log('Writing: ' + output);
 		mkdirs(outputDir, 0777, function() {
