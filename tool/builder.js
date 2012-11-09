@@ -166,6 +166,8 @@ function combineOne(info, no, callback) {
 	});
 };
 
+printLine('+');
+log('Start! Time: ' + startTime);
 fs.readFile(buildFileName, 'utf-8', function(err, data) {
 	if(err) {
 		throw err;
@@ -174,14 +176,13 @@ fs.readFile(buildFileName, 'utf-8', function(err, data) {
 	try {
 		buildJson = JSON.parse(data);
 	} catch(e) {
+		printLine();
 		throw new Error('Illegal json format build file!' + os.EOL + e.toString());
 	}
 	buildList = buildJson.builds || [];
 	buildTotal = buildList.length;
 	combineList = buildJson.combines || [];
 	combineTotal = combineList.length;
-	printLine('+');
-	log('Start! Time: ' + startTime);
 	build();
 	function build() {
 		if(buildList.length) {
