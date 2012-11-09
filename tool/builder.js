@@ -1,3 +1,4 @@
+var os = require('os');
 var fs = require('fs');
 var path = require('path');
 
@@ -16,7 +17,7 @@ var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName));
 var logs = [];
 
 function exit(code) {
-	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join('\n'), 'utf-8');
+	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), 'utf-8');
 	process.exit(code);
 };
 
@@ -126,7 +127,7 @@ function buildOne(info, exclude, no, callback) {
 		log('Merging: ' + input);
 		log('Writing: ' + output);
 		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, fileContent.join('\n\n'), 'utf-8');
+			fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), 'utf-8');
 			log('Done!');
 			callback();
 		});
@@ -152,7 +153,7 @@ function combineOne(info, no, callback) {
 	}
 	log('Writing: ' + output);
 	mkdirs(outputDir, 0777, function() {
-		fs.writeFileSync(output, fileContent.join('\n\n'), 'utf-8');
+		fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), 'utf-8');
 		log('Done!');
 		callback();
 	});
@@ -166,7 +167,7 @@ fs.readFile(buildFileName, 'utf-8', function(err, data) {
 	try {
 		buildJson = JSON.parse(data);
 	} catch(e) {
-		throw new Error('Illegal json format build file!\n' + e.toString());
+		throw new Error('Illegal json format build file!' + os.EOL + e.toString());
 	}
 	buildList = buildJson.builds || [];
 	buildTotal = buildList.length;

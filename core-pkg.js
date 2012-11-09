@@ -1246,16 +1246,13 @@ define('./string', [], {
 /**
  * @namespace YOM.array
  */
-define('./array', ['./object'], function(object) {
-	var YOM = {
-		'object': object
-	};
-	
+define('./array', ['require', './object'], function(require) {
 	return {
 		_ID: 103,
 		
 		isArray: Array.isArray || function(obj) {
-			return YOM.object.toString(obj) == '[object Array]';
+			var object = require('./object');
+			return object.toString(obj) == '[object Array]';
 		},
 	
 		each: function(arr, fn, bind) {
@@ -1286,11 +1283,12 @@ define('./array', ['./object'], function(object) {
 		},
 		
 		filter: function(arr, fn) {
+			var object = require('./object');
 			if(typeof arr.filter == 'function') {
 				return arr.filter(fn);
 			} else {
 				var res = [];
-				YOM.object.each(arr, function(item, i) {
+				object.each(arr, function(item, i) {
 					if(fn(item, i, arr)) {
 						res.push(item);
 					}
