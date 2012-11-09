@@ -1,7 +1,7 @@
 /**
  * @class YOM.dragdrop.Draggable
  */
-define('./draggable', ['./core-pkg'], function(YOM) {
+define(['./core-pkg'], function(YOM) {
 	function Draggable(el, opts) {
 		Draggable.superClass.constructor.call(this, {
 			dragmousedown: new YOM.Observer(),

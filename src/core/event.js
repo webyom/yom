@@ -1,7 +1,7 @@
 /**
  * @class YOM.Event
  */
-define('./event', ['./error', './object', './observer'], function(Err, object, Observer) {
+define(['./error', './object', './observer'], function(Err, object, Observer) {
 	var YOM = {
 		'Error': Err,
 		'object': object,

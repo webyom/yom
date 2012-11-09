@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.pos
  */
-define('./pos', ['./object'], function(object) {
+define(['./object'], function(object) {
 	var YOM = {
 		'object': object
 	};

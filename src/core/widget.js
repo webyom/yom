@@ -1,6 +1,6 @@
 /**
  * @namespace
  */
-define('./widget', [], {
+define({
 	_ID: 128
 });

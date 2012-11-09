@@ -1,7 +1,7 @@
 /**
  * @class YOM.Element
  */
-define('./element', ['./browser', './string', './object', './array', './event'], function(browser, string, object, array, Evt) {
+define(['./browser', './string', './object', './array', './event'], function(browser, string, object, array, Evt) {
 	var YOM = {
 		'browser': browser,
 		'string': string,

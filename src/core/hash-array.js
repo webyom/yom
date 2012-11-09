@@ -1,7 +1,7 @@
 /**
  * @class YOM.HashArray
  */
-define('./hash-array', [], function() {
+define(function() {
 	var HashArray = function() {
 		this._items = [];
 		this._k2i = {};

@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.cookie
  */
-define('./cookie', ['./config'], function(config) {
+define(['./config'], function(config) {
 	var YOM = {
 		'config': config
 	};

@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.css
  */
-define('./css', ['./object', './array', './class', './event', './element'], function(object, array, Class, Evt, Elem) {
+define(['./object', './array', './class', './event', './element'], function(object, array, Class, Evt, Elem) {
 	var YOM = {
 		'object': object,
 		'array': array,

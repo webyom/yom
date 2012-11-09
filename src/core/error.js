@@ -11,7 +11,7 @@ YOM.JsLoader
 YOM.Xhr
 	10401: onerror
 */
-define('./error', [], function() {
+define(function() {
 	var YomError = function(code, opt) {
 		if(typeof opt == 'string') {
 			opt = {message: opt};

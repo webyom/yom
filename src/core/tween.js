@@ -2,7 +2,7 @@
  * Inspired by KISSY
  * @class YOM.Tween
  */
-define('./tween', ['./browser', './object', './instance-manager', './element', './transition'], function(browser, object, InstanceManager, Elem, transition) {
+define(['./browser', './object', './instance-manager', './element', './transition'], function(browser, object, InstanceManager, Elem, transition) {
 	var YOM = {
 		'browser': browser,
 		'object': object,

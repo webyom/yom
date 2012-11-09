@@ -1,7 +1,7 @@
 /**
  * @class YOM.Event.Delegator
  */
-define('./event-delegator', ['./object', './event', './element'], function(object, Evt, Elem) {
+define(['./object', './event', './element'], function(object, Evt, Elem) {
 	var YOM = {
 		'object': object,
 		'Event': Evt,

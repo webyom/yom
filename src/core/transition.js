@@ -2,7 +2,7 @@
  * Inspired by KISSY
  * @namespace YOM.transition
  */
-define('./transition', [], function() {
+define(function() {
 	var _BACK_CONST = 1.70158;
 	return {
 		css: {

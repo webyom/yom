@@ -1,7 +1,7 @@
 /**
  * @class YOM.Event.MouseleaveEventHandler
  */
-define('./event-mouseleave', ['./browser', './object', './array', './class', './event', './element', './event-virtual-handler'], function(browser, object, array, Class, Evt, Elem, VirtualEventHandler) {
+define(['./browser', './object', './array', './class', './event', './element', './event-virtual-handler'], function(browser, object, array, Class, Evt, Elem, VirtualEventHandler) {
 	var YOM = {
 		'browser': browser,
 		'object': object,

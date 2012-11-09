@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.json
  */
-define('./json', ['./error', './object', './array', './json-sans-eval'], function(Err, object, array, jsonParse) {
+define(['./error', './object', './array', './json-sans-eval'], function(Err, object, array, jsonParse) {
 	var YOM = {
 		'Error': Err,
 		'object': object,

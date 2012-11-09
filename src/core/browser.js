@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.browser
  */
-define('./browser', [], function() {
+define(function() {
 	var _ua = navigator.userAgent.toLowerCase();
 	
 	return {

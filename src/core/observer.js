@@ -1,7 +1,7 @@
 /**
  * @class YOM.Observer
  */
-define('./observer', ['./object'], function(object) {
+define(['./object'], function(object) {
 	var Observer = function () {
 		this._subscribers = [];
 	};

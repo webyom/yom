@@ -1,7 +1,7 @@
 /**
  * @class YOM.JsLoader
  */
-define('./js-loader', ['./config', './error', './browser', './object', './class', './array', './instance-manager', './observer', './event', './element', './util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
+define(['./config', './error', './browser', './object', './class', './array', './instance-manager', './observer', './event', './element', './util'], function(config, Err, browser, object, Class, array, InstanceManager, Observer, Evt, Elem, util) {
 	var YOM = {
 		'config': config,
 		'Error': Err,

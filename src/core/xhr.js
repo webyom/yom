@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.Xhr
  */
-define('./xhr', ['./config', './error', './class', './object', './instance-manager', './observer', './event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
+define(['./config', './error', './class', './object', './instance-manager', './observer', './event'], function(config, Err, Class, object, InstanceManager, Observer, Evt) {
 	var YOM = {
 		'config': config,
 		'Error': Err,

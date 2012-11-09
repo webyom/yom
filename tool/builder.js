@@ -53,30 +53,46 @@ function mkdirs(dirpath, mode, callback) {
 	});
 };
 
-function getDeps(def, exclude, globalExclude) {
+function isLegalOutputDir(outputDir) {
+	if(/\/_?src(\/|$)/.test(outputDir)) {//TODO
+		return false;
+	}
+	return true;
+};
+
+function getDeps(def, relative, exclude, globalExclude) {
 	var deps = [];
 	var got = {};
-	var depArr = def.match(/\bdefine\s*\([^\[]*?(\[[^\]]*?\])/);
+	var depArr = def.match(/\bdefine\s*\([^\[\{]*(\[[^\[\]]*\])/m);
 	depArr = depArr && depArr[1];
 	exclude = exclude || {};
 	globalExclude = globalExclude || {};
-	depArr && depArr.replace(/["'](\.[^"'\s]+)["']/g, function(m, dep) {
+	relative && depArr && depArr.replace(new RegExp('["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']', 'mg'), function(m, dep) {
 		got[dep] || exclude[dep] || globalExclude[dep] || /\.js$/.test(dep) || deps.push(dep);
 		got[dep] = 1;
 	});
 	def.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
-		.replace(/\brequire\s*\(\s*["'](\.[^"'\s]+)["']\s*\)/g, function(m, dep) {//extract dependencies
+		.replace(new RegExp('\\brequire\\s*\\(\\s*["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']\\s*\\)', 'mg'), function(m, dep) {//extract dependencies
 			got[dep] || exclude[dep] || globalExclude[dep] || /\.js$/.test(dep) || deps.push(dep);
 			got[dep] = 1;
 		});
 	return deps;
 };
 
-function isLegalOutputDir(outputDir) {
-	if(/\/_?src(\/|$)/.test(outputDir)) {//TODO
-		return false;
-	}
-	return true;
+function fixDefineParams(def, depId) {
+	var bodyDeps = getDeps(def);
+	def = def.replace(/\b(define\s*\()\s*(["'][^"'\s]+["']\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(m, d, id, deps) {
+		if(bodyDeps.length) {
+			bodyDeps = "'" + bodyDeps.join("', '") + "'";
+			if(deps) {
+				deps = deps.replace(/]$/, ', ' + bodyDeps + ']');
+			} else {
+				deps = "['require', 'exports', 'module', " + bodyDeps + "], ";
+			}
+		}
+		return [d, id || depId && ("'" + depId + "', "), deps || '[], '].join('');
+	});
+	return def;
 };
 
 function buildOne(info, exclude, no, callback) {
@@ -88,6 +104,7 @@ function buildOne(info, exclude, no, callback) {
 	var inputDir = path.dirname(input);
 	var output = path.resolve(buildDir, info.output);
 	var outputDir = path.dirname(output);
+	var depId;
 	log('Input: ' + input);
 	log('Output: ' + output);
 	if(!isLegalOutputDir(outputDir)) {
@@ -97,14 +114,15 @@ function buildOne(info, exclude, no, callback) {
 		if(err) {
 			throw err;
 		}
-		var deps = getDeps(content, info.exclude, exclude);
+		var deps = getDeps(content, true, info.exclude, exclude);
 		var fileName, fileContent = [];
 		while(deps.length) {
-			fileName = path.resolve(inputDir, deps.shift() + '.js');
+			depId = deps.shift();
+			fileName = path.resolve(inputDir, depId + '.js');
 			log('Merging: ' + fileName);
-			fileContent.push(fs.readFileSync(fileName, 'utf-8'));
+			fileContent.push(fixDefineParams(fs.readFileSync(fileName, 'utf-8'), depId));
 		}
-		fileContent.push(content);
+		fileContent.push(fixDefineParams(content));
 		log('Merging: ' + input);
 		log('Writing: ' + output);
 		mkdirs(outputDir, 0777, function() {

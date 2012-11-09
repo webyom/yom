@@ -1,7 +1,7 @@
 /**
  * @class YOM.dragdrop.Sortable
  */
-define('./sortable', ['./core-pkg', './droppable'], function(YOM, Droppable) {
+define(['./core-pkg', './droppable'], function(YOM, Droppable) {
 	YOM.dragdrop = YOM.dragdrop || {};
 	YOM.dragdrop.Droppable = Droppable;
 	

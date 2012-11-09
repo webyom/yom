@@ -1,7 +1,7 @@
 /**
  * @class YOM.CrossDomainPoster
  */
-define('./cross-domain-poster', ['require', './config', './error', './object', './class', './instance-manager', './json', './observer', './event', './element'], function(require, config, Err, object, Class, InstanceManager, json, Observer, Evt, Elem) {
+define(['require', './config', './error', './object', './class', './instance-manager', './json', './observer', './event', './element'], function(require, config, Err, object, Class, InstanceManager, json, Observer, Evt, Elem) {
 	var YOM = {
 		'config': config,
 		'Error': Err,

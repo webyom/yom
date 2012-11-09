@@ -1,7 +1,7 @@
 /**
  * @namespace YOM.object
  */
-define('./object', ['require'], function(require) {
+define(function(require) {
 	return {
 		_ID: 110,
 		

@@ -1,7 +1,7 @@
 /**
  * YOM.Element FX extention, inspired by KISSY
  */
-define('./element-fx', ['./object', './array', './element', './tween'], function(object, array, Elem, Tween) {
+define(['./object', './array', './element', './tween'], function(object, array, Elem, Tween) {
 	var YOM = {
 		'object': object,
 		'array': array,
