@@ -8,6 +8,10 @@
 var define, require;
 
 ;(function(global) {
+	if(require._YOM_) {
+		return;
+	}
+	
 	/**
 	 * utils
 	 */
@@ -1042,6 +1046,8 @@ var define, require;
 	};
 	
 	require = _makeRequire();
+	
+	require._YOM_ = true;
 	
 	require._processDefQueue = _processDefQueue;//for modules built with require.js
 	

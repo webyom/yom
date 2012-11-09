@@ -11,6 +11,14 @@
 		{
 			"input": "src/dragdrop/dragdrop-pkg.js",
 			"output": "dragdrop-pkg.js"
+		},
+		{
+			"input": "widget/src/dialog/dialog.js",
+			"output": "widget/dialog.js"
+		},
+		{
+			"input": "widget/src/tooltip/tooltip.js",
+			"output": "widget/tooltip.js"
 		}
 	],
 	"combines": [
@@ -33,14 +41,6 @@
 		{
 			"inputs": ["widget/src/mask/mask.js"],
 			"output": "widget/mask.js"
-		},
-		{
-			"inputs": ["widget/src/dialog/dialog.js"],
-			"output": "widget/dialog.js"
-		},
-		{
-			"inputs": ["widget/src/tooltip/tooltip.js"],
-			"output": "widget/tooltip.js"
 		},
 		{
 			"inputs": ["widget/src/mod-odl/mod-odl.js"],

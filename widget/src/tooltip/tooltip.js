@@ -8,17 +8,8 @@ define(function(require) {
 	var _FX_DURATION = 300;
 	var _MIN_CLOSE_TIMEOUT = 1000;
 	var _DIRECTION_HASH = {L: 'L', R: 'R', T: 'T', B: 'B'};
-	var _TMPL = [
-		'<div data-type="yom-tooltip-inner" class="yom-tooltip-inner">',
-			'<div data-type="yom-tooltip-content" class="yom-tooltip-content"><%=content%></div>',
-			'<div data-type="yom-tooltip-arrow-outer" class="yom-tooltip-arrow-outer"></div>',
-			'<div data-type="yom-tooltip-arrow-inner" class="yom-tooltip-arrow-inner"></div>',
-			'<%if(!noCloseBtn) {%>',
-				'<span data-type="yom-tooltip-close-btn" class="yom-tooltip-close-btn">\u00d7</span>',
-			'<%}%>',
-		'</div>'
-	].join('');
 	
+	var _tmpl = require('./tooltip.html');
 	var _im = new YOM.InstanceManager();
 	
 	/**
@@ -47,7 +38,7 @@ define(function(require) {
 			position: 'absolute',
 			display: 'none'
 		}));
-		this._el.setHtml(YOM.tmpl.render(opt.tmpl || _TMPL, {
+		this._el.setHtml((opt.tmpl || _tmpl)({
 			id: this._id,
 			content: opt.content,
 			noCloseBtn: opt.noCloseBtn
