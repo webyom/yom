@@ -88,12 +88,28 @@ function getDeps(def, relative, exclude, globalExclude) {
 	return deps;
 };
 
-function compileTmpl(tmpl, depId) {
+function getTmplFnName(str) {
+	var fnName = (str + '').replace(/(?:[-_\.]+|(?:\.*\/)+)(\w)([^-_\.\/]*)/g, function($1, $2, $3) {return $2.toUpperCase() + $3;});
+	fnName = fnName.charAt(0).toLowerCase() + fnName.slice(1);
+	return fnName;
+};
+
+function compileTmpl(tmpl, depId, notAmdModule) {
+	var fnName = notAmdModule && getTmplFnName(depId);
 	var strict = /\$data\b/.test(tmpl);
-	var res = [
-		depId ? 
-		"define('" + depId + "', [], function() {" :
-		"define(function() {",
+	var res = [];
+	if(notAmdModule) {
+		res.push([
+			"var " + fnName + " = (function() {"
+		].join(os.EOL));
+	} else {
+		res.push([
+			depId ? 
+			"define('" + depId + "', [], function() {" :
+			"define(function() {"
+		].join(os.EOL));
+	}
+	res.push([
 		"	function $encodeHtml(str) {",
 		"		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\x60/g, '&#96;').replace(/\x27/g, '&#39;').replace(/\x22/g, '&quot;');",
 		"	};",
@@ -113,10 +129,18 @@ function compileTmpl(tmpl, depId) {
 				.split("%>").join(os.EOL + "		_$out_.push('") + "');",
 		"		" + (strict ? "" : "}"),
 		"		return _$out_.join('');",
-		"	};",
-		"});"
-	].join(os.EOL);
-	return res;
+		"	};"
+	].join(os.EOL));
+	if(notAmdModule) {
+		res.push([
+			"})();"
+		].join(os.EOL));
+	} else {
+		res.push([
+			"});"
+		].join(os.EOL));
+	}
+	return res.join(os.EOL);
 };
 
 function fixDefineParams(def, depId) {
@@ -190,15 +214,20 @@ function combineOne(info, no, callback) {
 	}
 	var output = path.resolve(buildDir, info.output);
 	var outputDir = path.dirname(output);
-	var fileName, fileContent = [];
+	var depId, fileName, fileContent = [];
 	log('Output: ' + output);
 	if(!isLegalOutputDir(outputDir)) {
 		throw new Error('Output to src dir denied!');
 	}
 	while(info.inputs.length) {
-		fileName = path.resolve(buildDir, info.inputs.shift());
+		depId = info.inputs.shift();
+		fileName = path.resolve(buildDir, depId);
 		log('Merging: ' + fileName);
-		fileContent.push(fs.readFileSync(fileName, charset));
+		if(/.html$/.test(depId)) {
+			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId, true));
+		} else {
+			fileContent.push(fs.readFileSync(fileName, charset));
+		}
 	}
 	log('Writing: ' + output);
 	mkdirs(outputDir, 0777, function() {
