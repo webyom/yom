@@ -8,7 +8,7 @@
 		<div id="yomConsoleOutputBox" style="line-height: 15px;"></div>
 		<div>
 			<label for="yomConsoleInputBox" style="font-weight: bold; color: blue;">&gt;&gt;</label>
-			<input id="yomConsoleInputBox" type="text" style="width: 458px; border: none; font-family: Courier New, Courier, monospace;" onkeyup="if(event.keyCode === 13) {require('<%=$util.uri%>').console.eval(this.value); return false;}" ondblclick="require('<%=$util.uri%>').console.eval(this.value); return false;" />
+			<input id="yomConsoleInputBox" type="text" style="width: 458px; border: none; font-family: Courier New, Courier, monospace;" onkeyup="if(event.keyCode === 13) {require('<%=$opt.extPkgUrl%>').console.eval(this.value); return false;}" ondblclick="require('<%=$opt.extPkgUrl%>').console.eval(this.value); return false;" />
 		</div>
 	</div>
 	<div style="height: 0; line-height: 0; clear: both;">&nbsp;</div>

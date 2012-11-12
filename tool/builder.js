@@ -113,7 +113,7 @@ function compileTmpl(tmpl, depId, notAmdModule) {
 		"	function $encodeHtml(str) {",
 		"		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\x60/g, '&#96;').replace(/\x27/g, '&#39;').replace(/\x22/g, '&quot;');",
 		"	};",
-		"	return function($data, $util) {",
+		"	return function($data, $opt) {",
 		"		$data = $data || {};",
 		"		var _$out_= [];",
 		"		var $print = function(str) {_$out_.push(str);};",

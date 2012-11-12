@@ -56,7 +56,7 @@ define(['require', 'exports', 'module', 'global', './core-pkg', './chunker'], fu
 			right: 0,
 			bottom: isIe6 ? Math.max(0, YOM.Element.getDocSize().height - YOM.Element.getViewRect().bottom) + 'px' : 0
 		}));
-		_el.container.innerHTML = _tmpl({}, {uri: module.uri.split('/').slice(0, -1).join('/') + '/ext-pkg.js'});
+		_el.container.innerHTML = _tmpl({}, {extPkgUrl: require.toUrl('./ext-pkg.js')});
 		_el.output = $id('yomConsoleOutput');
 		_el.outputBox = $id('yomConsoleOutputBox');
 		_el.inputBox = $id('yomConsoleInputBox');
