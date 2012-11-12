@@ -93,7 +93,7 @@ define(['require', './config', './error', './object', './class', './instance-man
 		this._clear();
 		try {
 			_loading_count === 0 && CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('allcomplete', {url: this._url, opt: this._opt}));
-		CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
+			CrossDomainPoster.dispatchEvent(CrossDomainPoster.createEvent('complete', {url: this._url, opt: this._opt, ret: ret}));
 		} catch(e) {
 			if(YOM.config.debug) {
 				throw new YOM.Error(YOM.Error.getCode(_ID, 1));

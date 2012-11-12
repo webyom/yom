@@ -38,7 +38,7 @@ define(['./browser', './string', './object'], function(browser, string, object) 
 			str = _getMixinTmplStr(str, opt.mixinTmpl);
 		}
 		fn = _useArrayJoin ? 
-		new Function("$data", "$util", "var YOM=this,_$out_=[],$print=function(str){_$out_.push(str);};" + (strict ? "" : "with($data){") + "_$out_.push('" + str
+		new Function("$data", "$opt", "var YOM=this,_$out_=[],$print=function(str){_$out_.push(str);};" + (strict ? "" : "with($data){") + "_$out_.push('" + str
 			.replace(/[\r\t\n]/g, "")
 			.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
 				return $0.replace(/('|\\)/g, '\\$1');
@@ -48,7 +48,7 @@ define(['./browser', './string', './object'], function(browser, string, object) 
 			.split("<%").join("');")
 			.split("%>").join("_$out_.push('")
 		+ "');" + (strict ? "" : "}") + "return _$out_.join('');") : 
-		new Function("$data", "$util", "var YOM=this,_$out_='',$print=function(str){_$out_+=str;};" + (strict ? "" : "with($data){") + "_$out_+='" + str
+		new Function("$data", "$opt", "var YOM=this,_$out_='',$print=function(str){_$out_+=str;};" + (strict ? "" : "with($data){") + "_$out_+='" + str
 			.replace(/[\r\t\n]/g, "")
 			.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
 				return $0.replace(/('|\\)/g, '\\$1');
