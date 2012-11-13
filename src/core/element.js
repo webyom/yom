@@ -857,12 +857,12 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 		return null;
 	};
 	
-	Elem.getViewRect = function(doc) {
+	Elem.getViewRect = function(ownerDoc) {
 		var res;
-		doc = doc || document;
+		var doc = ownerDoc || document;
 		res = {
-			top: window.pageYOffset || Math.max(doc.documentElement.scrollTop, doc.body.scrollTop),
-			left: window.pageXOffset || Math.max(doc.documentElement.scrollLeft, doc.body.scrollLeft),
+			top: !ownerDoc && window.pageYOffset > 0 ? window.pageYOffset : Math.max(doc.documentElement.scrollTop, doc.body.scrollTop),
+			left: !ownerDoc && window.pageXOffset > 0 ? window.pageXOffset : Math.max(doc.documentElement.scrollLeft, doc.body.scrollLeft),
 			bottom: 0,
 			right: 0,
 			width: doc.documentElement.clientWidth || doc.body.clientWidth,
