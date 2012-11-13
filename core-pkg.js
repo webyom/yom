@@ -4180,6 +4180,23 @@ define('./element-fx', ['./object', './array', './element', './tween'], function
 					YOM.Tween.apply(this, [el].concat(args)).play();
 				});
 				return this;
+			},
+			
+			tweenWait: function(ms) {
+				var self = this;
+				return {
+					tween: function() {
+						var args = YOM.array.getArray(arguments);
+						setTimeout(function() {
+							self.tween.apply(self, args);
+						}, ms);
+						return {
+							tweenWait: function(plusMs) {
+								return self.tweenWait(ms + plusMs);
+							}
+						};
+					}
+				};
 			}
 		};
 		
