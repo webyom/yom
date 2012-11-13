@@ -63,7 +63,7 @@ function mkdirs(dirpath, mode, callback) {
 };
 
 function isLegalOutputDir(outputDir) {
-	if(/\/_?src(\/|$)/.test(outputDir)) {//TODO
+	if((/\/_?src(\/|$)/).test(outputDir)) {//TODO
 		return false;
 	}
 	return true;
@@ -77,12 +77,12 @@ function getDeps(def, relative, exclude, globalExclude) {
 	exclude = exclude || {};
 	globalExclude = globalExclude || {};
 	relative && depArr && depArr.replace(new RegExp('["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']', 'mg'), function(m, dep) {
-		got[dep] || exclude[dep] || globalExclude[dep] || /\.js$/.test(dep) || deps.push(dep);
+		got[dep] || exclude[dep] || globalExclude[dep] || (/\.js$/).test(dep) || deps.push(dep);
 		got[dep] = 1;
 	});
 	def.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
 		.replace(new RegExp('\\brequire\\s*\\(\\s*["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']\\s*\\)', 'mg'), function(m, dep) {//extract dependencies
-			got[dep] || exclude[dep] || globalExclude[dep] || /\.js$/.test(dep) || deps.push(dep);
+			got[dep] || exclude[dep] || globalExclude[dep] || (/\.js$/).test(dep) || deps.push(dep);
 			got[dep] = 1;
 		});
 	return deps;
@@ -96,7 +96,7 @@ function getTmplFnName(str) {
 
 function compileTmpl(tmpl, depId, notAmdModule) {
 	var fnName = notAmdModule && getTmplFnName(depId);
-	var strict = /\$data\b/.test(tmpl);
+	var strict = (/\$data\b/).test(tmpl);
 	var res = [];
 	if(notAmdModule) {
 		res.push([
@@ -179,13 +179,13 @@ function buildOne(info, exclude, no, callback) {
 			throw err;
 		}
 		var deps, fileName, fileContent = [];
-		if(/.html$/.test(input)) {
+		if((/.html?$/).test(input)) {
 			fileContent.push(compileTmpl(content));
 		} else {
 			deps = getDeps(content, true, info.exclude, exclude);
 			while(deps.length) {
 				depId = deps.shift();
-				if(/.html$/.test(depId)) {
+				if((/.html?$/).test(depId)) {
 					fileName = path.resolve(inputDir, depId);
 					log('Merging: ' + fileName);
 					fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId));
@@ -223,7 +223,7 @@ function combineOne(info, no, callback) {
 		depId = info.inputs.shift();
 		fileName = path.resolve(buildDir, depId);
 		log('Merging: ' + fileName);
-		if(/.html$/.test(depId)) {
+		if((/.html?$/).test(depId)) {
 			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId, true));
 		} else {
 			fileContent.push(fs.readFileSync(fileName, charset));
