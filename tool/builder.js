@@ -62,7 +62,7 @@ function mkdirs(dirpath, mode, callback) {
 	});
 };
 
-function isLegalOutputDir(outputDir) {
+function isSrcDir(outputDir) {
 	if((/\/_?src(\/|$)/).test(outputDir)) {//TODO
 		return false;
 	}
@@ -77,12 +77,12 @@ function getDeps(def, relative, exclude, globalExclude) {
 	exclude = exclude || {};
 	globalExclude = globalExclude || {};
 	relative && depArr && depArr.replace(new RegExp('["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']', 'mg'), function(m, dep) {
-		got[dep] || exclude[dep] || globalExclude[dep] || (/\.js$/).test(dep) || deps.push(dep);
+		got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep);
 		got[dep] = 1;
 	});
 	def.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
 		.replace(new RegExp('\\brequire\\s*\\(\\s*["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']\\s*\\)', 'mg'), function(m, dep) {//extract dependencies
-			got[dep] || exclude[dep] || globalExclude[dep] || (/\.js$/).test(dep) || deps.push(dep);
+			got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep);
 			got[dep] = 1;
 		});
 	return deps;
@@ -159,19 +159,70 @@ function fixDefineParams(def, depId) {
 	return def;
 };
 
-function buildOne(info, exclude, no, callback) {
-	log('Build ' + no);
-	if(!info.output) {
-		throw new Error('Output not defined!');
-	}
+function buildOneDir(info, exclude, callback, baseName) {
+	var inputDir = path.resolve(buildDir, info.input);
+	var outputDir = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output);
+	var buildList = fs.readdirSync(inputDir);
+	var buildTotal = buildList.length;
+	baseName = baseName || '';
+	build();
+	function build() {
+		var inputFile, outputFile, fileName;
+		if(buildList.length) {
+			inputFile = path.join(inputDir, buildList.shift());
+			if(path.basename(inputFile) == 'main.js' || path.basename(inputFile) == path.basename(inputDir) + '.js') {
+				fileName = path.basename(inputFile).replace(/\.js$/, '-built.js');
+				outputFile = outputDir ? path.join(outputDir, baseName, fileName) : path.join(inputDir, fileName);
+				buildOne({input: inputFile, output: outputFile, exclude: info.exclude}, exclude, function() {
+					build();
+				}, true);
+			} else if((/\.tpl.html?$/).test(inputFile)) {
+				outputFile = inputFile + '.js';
+				printLine();
+				log('Build');
+				log('Input: ' + inputFile);
+				log('Output: ' + outputFile);
+				fs.writeFileSync(outputFile, compileTmpl(fs.readFileSync(inputFile, charset)), charset);
+				log('Done!');
+				build();
+			} else if(!path.extname(inputFile) && !(/^\.|~$/).test(path.basename(inputFile))) {
+				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude}, exclude, function() {
+					build();
+				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile));
+			} else {
+				build();
+			}
+		} else {
+			callback();
+		}
+	};
+};
+
+function buildOne(info, exclude, callback, ignoreSrc) {
 	var input = path.resolve(buildDir, info.input);
 	var inputDir = path.dirname(input);
-	var output = path.resolve(buildDir, info.output);
+	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output);
 	var outputDir = path.dirname(output);
 	var depId;
+	if(input == output) {
+		printLine();
+		log('Build');
+		log('Input: ' + input);
+		log('Output: ' + output);
+		throw new Error('Input and output must not be the same!');
+	}
+	if(!path.extname(input)) {//build dir
+		buildOneDir(info, exclude, callback);
+		return;
+	}
+	printLine();
+	log('Build');
 	log('Input: ' + input);
 	log('Output: ' + output);
-	if(!isLegalOutputDir(outputDir)) {
+	if(!(/\.js$/).test(input) || !(/\.js$/).test(output)) {
+		throw new Error('Input and output must be both js file name or dir name!');
+	}
+	if(!ignoreSrc && !isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!');
 	}
 	fs.readFile(input, charset, function(err, content) {
@@ -179,13 +230,13 @@ function buildOne(info, exclude, no, callback) {
 			throw err;
 		}
 		var deps, fileName, fileContent = [];
-		if((/.html?$/).test(input)) {
+		if((/\.tpl.html?$/).test(input)) {
 			fileContent.push(compileTmpl(content));
 		} else {
 			deps = getDeps(content, true, info.exclude, exclude);
 			while(deps.length) {
 				depId = deps.shift();
-				if((/.html?$/).test(depId)) {
+				if((/\.tpl.html?$/).test(depId)) {
 					fileName = path.resolve(inputDir, depId);
 					log('Merging: ' + fileName);
 					fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId));
@@ -207,8 +258,9 @@ function buildOne(info, exclude, no, callback) {
 	});
 };
 
-function combineOne(info, no, callback) {
-	log('Combine ' + no);
+function combineOne(info, callback) {
+	printLine();
+	log('Combine');
 	if(!info.output) {
 		throw new Error('Output not defined!');
 	}
@@ -216,14 +268,14 @@ function combineOne(info, no, callback) {
 	var outputDir = path.dirname(output);
 	var depId, fileName, fileContent = [];
 	log('Output: ' + output);
-	if(!isLegalOutputDir(outputDir)) {
+	if(!isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!');
 	}
 	while(info.inputs.length) {
 		depId = info.inputs.shift();
 		fileName = path.resolve(buildDir, depId);
 		log('Merging: ' + fileName);
-		if((/.html?$/).test(depId)) {
+		if((/\.tpl.html?$/).test(depId)) {
 			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId, true));
 		} else {
 			fileContent.push(fs.readFileSync(fileName, charset));
@@ -243,7 +295,7 @@ fs.readFile(buildFileName, charset, function(err, data) {
 	if(err) {
 		throw err;
 	}
-	var buildJson, buildList, buildTotal, combineList, combineTotal;
+	var buildJson, buildList, combineList, combineTotal;
 	try {
 		buildJson = JSON.parse(data);
 	} catch(e) {
@@ -251,14 +303,12 @@ fs.readFile(buildFileName, charset, function(err, data) {
 		throw new Error('Illegal json format build file!' + os.EOL + e.toString());
 	}
 	buildList = buildJson.builds || [];
-	buildTotal = buildList.length;
 	combineList = buildJson.combines || [];
 	combineTotal = combineList.length;
 	build();
 	function build() {
 		if(buildList.length) {
-			printLine();
-			buildOne(buildList.shift(), buildJson.exclude, buildTotal - buildList.length, function() {
+			buildOne(buildList.shift(), buildJson.exclude, function() {
 				build();
 			});
 		} else {
@@ -267,8 +317,7 @@ fs.readFile(buildFileName, charset, function(err, data) {
 	};
 	function combine() {
 		if(combineList.length) {
-			printLine();
-			combineOne(combineList.shift(), combineTotal - combineList.length, function() {
+			combineOne(combineList.shift(), function() {
 				combine();
 			});
 		} else {
