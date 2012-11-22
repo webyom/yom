@@ -3,14 +3,14 @@
  */
 define(function(require) {
 	var YOM = function(sel, context) {
-		return Elem.query(sel, context);
-	};
+		return Elem.query(sel, context)
+	}
 	
-	var object = require('./object');
-	var Elem = require('./element');
+	var object = require('./object')
+	var Elem = require('./element')
 	
-	YOM._ID = 100;
-	YOM.debugMode = 0;
+	YOM._ID = 100
+	YOM.debugMode = 0
 	
 	YOM = object.extend(YOM, {
 		'config': require('./config'),
@@ -40,51 +40,52 @@ define(function(require) {
 		'tmpl': require('./tmpl'),
 		'flash': require('./flash'),
 		'widget': require('./widget')
-	});
+	})
 	
 	YOM.Event = object.extend(YOM.Event, {
 		'Delegator': require('./event-delegator'),
 		'VirtualEventHandler': require('./event-virtual-handler'),
 		'MouseenterEventHandler': require('./event-mouseenter'),
 		'MouseleaveEventHandler': require('./event-mouseleave')
-	});
+	})
 	
-	require('./element-fx');
+	require('./element-fx')
 	
-	return YOM;
-});
+	return YOM
+})
 
 function $id(id) {
-	return document.getElementById(id);
-};
+	return document.getElementById(id)
+}
 
 function $query(sel, context) {
-	var Element = require('yom/core/element');
-	return Element.query(sel, context);
-};
+	var Element = require('yom/core/element')
+	return Element.query(sel, context)
+}
 
 function $getClean(obj) {
-	var object = require('yom/core/object');
-	return object.getClean(obj);
-};
+	var object = require('yom/core/object')
+	return object.getClean(obj)
+}
 
 function $extend(origin, extend, check) {
-	var object = require('yom/core/object');
-	return object.extend(origin, extend, check);
-};
+	var object = require('yom/core/object')
+	return object.extend(origin, extend, check)
+}
 
 function $bind(that, fn) {
-	var object = require('yom/core/object');
-	return object.bind(that, fn);
-};
+	var object = require('yom/core/object')
+	return object.bind(that, fn)
+}
 
 function $now() {
-	return +new Date();
-};
+	return +new Date()
+}
 
-function $empty() {};
+function $empty() {}
 
-var _yom_unique_id_count = 0;
+var _yom_unique_id_count = 0
 function $getUniqueId() {
-	return 'YOM_UNIQUE_ID_' + _yom_unique_id_count++;	
-};
+	return 'YOM_UNIQUE_ID_' + _yom_unique_id_count++	
+}
+

@@ -7,11 +7,11 @@
 <body>
 <textarea id="mark"></textarea>
 <script type="text/javascript">
-var mark = location.hash.replace(/^#/, '');
-document.getElementById('mark').value = mark;
-document.title = parent.document.title;
+var mark = location.hash.replace(/^#/, '')
+document.getElementById('mark').value = mark
+document.title = parent.document.title
 if(mark || parent.location.hash) {
-    parent.location.hash = '!' + mark;
+    parent.location.hash = '!' + mark
 }
 </script>
 </body>

@@ -2,7 +2,7 @@
  * @namespace YOM.browser
  */
 define(function() {
-	var _ua = navigator.userAgent.toLowerCase();
+	var _ua = navigator.userAgent.toLowerCase()
 	
 	return {
 		_ID: 104,
@@ -17,7 +17,8 @@ define(function() {
 		android: (/android/).test(_ua),
 		
 		isQuirksMode: function() {
-			return document.compatMode != 'CSS1Compat';
+			return document.compatMode != 'CSS1Compat'
 		}
-	};
-});
+	}
+})
+

@@ -48,9 +48,10 @@ ID LIST:
  * @namespace YOM.config
  */
 define(function() {
-	var t = document.domain.split('.'), l = t.length;
+	var t = document.domain.split('.'), l = t.length
 	return {
 		debug: location.href.indexOf('yom-debug=1') > 0,
 		domain: t.slice(l - 2, l).join('.')
-	};
-});
+	}
+})
+

@@ -4,7 +4,7 @@
 define(['./object'], function(object) {
 	var YOM = {
 		'object': object
-	};
+	}
 	
 	return {
 		_ID: 112,
@@ -13,14 +13,14 @@ define(['./object'], function(object) {
 			if(navigator.geolocation && navigator.geolocation.getCurrentPosition) {
 				navigator.geolocation.getCurrentPosition(function (position) {
 					if(YOM.object.isFunction(onSuccess)) {
-						onSuccess.call(position, position.coords.latitude, position.coords.longitude);
+						onSuccess.call(position, position.coords.latitude, position.coords.longitude)
 					}
-				}, onFail);
+				}, onFail)
 			} else {
 				onFail({
 					code: 0,
 					message: 'Not Supported'
-				});
+				})
 			}
 		},
 		
@@ -28,22 +28,22 @@ define(['./object'], function(object) {
 			if(navigator.geolocation && navigator.geolocation.watchPosition) {
 				return navigator.geolocation.watchPosition(function (position) {
 					if(YOM.object.isFunction(onSuccess)) {
-						onSuccess.call(position, position.coords.latitude, position.coords.longitude);
+						onSuccess.call(position, position.coords.latitude, position.coords.longitude)
 					}
-				}, onFail);
+				}, onFail)
 			} else {
 				onFail({
 					code: 0,
 					message: 'Not Supported'
-				});
-				return null;
+				})
+				return null
 			}
 		},
 		
 		clearWatch: function(watchHandler) {
 			if(watchHandler && navigator.geolocation && navigator.geolocation.clearWatch) {
-				navigator.geolocation.clearWatch(watchHandler);
+				navigator.geolocation.clearWatch(watchHandler)
 			}
 		}
-	};
-});
+	}
+})

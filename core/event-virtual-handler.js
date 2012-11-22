@@ -5,65 +5,66 @@ define(['./object', './event'], function(object, Evt) {
 	var YOM = {
 		'object': object,
 		'Event': Evt
-	};
+	}
 	
 	var VirtualEventHandler = function(el) {
-		this._delegateEl = el;
-		this._targetEl = null;
-		this._listenerPool = [];
-		this._listenerCount = 0;
-	};
+		this._delegateEl = el
+		this._targetEl = null
+		this._listenerPool = []
+		this._listenerCount = 0
+	}
 	
 	VirtualEventHandler.prototype = {
 		_destroy: function() {
-			YOM.Event.removeCustomizedEventHandler(this.name, this._delegateEl.elEventRef);
+			YOM.Event.removeCustomizedEventHandler(this.name, this._delegateEl.elEventRef)
 		},
 		
 		_dispatch: function(e) {
 			YOM.object.each(this._listenerPool, function(listener) {
-				listener(e);
-			});
+				listener(e)
+			})
 		},
 		
 		addListener: function(listener) {
-			var found;
+			var found
 			if(!listener) {
-				return null;
+				return null
 			}
 			YOM.object.each(this._listenerPool, function(item) {
 				if(listener == item) {
-					found = 1;
-					return false;
+					found = 1
+					return false
 				}
-				return true;
-			});
+				return true
+			})
 			if(found) {
-				return null;
+				return null
 			}
-			this._listenerCount++;
-			return this._listenerPool.push(listener);
+			this._listenerCount++
+			return this._listenerPool.push(listener)
 		},
 		
 		removeListener: function(listener) {
-			var found = null;
-			var self = this;
+			var found = null
+			var self = this
 			YOM.object.each(this._listenerPool, function(item, i) {
 				if(listener == item) {
-					found = item;
-					self._listenerPool.splice(i, 1);
-					this._listenerCount--;
-					return false;
+					found = item
+					self._listenerPool.splice(i, 1)
+					this._listenerCount--
+					return false
 				}
-				return true;
-			});
+				return true
+			})
 			if(!this._listenerCount) {
-				this._destroy();
+				this._destroy()
 			}
-			return found;
+			return found
 		},
 		
 		constructor: VirtualEventHandler
-	};
+	}
 	
-	return VirtualEventHandler;
-});
+	return VirtualEventHandler
+})
+

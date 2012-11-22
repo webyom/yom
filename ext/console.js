@@ -2,50 +2,50 @@
  * @namespace YOM.console
  */
 define(['require', 'exports', 'module', 'global', '../core/core-built', './chunker'], function(require, exports, module, global, YOM, Chunker) {
-	var _tmpl = require('./console.tpl.html');
-	var _global = global;
-	var _on = 0;
-	var _el = {};
-	var _chunker = null;
-	var _data = [];
-	var _inited = false;
+	var _tmpl = require('./console.tpl.html')
+	var _global = global
+	var _on = 0
+	var _el = {}
+	var _chunker = null
+	var _data = []
+	var _inited = false
 	
 	function _inputFocus(str) {
 		try {
 			if(typeof str == 'string') {
-				_el.inputBox.value = str;
+				_el.inputBox.value = str
 			}
-			_el.inputBox.focus();
-			_el.inputBox.select();
+			_el.inputBox.focus()
+			_el.inputBox.select()
 		} catch(e) {}
-	};
+	}
 	
 	function _colExp() {
 		$query(_el.output).toggle(function(type) {
 			if(type == 'SHOW') {
-				_el.colExpBtn.innerHTML = '-';
-				_el.colExpBtn.title = 'Minimize';
-				_el.container.style.width = '500px';
-				_inputFocus();
+				_el.colExpBtn.innerHTML = '-'
+				_el.colExpBtn.title = 'Minimize'
+				_el.container.style.width = '500px'
+				_inputFocus()
 			} else {
-				_el.colExpBtn.innerHTML = '^';
-				_el.colExpBtn.title = 'Maxmize';
-				_el.container.style.width = '160px';
+				_el.colExpBtn.innerHTML = '^'
+				_el.colExpBtn.title = 'Maxmize'
+				_el.container.style.width = '160px'
 			}
-		});
-	};
+		})
+	}
 	
 	function _clear() {
-		_el.outputBox.innerHTML = '';
-		_inputFocus('');
-	};
+		_el.outputBox.innerHTML = ''
+		_inputFocus('')
+	}
 	
 	function _init() {
 		if(_inited) {
-			return;
+			return
 		}
-		_inited = true;
-		var isIe6 = YOM.browser.ie && YOM.browser.v === 6;
+		_inited = true
+		var isIe6 = YOM.browser.ie && YOM.browser.v === 6
 		_el.container = document.body.appendChild(YOM.Element.create('div', {
 			id: 'yomConsole'
 		}, {
@@ -55,116 +55,116 @@ define(['require', 'exports', 'module', 'global', '../core/core-built', './chunk
 			zIndex: '99999',
 			right: 0,
 			bottom: isIe6 ? Math.max(0, YOM.Element.getDocSize().height - YOM.Element.getViewRect().bottom) + 'px' : 0
-		}));
-		_el.container.innerHTML = _tmpl({}, {extPkgUrl: require.toUrl('./ext-built.js')});
-		_el.output = $id('yomConsoleOutput');
-		_el.outputBox = $id('yomConsoleOutputBox');
-		_el.inputBox = $id('yomConsoleInputBox');
-		_el.colExpBtn = $id('yomConsoleColExpBtn');
-		_el.clearBtn = $id('yomConsoleClearBtn');
-		YOM.Event.addListener(_el.colExpBtn, 'click', _colExp);
-		YOM.Event.addListener(_el.clearBtn, 'click', _clear);
-		_chunker = _chunker || new Chunker(_log, {interval2: 1000});
-		_chunker.push(_data, true);
-		_chunker.process();
-		_data = [];
-	};
+		}))
+		_el.container.innerHTML = _tmpl({}, {extPkgUrl: require.toUrl('./ext-built.js')})
+		_el.output = $id('yomConsoleOutput')
+		_el.outputBox = $id('yomConsoleOutputBox')
+		_el.inputBox = $id('yomConsoleInputBox')
+		_el.colExpBtn = $id('yomConsoleColExpBtn')
+		_el.clearBtn = $id('yomConsoleClearBtn')
+		YOM.Event.addListener(_el.colExpBtn, 'click', _colExp)
+		YOM.Event.addListener(_el.clearBtn, 'click', _clear)
+		_chunker = _chunker || new Chunker(_log, {interval2: 1000})
+		_chunker.push(_data, true)
+		_chunker.process()
+		_data = []
+	}
 	
 	function _getEvtDelegator() {
-		var delegator = new YOM.Event.Delegator(_el.outputBox);
+		var delegator = new YOM.Event.Delegator(_el.outputBox)
 		_getEvtDelegator = function() {
-			return delegator;
-		};
-		return delegator;
-	};
+			return delegator
+		}
+		return delegator
+	}
 	
 	function _expandObjStr(obj, objLevel) {
-		var tmp, indent;
-		var expanded = parseInt(this.getAttribute('_exp'));
-		indent = [];
+		var tmp, indent
+		var expanded = parseInt(this.getAttribute('_exp'))
+		indent = []
 		for(var i = 0; i < objLevel; i++) {
-			indent.push('&nbsp;&nbsp;&nbsp;&nbsp;');
+			indent.push('&nbsp;&nbsp;&nbsp;&nbsp;')
 		}
 		if(YOM.array.isArray(obj)) {
-			this.innerHTML = expanded ? 'Array[' + obj.length + ']' : _stringifyObj(obj, objLevel);
+			this.innerHTML = expanded ? 'Array[' + obj.length + ']' : _stringifyObj(obj, objLevel)
 		} else {
 			if(expanded) {
 				try {
-					tmp = obj.toString();
+					tmp = obj.toString()
 				} catch(e) {
-					tmp = YOM.object.toString(obj);
+					tmp = YOM.object.toString(obj)
 				}
-				this.innerHTML = tmp;
+				this.innerHTML = tmp
 			} else {
-				tmp = [];
+				tmp = []
 				try {
 					YOM.object.each(obj, function(val, key) {
 						if(val === YOM.object.PRIVATE_PROPERTY) {
-							val = '[Private Property]';
+							val = '[Private Property]'
 						}
-						tmp.push(indent.join('') + '"' + key + '": ' + _stringifyObj(val, objLevel + 1));
-					});
+						tmp.push(indent.join('') + '"' + key + '": ' + _stringifyObj(val, objLevel + 1))
+					})
 				} catch(e) {
-					tmp = [indent.join('') + 'Access Denied!'];
+					tmp = [indent.join('') + 'Access Denied!']
 				}
-				indent.pop();
+				indent.pop()
 				if(tmp.length) {
-					this.innerHTML = '{<br />' + tmp.join(', <br />') + '<br />' + indent.join('') + '}';
+					this.innerHTML = '{<br />' + tmp.join(', <br />') + '<br />' + indent.join('') + '}'
 				} else {
-					this.innerHTML = '{}';
+					this.innerHTML = '{}'
 				}
 			}
 		}
 		if(expanded) {
-			this.setAttribute('_exp', '0');
+			this.setAttribute('_exp', '0')
 		} else {
-			this.setAttribute('_exp', '1');
+			this.setAttribute('_exp', '1')
 		}
-		this.setAttribute('_exp', expanded ? '0' : '1');
-	};
+		this.setAttribute('_exp', expanded ? '0' : '1')
+	}
 	
 	function _stringifyObj(obj, objLevel, isArritem) {
-		objLevel = objLevel || 1;
-		var tmp, res;
-		var rdm = new Date().getTime() + '' + parseInt(Math.random() * 10000);
+		objLevel = objLevel || 1
+		var tmp, res
+		var rdm = new Date().getTime() + '' + parseInt(Math.random() * 10000)
 		if(typeof obj == 'string') {
-			res = '"' + YOM.string.encodeHtml(obj) + '"';
+			res = '"' + YOM.string.encodeHtml(obj) + '"'
 		} else if(YOM.array.isArray(obj)) {
 			if(isArritem) {
 				_getEvtDelegator().delegate('click', 'consoleItem' + rdm, function(e) {
-					_expandObjStr.call(this, obj, objLevel);
+					_expandObjStr.call(this, obj, objLevel)
 				}, {maxBubble: 0}).delegate('mouseover', 'consoleItem' + rdm, function(e) {
-					this.style.background = '#eee';
+					this.style.background = '#eee'
 				}, {maxBubble: 0}).delegate('mouseout', 'consoleItem' + rdm, function(e) {
-					this.style.background = '';
-				}, {maxBubble: 0});
-				res = '<span _exp="0" data-yom-click="consoleItem' + rdm + '" data-yom-mouseover="consoleItem' + rdm + '" data-yom-mouseout="consoleItem' + rdm + '" style="cursor: pointer;">Array[' + obj.length + ']</span>';
+					this.style.background = ''
+				}, {maxBubble: 0})
+				res = '<span _exp="0" data-yom-click="consoleItem' + rdm + '" data-yom-mouseover="consoleItem' + rdm + '" data-yom-mouseout="consoleItem' + rdm + '" style="cursor: pointer;">Array[' + obj.length + ']</span>'
 			} else {
-				tmp = [];
+				tmp = []
 				YOM.object.each(obj, function(item) {
-					tmp.push(_stringifyObj(item, objLevel, 1));
-				});
-				res = '[' + tmp.join(', ') + ']';
+					tmp.push(_stringifyObj(item, objLevel, 1))
+				})
+				res = '[' + tmp.join(', ') + ']'
 			}
 		} else if(typeof obj == 'object' && obj) {
 			_getEvtDelegator().delegate('click', 'consoleItem' + rdm, function(e) {
-				_expandObjStr.call(this, obj, objLevel);
+				_expandObjStr.call(this, obj, objLevel)
 			}, {maxBubble: 0}).delegate('mouseover', 'consoleItem' + rdm, function(e) {
-				this.style.background = '#eee';
+				this.style.background = '#eee'
 			}, {maxBubble: 0}).delegate('mouseout', 'consoleItem' + rdm, function(e) {
-				this.style.background = '';
-			}, {maxBubble: 0});
+				this.style.background = ''
+			}, {maxBubble: 0})
 			try {
-				tmp = obj.toString();
+				tmp = obj.toString()
 			} catch(e) {
-				tmp = YOM.object.toString(obj);
+				tmp = YOM.object.toString(obj)
 			}
-			res = '<span _exp="0" data-yom-click="consoleItem' + rdm + '" data-yom-mouseover="consoleItem' + rdm + '" data-yom-mouseout="consoleItem' + rdm + '" style="cursor: pointer;">' + tmp + '</span>';
+			res = '<span _exp="0" data-yom-click="consoleItem' + rdm + '" data-yom-mouseover="consoleItem' + rdm + '" data-yom-mouseout="consoleItem' + rdm + '" style="cursor: pointer;">' + tmp + '</span>'
 		} else {
-			res = YOM.string.encodeHtml(obj);
+			res = YOM.string.encodeHtml(obj)
 		}
-		return res.replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
-	};
+		return res.replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+	}
 	
 	function _log(str, type, lead) {
 		var p = _el.outputBox.appendChild(YOM.Element.create('p', {}, {
@@ -172,83 +172,83 @@ define(['require', 'exports', 'module', 'global', '../core/core-built', './chunk
 			borderBottom: 'solid 1px #f3f3f3',
 			padding: '2px 0',
 			wordWrap: 'break-word'
-		}));
-		p.innerHTML = '<span style="color: blue;">' + (lead || '&gt;') + '</span>' + '<span style="color: ' + (type === 0 ? 'green' : type === 1 ? 'red' : 'black') + '; margin-left: 2px;">' + str + '</span>';
-		_el.output.scrollTop = 999999999;
-	};
+		}))
+		p.innerHTML = '<span style="color: blue;">' + (lead || '&gt;') + '</span>' + '<span style="color: ' + (type === 0 ? 'green' : type === 1 ? 'red' : 'black') + '; margin-left: 2px;">' + str + '</span>'
+		_el.output.scrollTop = 999999999
+	}
 	
 	function setGlobal(g) {
 		if(g && g.eval) {
-			_global = g;
+			_global = g
 		}
-	};
+	}
 	
 	function resetGlobal() {
-		_global = global;
-	};
+		_global = global
+	}
 	
 	function log(str, type, lead) {
-		_init();
+		_init()
 		if(typeof str != 'string') {
-			str = _stringifyObj(str);
+			str = _stringifyObj(str)
 		}
 		if(_on && _chunker) {
-			_chunker.push([str, type, lead]);
+			_chunker.push([str, type, lead])
 		} else {
-			_data.push([str, type, lead]);
+			_data.push([str, type, lead])
 		}
-		return this;
-	};
+		return this
+	}
 	
 	function eval(str) {
 		if(str) {
-			this.log('<span style="color: blue;">' + YOM.string.encodeHtml(str) + '</span>', '', '&gt;&gt;');
+			this.log('<span style="color: blue;">' + YOM.string.encodeHtml(str) + '</span>', '', '&gt;&gt;')
 			try {
-				this.log(_stringifyObj(_global.eval(str)));
+				this.log(_stringifyObj(_global.eval(str)))
 			} catch(e) {
-				this.log(new YOM.Error(e).toString(), 1);
+				this.log(new YOM.Error(e).toString(), 1)
 			}
-			_inputFocus('');
+			_inputFocus('')
 		}
-		return this;
-	};
+		return this
+	}
 	
 	function error(str) {
-		log(str, 1);
-		return this;
-	};
+		log(str, 1)
+		return this
+	}
 	
 	function success(str) {
-		log(str, 0);
-		return this;
-	};
+		log(str, 0)
+		return this
+	}
 	
 	function show() {
-		$query(_el.container).show();
-		return this;
-	};
+		$query(_el.container).show()
+		return this
+	}
 	
 	function hide() {
-		$query(_el.container).hide();
-		return this;
-	};
+		$query(_el.container).hide()
+		return this
+	}
 	
 	function turnOn() {
-		_on = 1;
-		_init();
+		_on = 1
+		_init()
 		if(_chunker) {
-			_chunker.push(_data, true);
-			_data = [];
+			_chunker.push(_data, true)
+			_data = []
 		}
-		show();
-		return this;
-	};
+		show()
+		return this
+	}
 	
 	function turnOff() {
-		_on = 0;
-		hide();
-		return this;
-	};
+		_on = 0
+		hide()
+		return this
+	}
 	
 	return {
 		_ID: 118,
@@ -262,5 +262,5 @@ define(['require', 'exports', 'module', 'global', '../core/core-built', './chunk
 		hide: hide,
 		turnOn: turnOn,
 		turnOff: turnOff
-	};
-});
+	}
+})

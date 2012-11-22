@@ -7,5 +7,6 @@ define(function(require) {
 		'Droppable': require('./droppable'),
 		'Sortable': require('./sortable'),
 		'Resizeable': require('./resizeable')
-	};
-});
+	}
+})
+

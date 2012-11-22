@@ -238,5 +238,5 @@ var jsonParse = (function () {
   };
 })();
 
-return jsonParse;
-});
+return jsonParse
+})

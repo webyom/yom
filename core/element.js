@@ -8,306 +8,306 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 		'object': object,
 		'array': array,
 		'Event': Evt
-	};
+	}
 	
-	var _ID = 107;
+	var _ID = 107
 	
 	function _isElementNode(el) {
-		return el && (el.nodeType === 1 || el.nodeType === 9);
-	};
+		return el && (el.nodeType === 1 || el.nodeType === 9)
+	}
 	
 	function _hasClass(el, className) {
-		return new RegExp('(?:^|\\s+)' + className + '(?:$|\\s+)').test(el.className);
-	};
+		return new RegExp('(?:^|\\s+)' + className + '(?:$|\\s+)').test(el.className)
+	}
 	
 	function Item(el) {
-		this._el = el;
-		this._styleStorage = {};
-	};
+		this._el = el
+		this._styleStorage = {}
+	}
 	
 	YOM.object.extend(Item.prototype, {
 		get: function() {
-			return this._el;
+			return this._el
 		},
 		
 		setStyle: function(name, value) {
-			var el = this.get();
-			var computer = el.ownerDocument.defaultView;
-			computer = computer && computer.getComputedStyle;
+			var el = this.get()
+			var computer = el.ownerDocument.defaultView
+			computer = computer && computer.getComputedStyle
 			if(typeof name == 'object') {
 				YOM.object.each(name, function(val, key) {
-					new Item(el).setStyle(key, val);
-				});
+					new Item(el).setStyle(key, val)
+				})
 			} else {
 				if(!name) {
-					return this;
+					return this
 				}
-				name = YOM.string.toCamelCase(name);
+				name = YOM.string.toCamelCase(name)
 				switch(name) {
 				case 'opacity':
 					if(computer) {
-						el.style[name] = value;
+						el.style[name] = value
 					} else {
 						if(value == 1) {
-							el.style.filter = '';
+							el.style.filter = ''
 						} else {
-							el.style.filter = 'alpha(opacity=' + parseInt(value * 100) + ')';
+							el.style.filter = 'alpha(opacity=' + parseInt(value * 100) + ')'
 						}
 					}
-					break;
+					break
 				default:
-					el.style[name] = value;
+					el.style[name] = value
 				}
 			}
-			return this;
+			return this
 		},
 		
 		getStyle: function(name) {
-			name = YOM.string.toCamelCase(name);
-			var el = this.get();
-			var style = el.style[name];
-			var computer = el.ownerDocument.defaultView;
-			computer = computer && computer.getComputedStyle;
+			name = YOM.string.toCamelCase(name)
+			var el = this.get()
+			var style = el.style[name]
+			var computer = el.ownerDocument.defaultView
+			computer = computer && computer.getComputedStyle
 			if(style) {
-				return style;
+				return style
 			}
 			switch(name) {
 			case 'opacity':
 				if(computer) {
-					style = computer(el, null)[name];
+					style = computer(el, null)[name]
 				} else {
-					style = 100;
+					style = 100
 					try {
-						style = el.filters['DXImageTransform.Microsoft.Alpha'].opacity;
+						style = el.filters['DXImageTransform.Microsoft.Alpha'].opacity
 					} catch (e) {
 						try {
-							style = el.filters('alpha').opacity;
+							style = el.filters('alpha').opacity
 						} catch(e) {}
 					}
-					style = style / 100;
+					style = style / 100
 				}
-				break;
+				break
 			default:
 				if(computer) {
-					style = computer(el, null)[name];
+					style = computer(el, null)[name]
 				} else if(el.currentStyle) {
-					style = el.currentStyle[name];
+					style = el.currentStyle[name]
 				} else {
-					style = el.style[name];
+					style = el.style[name]
 				}
 			}
-			return style;
+			return style
 		},
 		
 		storeStyle: function(name) {
 			if(YOM.array.isArray(name)) {
 				YOM.object.each(name, function(nm) {
-					this.storeStyle(nm);
-				}, this);
+					this.storeStyle(nm)
+				}, this)
 			} else {
-				this._styleStorage[name] = this.getStyle(name);
+				this._styleStorage[name] = this.getStyle(name)
 			}
-			return this;
+			return this
 		},
 		
 		restoreStyle: function(name) {
 			if(YOM.array.isArray(name)) {
 				YOM.object.each(name, function(nm) {
-					this.restoreStyle(nm);
-				}, this);
+					this.restoreStyle(nm)
+				}, this)
 			} else {
 				if(typeof this._styleStorage[name] == 'undefined') {
-					return this;
+					return this
 				}
-				this.setStyle(name, this._styleStorage[name]);
+				this.setStyle(name, this._styleStorage[name])
 			}
-			return this;
+			return this
 		}
-	});
+	})
 	
 	function Elem(el) {
-		this._items = [];
+		this._items = []
 		if(el instanceof Elem) {
-			return el;
+			return el
 		} else if(YOM.array.isArray(el)) {
 			YOM.object.each(el, function(item) {
 				if(_isElementNode(item)) {
-					this._items.push(new Item(item));
+					this._items.push(new Item(item))
 				}
-			}, this);
+			}, this)
 		} else if(YOM.object.toString(el) == '[object NodeList]') {
 			YOM.object.each(YOM.array.getArray(el), function(item) {
-				this._items.push(new Item(item));
-			}, this);
+				this._items.push(new Item(item))
+			}, this)
 		} else if(_isElementNode(el)) {
-			this._items.push(new Item(el));
+			this._items.push(new Item(el))
 		} else if(el && el.length && el.item) {//StaticNodeList, IE8/Opera
 			for(var i = 0, l = el.length; i < l; i++) {
-				this._items.push(new Item(el.item(i)));
+				this._items.push(new Item(el.item(i)))
 			}
 		}
-		this._styleStorage = {};
-		return this;
-	};
+		this._styleStorage = {}
+		return this
+	}
 
 	YOM.object.extend(Elem.prototype, {
 		_getItem: function(i) {
 			if(typeof i == 'undefined') {
-				return this._items[0];
+				return this._items[0]
 			} else {
-				return this._items[i];
+				return this._items[i]
 			}
 		},
 		
 		get: function(i) {
-			var item = this._getItem(i);
-			return item && item.get();
+			var item = this._getItem(i)
+			return item && item.get()
 		},
 		
 		getAll: function() {
-			var res = [];
+			var res = []
 			this.each(function(el) {
-				res.push(el);
-			});
-			return res;
+				res.push(el)
+			})
+			return res
 		},
 		
 		find: function(sel) {
-			var res = [];
+			var res = []
 			this.each(function(el) {
-				var tmp;
+				var tmp
 				if(!_isElementNode(el)) {
-					return;
+					return
 				}
-				tmp = document.querySelectorAll ? el.querySelectorAll(sel) : Sizzle(sel, el);
+				tmp = document.querySelectorAll ? el.querySelectorAll(sel) : Sizzle(sel, el)
 				if(YOM.array.isArray(tmp)) {
-					res = res.concat(tmp);
+					res = res.concat(tmp)
 				} else if(YOM.object.toString(tmp) == '[object NodeList]') {
-					res = res.concat(YOM.array.getArray(tmp));
+					res = res.concat(YOM.array.getArray(tmp))
 				} else if(tmp.length && tmp.item) {//StaticNodeList, IE8/Opera
 					for(var i = 0, l = tmp.length; i < l; i++) {
-						res.push(tmp.item(i));
+						res.push(tmp.item(i))
 					}
 				}
-			});
-			return new Elem(res);
+			})
+			return new Elem(res)
 		},
 		
 		toQueryString: function() {
-			var res = [];
+			var res = []
 			this.find('input, select, textarea').each(function(el) {
 				if(!el.name || el.disabled || el.type == 'button' || el.type == 'submit' || el.type == 'reset' || el.type == 'file') {
-					return;
+					return
 				}
 				if(el.tagName.toLowerCase() == 'select') {
 					for(var i = 0, l = el.options.length; i < l; i++) {
 						if(el.options[i].selected) {
-							res.push(el.name + '=' + encodeURIComponent(el.options[i].value));
+							res.push(el.name + '=' + encodeURIComponent(el.options[i].value))
 						}
 					}
 				} else if(el.type != 'radio' && el.type != 'checkbox' || el.checked) {
-					res.push(el.name + '=' + encodeURIComponent(el.value));
+					res.push(el.name + '=' + encodeURIComponent(el.value))
 				}
-			});
-			return res.join('&');
+			})
+			return res.join('&')
 		},
 		
 		size: function() {
-			return this._items.length;
+			return this._items.length
 		},
 		
 		each: function(fn, bind) {
-			var item;
+			var item
 			for(var i = 0, l = this._items.length; i < l; i++) {
-				item = this._getItem(i);
+				item = this._getItem(i)
 				if(fn.call(bind || this, item.get(), i, item) === false) {
-					return this;
+					return this
 				}
 			}
-			return this;
+			return this
 		},
 		
 		hasClass: function(className) {
 			if(!this.size()) {
-				return false;
+				return false
 			}
-			var res = true;
+			var res = true
 			this.each(function(el) {
 				if(!_hasClass(el, className)) {
-					res = false;
-					return false;
+					res = false
+					return false
 				}
-				return true;
-			});
-			return res;
+				return true
+			})
+			return res
 		},
 		
 		addClass: function(className) {
 			this.each(function(el) {
 				if(!_hasClass(el, className)) {
-					el.className = el.className ? el.className + ' ' + className : className;
+					el.className = el.className ? el.className + ' ' + className : className
 				}
-			});
-			return this;
+			})
+			return this
 		},
 			
 		removeClass: function(className) {
 			this.each(function(el) {
-				el.className = el.className.replace(new RegExp('(?:^|\\s+)' + className, 'g'), '');
-			});
-			return this;
+				el.className = el.className.replace(new RegExp('(?:^|\\s+)' + className, 'g'), '')
+			})
+			return this
 		},
 		
 		toggleClass: function(className) {
 			this.each(function(el) {
 				if(_hasClass(el, className)) {
-					el.className = el.className.replace(new RegExp('(?:^|\\s+)' + className, 'g'), '');
+					el.className = el.className.replace(new RegExp('(?:^|\\s+)' + className, 'g'), '')
 				} else {
-					el.className = el.className ? el.className + ' ' + className : className;
+					el.className = el.className ? el.className + ' ' + className : className
 				}
-			});
-			return this;
+			})
+			return this
 		},
 		
 		setAttr: function(name, value) {
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Elem(el).setAttr(key, val);
-					});
+						new Elem(el).setAttr(key, val)
+					})
 				} else {
 					if(!name) {
-						return;
+						return
 					}
 					if(name.indexOf('data-') === 0 && el.dataset) {
-						name = name.split('-');
-						name.shift();
-						new Elem(el).setDatasetVal(name.join('-'), value);
+						name = name.split('-')
+						name.shift()
+						new Elem(el).setDatasetVal(name.join('-'), value)
 					} else if(name == 'class' || name == 'className') {
-						el.className = value;
+						el.className = value
 					} else {
-						el.setAttribute(name, value);
+						el.setAttribute(name, value)
 					}
 				}
-			});
-			return this;
+			})
+			return this
 		},
 		
 		removeAttr: function(name) {
 			this.each(function(el) {
-				el.removeAttribute(name);
-			});
-			return this;
+				el.removeAttribute(name)
+			})
+			return this
 		},
 		
 		getAttr: function(name) {
-			var el = this.get();
+			var el = this.get()
 			if(name == 'class' || name == 'className') {
-				return el.className;
+				return el.className
 			} else if(el.nodeType !== 1 || el.tagName == 'HTML') {
-				return '';
+				return ''
 			} else {
-				return el.getAttribute(name);
+				return el.getAttribute(name)
 			}
 		},
 		
@@ -315,29 +315,29 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Elem(el).setProp(key, val);
-					});
+						new Elem(el).setProp(key, val)
+					})
 				} else {
 					if(!name) {
-						return;
+						return
 					}
-					el[name] = val;
+					el[name] = val
 				}
-			});
-			return this;
+			})
+			return this
 		},
 		
 		getProp: function(name) {
-			var el = this.get();
-			return el[name];
+			var el = this.get()
+			return el[name]
 		},
 		
 		getDatasetVal: function(name) {
-			var el = this.get();
+			var el = this.get()
 			if(el.dataset) {
-				return el.dataset[YOM.string.toCamelCase(name)];
+				return el.dataset[YOM.string.toCamelCase(name)]
 			} else {
-				return this.getAttr('data-' + YOM.string.toJoinCase(name, '-'));
+				return this.getAttr('data-' + YOM.string.toJoinCase(name, '-'))
 			}
 		},
 		
@@ -345,137 +345,137 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 			this.each(function(el) {
 				if(typeof name == 'object') {
 					YOM.object.each(name, function(val, key) {
-						new Elem(el).setDatasetVal(key, val);
-					});
+						new Elem(el).setDatasetVal(key, val)
+					})
 				} else {
 					if(el.dataset) {
-						el.dataset[YOM.string.toCamelCase(name)] = value;
+						el.dataset[YOM.string.toCamelCase(name)] = value
 					} else {
-						this.setAttr('data-' + YOM.string.toJoinCase(name, '-'), value);
+						this.setAttr('data-' + YOM.string.toJoinCase(name, '-'), value)
 					}
 				}
-			});
-			return this;
+			})
+			return this
 		},
 		
 		setVal: function(value) {
 			this.each(function(el) {
-				el.value = value;
-			});
-			return this;
+				el.value = value
+			})
+			return this
 		},
 		
 		getVal: function() {
-			return this.get().value;
+			return this.get().value
 		},
 		
 		setStyle: function(name, value) {
 			this.each(function(el, i, _item) {
-				_item.setStyle(name, value);
-			});
-			return this;
+				_item.setStyle(name, value)
+			})
+			return this
 		},
 		
 		getStyle: function(name) {
-			return this._getItem(0).getStyle(name);
+			return this._getItem(0).getStyle(name)
 		},
 		
 		storeStyle: function(name) {
 			this.each(function(el, i, _item) {
-				_item.storeStyle(name);
-			});
-			return this;
+				_item.storeStyle(name)
+			})
+			return this
 		},
 		
 		restoreStyle: function(name) {
 			this.each(function(el, i, _item) {
-				_item.restoreStyle(name);
-			});
-			return this;
+				_item.restoreStyle(name)
+			})
+			return this
 		},
 		
 		getScrolls: function() {
-			var el = this.get();
-			var parent = el.parentNode;
-			var res = {left: 0, top: 0};
+			var el = this.get()
+			var parent = el.parentNode
+			var res = {left: 0, top: 0}
 			while(parent && !Elem.isBody(parent)) {
-				res.left = parent.scrollLeft;
-				res.top = parent.scrollTop;
-				parent = parent.parentNode;
+				res.left = parent.scrollLeft
+				res.top = parent.scrollTop
+				parent = parent.parentNode
 			}
-			return res;
+			return res
 		},
 		
 		getScrollLeft: function() {
-			var el = this.get();
+			var el = this.get()
 			if(!el) {
-				return 0;
+				return 0
 			}
 			if(Elem.isBody(el)) {
-				return Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
+				return Math.max(document.documentElement.scrollLeft, document.body.scrollLeft)
 			} else {
-				return el.scrollLeft;
+				return el.scrollLeft
 			}
 		},
 		
 		getScrollTop: function() {
-			var el = this.get();
+			var el = this.get()
 			if(!el) {
-				return 0;
+				return 0
 			}
 			if(Elem.isBody(el)) {
-				return Math.max(document.documentElement.scrollTop, document.body.scrollTop);
+				return Math.max(document.documentElement.scrollTop, document.body.scrollTop)
 			} else {
-				return el.scrollTop;
+				return el.scrollTop
 			}
 		},
 		
 		scrollLeftBy: function(x, interval) {
-			var el = this.get();
+			var el = this.get()
 			if(!x || !el) {
-				return this;
+				return this
 			}
-			this.scrollLeftTo(this.getScrollLeft() + x, interval);
-			return this;
+			this.scrollLeftTo(this.getScrollLeft() + x, interval)
+			return this
 		},
 		
 		scrollTopBy: function(y, interval) {
-			var el = this.get();
+			var el = this.get()
 			if(!y || !el) {
-				return this;
+				return this
 			}
-			this.scrollTopTo(this.getScrollTop() + y, interval);
-			return this;
+			this.scrollTopTo(this.getScrollTop() + y, interval)
+			return this
 		},
 		
 		scrollLeftTo: function(x, interval, transition) {
-			var el = this.get();
+			var el = this.get()
 			if(!el || el.scrollLeft == x) {
-				return this;
+				return this
 			}
 			if(x instanceof Elem) {
-				this.scrollLeftTo(x.getRect(this).left, interval, transition);
-				return this;
+				this.scrollLeftTo(x.getRect(this).left, interval, transition)
+				return this
 			}
-			var rect = this.getRect();
-			var viewRect = Elem.getViewRect();
-			var scrollWidth, clientWidth;
-			var isBody = Elem.isBody(el);
+			var rect = this.getRect()
+			var viewRect = Elem.getViewRect()
+			var scrollWidth, clientWidth
+			var isBody = Elem.isBody(el)
 			if(isBody) {
-				scrollWidth = rect.width;
-				clientWidth = viewRect.width;
+				scrollWidth = rect.width
+				clientWidth = viewRect.width
 			} else {
-				scrollWidth = el.scrollWidth;
-				clientWidth = el.clientWidth;
+				scrollWidth = el.scrollWidth
+				clientWidth = el.clientWidth
 			}
 			if(scrollWidth <= clientWidth) {
-				return this;
+				return this
 			}
-			x = x < 0 ? 0 : (x > scrollWidth - clientWidth ? scrollWidth - clientWidth : x);
-			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el);
+			x = x < 0 ? 0 : (x > scrollWidth - clientWidth ? scrollWidth - clientWidth : x)
+			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el)
 			if(interval === 0) {
-				tweenObj.setProp('scrollLeft', x);
-				return this;
+				tweenObj.setProp('scrollLeft', x)
+				return this
 			}
 			tweenObj.tween(interval || 1000, {
 				transition: transition || 'easeOut',
@@ -489,38 +489,38 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 						scrollLeft: x
 					}
 				}
-			});
-			return this;
+			})
+			return this
 		},
 		
 		scrollTopTo: function(y, interval, transition) {
-			var el = this.get();
+			var el = this.get()
 			if(!el || el.scrollTop == y) {
-				return this;
+				return this
 			}
 			if(y instanceof Elem) {
-				this.scrollTopTo(y.getRect(this).top, interval, transition);
-				return this;
+				this.scrollTopTo(y.getRect(this).top, interval, transition)
+				return this
 			}
-			var rect = this.getRect();
-			var viewRect = Elem.getViewRect();
-			var scrollHeight, clientHeight;
-			var isBody = Elem.isBody(el);
+			var rect = this.getRect()
+			var viewRect = Elem.getViewRect()
+			var scrollHeight, clientHeight
+			var isBody = Elem.isBody(el)
 			if(isBody) {
-				scrollHeight = rect.height;
-				clientHeight = viewRect.height;
+				scrollHeight = rect.height
+				clientHeight = viewRect.height
 			} else {
-				scrollHeight = el.scrollHeight;
-				clientHeight = el.clientHeight;
+				scrollHeight = el.scrollHeight
+				clientHeight = el.clientHeight
 			}
 			if(scrollHeight <= clientHeight) {
-				return this;
+				return this
 			}
-			y = y < 0 ? 0 : (y > scrollHeight - clientHeight ? scrollHeight - clientHeight : y);
-			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el);
+			y = y < 0 ? 0 : (y > scrollHeight - clientHeight ? scrollHeight - clientHeight : y)
+			var tweenObj = isBody ? new Elem(YOM.browser.chrome ? document.body : document.documentElement) : new Elem(el)
 			if(interval === 0) {
-				tweenObj.setProp('scrollTop', y);
-				return this;
+				tweenObj.setProp('scrollTop', y)
+				return this
 			}
 			tweenObj.tween(interval || 1000, {
 				transition: transition || 'easeOut',
@@ -534,42 +534,42 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 						scrollTop: y
 					}
 				}
-			});
-			return this;
+			})
+			return this
 		},
 		
 		getOffsetParent: function() {
-			var el = this.get();
+			var el = this.get()
 			if(!el || Elem.isBody(el)) {
-				return null;
+				return null
 			}
-			return el.offsetParent && new Elem(el.offsetParent);
+			return el.offsetParent && new Elem(el.offsetParent)
 		},
 		
 		getRect: function(relative) {
-			var el, rect, docScrolls, elScrolls, res;
-			el = this.get();
+			var el, rect, docScrolls, elScrolls, res
+			el = this.get()
 			if(Elem.isBody(el)) {
-				var bodySize = Elem.getDocSize(el.ownerDocument);
+				var bodySize = Elem.getDocSize(el.ownerDocument)
 				res = {
 					top: 0, left: 0,
 					width: bodySize.width,
 					height: bodySize.height
-				};
-				res.right = res.width;
-				res.bottom = res.height;
-				return res;
+				}
+				res.right = res.width
+				res.bottom = res.height
+				return res
 			}
-			rect = el.getBoundingClientRect && el.getBoundingClientRect();
-			relative = relative ? Elem.query(relative).getRect() : {top: 0, left: 0};
-			docScrolls = Elem.getViewRect(el.ownerDocument);
-			elScrolls = this.getScrolls();
+			rect = el.getBoundingClientRect && el.getBoundingClientRect()
+			relative = relative ? Elem.query(relative).getRect() : {top: 0, left: 0}
+			docScrolls = Elem.getViewRect(el.ownerDocument)
+			elScrolls = this.getScrolls()
 			if(rect) {
 				if(YOM.browser.ie && !YOM.browser.isQuirksMode() && (YOM.browser.v <= 7 || document.documentMode <= 7)) {
-					rect.left -= 2;
-					rect.top -= 2;
-					rect.right -= 2;
-					rect.bottom -= 2;
+					rect.left -= 2
+					rect.top -= 2
+					rect.right -= 2
+					rect.bottom -= 2
 				}
 				res = {
 					top: rect.top + docScrolls.top - relative.top,
@@ -578,7 +578,7 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 					right: rect.right + docScrolls.left - relative.left,
 					width: rect.width || Math.max(el.clientWidth, el.offsetWidth),
 					height: rect.height || Math.max(el.clientHeight, el.offsetHeight)
-				};
+				}
 			} else {
 				res = {
 					top: el.offsetTop - elScrolls.top - relative.top,
@@ -587,279 +587,279 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 					right: 0,
 					width: Math.max(el.clientWidth, el.offsetWidth),
 					height: Math.max(el.clientHeight, el.offsetHeight)
-				};
-				while(el.offsetParent) {
-					el = el.offsetParent;
-					res.top += el.offsetTop + (parseInt(new Elem(el).getStyle('borderTopWidth')) || 0);
-					res.left += el.offsetLeft + (parseInt(new Elem(el).getStyle('borderLeftWidth')) || 0);
 				}
-				res.bottom = res.top + res.height - relative.top;
-				res.right = res.left + res.width - relative.left;
+				while(el.offsetParent) {
+					el = el.offsetParent
+					res.top += el.offsetTop + (parseInt(new Elem(el).getStyle('borderTopWidth')) || 0)
+					res.left += el.offsetLeft + (parseInt(new Elem(el).getStyle('borderLeftWidth')) || 0)
+				}
+				res.bottom = res.top + res.height - relative.top
+				res.right = res.left + res.width - relative.left
 			}
-			return res;
+			return res
 		},
 		
 		setHtml: function(html) {
-			this.get().innerHTML = html;
-			return this;
+			this.get().innerHTML = html
+			return this
 		},
 		
 		removeChild: function(el) {
 			if(!(el instanceof Elem)) {
-				el = this.find(el);
+				el = this.find(el)
 			}
 			el.each(function(child) {
-				child.parentNode.removeChild(child);
-			});
-			return this;
+				child.parentNode.removeChild(child)
+			})
+			return this
 		},
 		
 		empty: function() {
-			this.setHtml('');
-			return this;
+			this.setHtml('')
+			return this
 		},
 		
 		remove: function() {
-			var el = this.get();
+			var el = this.get()
 			if(!el || Elem.isBody(el)) {
-				return null;
+				return null
 			}
-			return new Elem(el.parentNode.removeChild(el));
+			return new Elem(el.parentNode.removeChild(el))
 		},
 		
 		first: function() {
-			var res = null;
-			var el = this.get();
+			var res = null
+			var el = this.get()
 			if(!el) {
-				return res;
+				return res
 			}
 			new Elem(el.childNode || el.children).each(function(item) {
 				if(_isElementNode(item)) {
-					res = item;
-					return false;
+					res = item
+					return false
 				}
-				return true;
-			});
-			return res;
+				return true
+			})
+			return res
 		},
 		
 		next: function() {
-			var el = this.get();
+			var el = this.get()
 			if(!el) {
-				return null;
+				return null
 			}
 			return el.nextElementSibling || Elem.searchChain(el, 'nextSibling', function(el) {
-				return _isElementNode(el);
-			});
+				return _isElementNode(el)
+			})
 		},
 		
 		previous: function() {
-			var el = this.get();
+			var el = this.get()
 			if(!el) {
-				return null;
+				return null
 			}
 			return el.previousElementSibling || Elem.searchChain(el, 'previousSibling', function(el) {
-				return _isElementNode(el);
-			});
+				return _isElementNode(el)
+			})
 		},
 		
 		head: function(tar) {
-			var firstChild = this.first();
+			var firstChild = this.first()
 			if(firstChild) {
-				return new Elem(this.get().insertBefore(tar, firstChild));
+				return new Elem(this.get().insertBefore(tar, firstChild))
 			} else {
-				return this.append(tar);
+				return this.append(tar)
 			}
 		},
 		
 		headTo: function(tar) {
-			tar = Elem.query(tar);
-			var firstChild = tar.first();
+			tar = Elem.query(tar)
+			var firstChild = tar.first()
 			if(firstChild) {
-				return new Elem(tar.get().insertBefore(this.get(), firstChild));
+				return new Elem(tar.get().insertBefore(this.get(), firstChild))
 			} else {
-				return tar.append(this.get());
+				return tar.append(this.get())
 			}
 		},
 		
 		append: function(el) {
 			if(_isElementNode(el)) {
-				return new Elem(this.get().appendChild(el));
+				return new Elem(this.get().appendChild(el))
 			} else if(el instanceof Elem) {
-				return new Elem(this.get().appendChild(el.get()));
+				return new Elem(this.get().appendChild(el.get()))
 			}
-			return null;
+			return null
 		},
 		
 		appendTo: function(parent) {
-			var child = this.get();
+			var child = this.get()
 			if(!child) {
-				return null;
+				return null
 			}
 			if(_isElementNode(parent)) {
-				return new Elem(parent.appendChild(child));
+				return new Elem(parent.appendChild(child))
 			} else if(parent instanceof Elem) {
-				return new Elem(parent.append(child));
+				return new Elem(parent.append(child))
 			}
-			return null;
+			return null
 		},
 		
 		before: function(target) {
-			var el = this.get();
-			target = Elem.query(target).get();
+			var el = this.get()
+			target = Elem.query(target).get()
 			if(!el || !target || Elem.isBody(target)) {
-				return this;
+				return this
 			}
-			target.parentNode.insertBefore(el, target);
-			return this;
+			target.parentNode.insertBefore(el, target)
+			return this
 		},
 		
 		after: function(target) {
-			var el = this.get();
-			target = Elem.query(target).get();
+			var el = this.get()
+			target = Elem.query(target).get()
 			if(!el || !target || Elem.isBody(target)) {
-				return this;
+				return this
 			}
 			if(target.nextSibling) {
-				target.parentNode.insertBefore(el, target.nextSibling);
+				target.parentNode.insertBefore(el, target.nextSibling)
 			} else {
-				target.parentNode.appendChild(el);
+				target.parentNode.appendChild(el)
 			}
-			return this;
+			return this
 		},
 		
 		clone: function(bool) {
-			var el = this.get();
+			var el = this.get()
 			if(el) {
-				return new Elem(el.cloneNode(bool));
+				return new Elem(el.cloneNode(bool))
 			}
-			return null;
+			return null
 		},
 		
 		show: function() {
 			if(!this.size()) {
-				return this;
+				return this
 			}
-			var _display = this.getDatasetVal('yom-display');
-			this.setStyle('display', _display == undefined ? 'block' : _display);
-			return this;
+			var _display = this.getDatasetVal('yom-display')
+			this.setStyle('display', _display == undefined ? 'block' : _display)
+			return this
 		},
 		
 		hide: function() {
 			if(!this.size()) {
-				return this;
+				return this
 			}
-			var _display = this.getStyle('display');
+			var _display = this.getStyle('display')
 			if(_display != 'none' && this.getDatasetVal('yom-display') == undefined) {
-				this.setDatasetVal('yom-display', _display);
+				this.setDatasetVal('yom-display', _display)
 			}
-			this.setStyle('display', 'none');
-			return this;
+			this.setStyle('display', 'none')
+			return this
 		},
 		
 		toggle: function(callback) {
 			this.each(function(el) {
-				el = new Elem(el);
+				el = new Elem(el)
 				if(el.getStyle('display') == 'none') {
-					el.show();
-					callback && callback.call(el, 'SHOW');
+					el.show()
+					callback && callback.call(el, 'SHOW')
 				} else {
-					el.hide();
-					callback && callback.call(el, 'HIDE');
+					el.hide()
+					callback && callback.call(el, 'HIDE')
 				}
-			});
-			return this;
+			})
+			return this
 		},
 		
 		addEventListener: function(eType, listener, bind) {
 			this.each(function(el) {
-				YOM.Event.addListener(el, eType, listener, bind || el);
-			});
-			return this;
+				YOM.Event.addListener(el, eType, listener, bind || el)
+			})
+			return this
 		},
 		
 		removeEventListener: function(eType, listener) {
 			this.each(function(el) {
-				YOM.Event.removeListener(el, eType, listener);
-			});
-			return this;
+				YOM.Event.removeListener(el, eType, listener)
+			})
+			return this
 		},
 		
 		concat: function(els) {
-			return new Elem(this.getAll().concat(new Elem(els).getAll()));
+			return new Elem(this.getAll().concat(new Elem(els).getAll()))
 		},
 		
 		removeItem: function(el) {
 			YOM.array.remove(this._items, function(item, i) {
 				if(typeof el == 'function') {
-					return el(item.get(), i);
+					return el(item.get(), i)
 				} else if(typeof el == 'number') {
 					if(el == i) {
-						return -1;
+						return -1
 					} else {
-						return 0;
+						return 0
 					}
 				} else {
-					return el == item.el;
+					return el == item.el
 				}
-			});
-			return this;
+			})
+			return this
 		}
-	});
+	})
 	
-	Elem.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+	Elem.head = document.head || document.getElementsByTagName('head')[0] || document.documentElement
 	
 	Elem.query = function(sel, context) {
-		var res;
+		var res
 		if(sel instanceof Elem) {
-			return sel;
+			return sel
 		} else if(typeof sel == 'string') {
 			if(context) {
-				context = new Elem(typeof context == 'string' ? (document.querySelectorAll ? document.querySelectorAll(context) : Sizzle(context)) : context);
-				res = context.find(sel);
+				context = new Elem(typeof context == 'string' ? (document.querySelectorAll ? document.querySelectorAll(context) : Sizzle(context)) : context)
+				res = context.find(sel)
 			} else {
-				res = new Elem(document.querySelectorAll ? document.querySelectorAll(sel) : Sizzle(sel));
+				res = new Elem(document.querySelectorAll ? document.querySelectorAll(sel) : Sizzle(sel))
 			}
 		} else {
-			res = new Elem(sel);
+			res = new Elem(sel)
 		}
-		return res;
-	};
+		return res
+	}
 	
 	Elem.isBody = function(el) {
-		el = Elem.query(el).get();
+		el = Elem.query(el).get()
 		if(!el) {
-			return false;
+			return false
 		}
-		return el.tagName == 'BODY' || el.tagName == 'HTML';
-	};
+		return el.tagName == 'BODY' || el.tagName == 'HTML'
+	}
 
 	Elem.create = function(name, attrs, style) {
-		var el = new Elem(document.createElement(name));
-		attrs && el.setAttr(attrs);
-		style && el.setStyle(style);
-		return el.get();
-	};
+		var el = new Elem(document.createElement(name))
+		attrs && el.setAttr(attrs)
+		style && el.setStyle(style)
+		return el.get()
+	}
 	
 	Elem.contains = function(a, b) {
-		return (a.contains) ? (a != b && a.contains(b)) : !!(a.compareDocumentPosition(b) & 16);
-	};
+		return (a.contains) ? (a != b && a.contains(b)) : !!(a.compareDocumentPosition(b) & 16)
+	}
 	
 	Elem.searchChain = function(el, prop, validator) {
-		var res;
+		var res
 		while(el && el.nodeType) {
-			res = el[prop];
+			res = el[prop]
 			if(res && (!validator || validator(res))) {
-				return res;
+				return res
 			}
-			el = res;
+			el = res
 		}
-		return null;
-	};
+		return null
+	}
 	
 	Elem.getViewRect = function(ownerDoc) {
-		var res;
-		var doc = ownerDoc || document;
+		var res
+		var doc = ownerDoc || document
 		res = {
 			top: !ownerDoc && window.pageYOffset > 0 ? window.pageYOffset : Math.max(doc.documentElement.scrollTop, doc.body.scrollTop),
 			left: !ownerDoc && window.pageXOffset > 0 ? window.pageXOffset : Math.max(doc.documentElement.scrollLeft, doc.body.scrollLeft),
@@ -867,55 +867,56 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 			right: 0,
 			width: doc.documentElement.clientWidth || doc.body.clientWidth,
 			height: doc.documentElement.clientHeight || doc.body.clientHeight
-		};
-		res.bottom = res.top + res.height;
-		res.right = res.left + res.width;
-		return res;
-	};
+		}
+		res.bottom = res.top + res.height
+		res.right = res.left + res.width
+		return res
+	}
 
 	Elem.getFrameRect = function(maxBubble) {
-		var res, rect;
-		var win = window;
-		var frame = win.frameElement;
-		var bubbleLeft = maxBubble;
+		var res, rect
+		var win = window
+		var frame = win.frameElement
+		var bubbleLeft = maxBubble
 		if(!frame) {
-			return new Elem(document.body).getRect();
+			return new Elem(document.body).getRect()
 		}
-		res = new Elem(frame).getRect();
-		win = win.parent;
-		frame = win.frameElement;
+		res = new Elem(frame).getRect()
+		win = win.parent
+		frame = win.frameElement
 		while(frame && (!maxBubble || --bubbleLeft > 0)) {
-			rect = new Elem(frame).getRect();
-			res.left += rect.left;
-			res.right += rect.left;
-			res.top += rect.top;
-			res.bottom += rect.top;
-			win = win.parent;
-			frame = win.frameElement;
+			rect = new Elem(frame).getRect()
+			res.left += rect.left
+			res.right += rect.left
+			res.top += rect.top
+			res.bottom += rect.top
+			win = win.parent
+			frame = win.frameElement
 		}
-		return res;
-	};
+		return res
+	}
 	
 	Elem.getDocSize = function(doc) {
-		var w, h;
-		doc = doc || document;
+		var w, h
+		doc = doc || document
 		if(YOM.browser.isQuirksMode()) {
 			if(YOM.browser.chrome || YOM.browser.safari || YOM.browser.firefox) {
-				w = Math.max(doc.documentElement.scrollWidth, doc.body.scrollWidth);
-				h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
+				w = Math.max(doc.documentElement.scrollWidth, doc.body.scrollWidth)
+				h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight)
 			} else {
-				w = doc.body.scrollWidth || doc.documentElement.scrollWidth;
-				h = doc.body.scrollHeight || doc.documentElement.scrollHeight;
+				w = doc.body.scrollWidth || doc.documentElement.scrollWidth
+				h = doc.body.scrollHeight || doc.documentElement.scrollHeight
 			}
 		} else {
-			w = doc.documentElement.scrollWidth || doc.body.scrollWidth;
-			h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+			w = doc.documentElement.scrollWidth || doc.body.scrollWidth
+			h = doc.documentElement.scrollHeight || doc.body.scrollHeight
 		}
 		return {
 			width: w,
 			height: h
-		};
-	};
+		}
+	}
 	
-	return Elem;
-});
+	return Elem
+})
+
