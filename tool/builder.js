@@ -26,6 +26,7 @@ var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
 var logs = []
 var globalUglifyLevel = 0
 var globalExclude = {}
+var copyright = ''
 
 function exit(code) {
 	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
@@ -72,11 +73,11 @@ function isSrcDir(outputDir) {
 	return true
 }
 
-function getUglified(content, level) {
+function getUglified(content, info) {
 	var ast
-	level = typeof level != 'undefined' ? level :  globalUglifyLevel
+	var level = typeof info.uglify != 'undefined' ? info.uglify : globalUglifyLevel
 	if(!(level > 0)) {
-		return content
+		return copyright + content
 	}
 	ast = uglify.parser.parse(content)
 	if(level > 1) {
@@ -85,7 +86,7 @@ function getUglified(content, level) {
 	if(level > 2) {
 		ast = uglify.uglify.ast_squeeze(ast)
 	}
-	return uglify.uglify.gen_code(ast)
+	return copyright + uglify.uglify.gen_code(ast)
 }
 
 function getDeps(def, relative, exclude) {
@@ -201,7 +202,7 @@ function buildOneDir(info, callback, baseName) {
 				log('Build')
 				log('Input: ' + inputFile)
 				log('Output: ' + outputFile)
-				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset)), info.uglify), charset)
+				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset)), info), charset)
 				log('Done!')
 				build()
 			} else if(!path.extname(inputFile) && !(/^\.|~$/).test(path.basename(inputFile))) {
@@ -270,7 +271,7 @@ function buildOne(info, callback, ignoreSrc) {
 		log('Merging: ' + input)
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info.uglify), charset)
+			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info), charset)
 			log('Done!')
 			callback()
 		})
@@ -303,7 +304,7 @@ function combineOne(info, callback) {
 	log('Writing: ' + output)
 	mkdirs(outputDir, 0777, function() {
 		if((/.js$/).test(output)) {
-			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info.uglify), charset)
+			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info), charset)
 		} else {
 			fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), charset)
 		}
@@ -327,6 +328,7 @@ fs.readFile(buildFileName, charset, function(err, data) {
 	}
 	globalUglifyLevel = buildJson.uglify || 0
 	globalExclude = buildJson.exclude || {}
+	copyright = buildJson.copyright || ''
 	buildList = buildJson.builds || []
 	combineList = buildJson.combines || []
 	combineTotal = combineList.length
