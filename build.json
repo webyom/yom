@@ -1,7 +1,10 @@
 {
 	"builds": [
 		{
-			"input": "./"
+			"input": "./",
+			"ignore": {
+				"./tool": 1
+			}
 		}
 	]
 }
