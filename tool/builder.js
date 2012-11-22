@@ -26,7 +26,7 @@ var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
 var logs = []
 var globalUglifyLevel = 0
 var globalExclude = {}
-var copyright = ''
+var globalCopyright = ''
 
 function exit(code) {
 	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
@@ -76,7 +76,8 @@ function isSrcDir(outputDir) {
 function getUglified(content, info) {
 	var ast
 	var level = typeof info.uglify != 'undefined' ? info.uglify : globalUglifyLevel
-	if(!(level > 0)) {
+	var copyright = info.copyright || globalCopyright
+	if(!level) {
 		return copyright + content
 	}
 	ast = uglify.parser.parse(content)
@@ -86,7 +87,7 @@ function getUglified(content, info) {
 	if(level > 2) {
 		ast = uglify.uglify.ast_squeeze(ast)
 	}
-	return copyright + uglify.uglify.gen_code(ast)
+	return copyright + uglify.uglify.gen_code(ast, {beautify: level < 0})
 }
 
 function getDeps(def, relative, exclude) {
@@ -328,7 +329,7 @@ fs.readFile(buildFileName, charset, function(err, data) {
 	}
 	globalUglifyLevel = buildJson.uglify || 0
 	globalExclude = buildJson.exclude || {}
-	copyright = buildJson.copyright || ''
+	globalCopyright = buildJson.copyright || ''
 	buildList = buildJson.builds || []
 	combineList = buildJson.combines || []
 	combineTotal = combineList.length
