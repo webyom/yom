@@ -184,13 +184,24 @@ function buildOneDir(info, callback, baseName) {
 	var outputDir = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
 	var buildList = fs.readdirSync(inputDir)
 	var buildTotal = buildList.length
+	var ignore = info.ignore || {}
 	baseName = baseName || ''
+	if(!baseName && info.ignore) {
+		ignore = {}
+		for(var dir in info.ignore) {
+			if(info.ignore.hasOwnProperty(dir)) {
+				ignore[path.join(inputDir, dir)] = 1
+			}
+		}
+	}
 	build()
 	function build() {
 		var inputFile, outputFile, fileName
 		if(buildList.length) {
 			inputFile = path.join(inputDir, buildList.shift())
-			if(path.basename(inputFile) == 'main.js' || path.basename(inputFile) == path.basename(inputDir) + '.js') {
+			if(ignore[inputFile]) {
+				build()
+			} else if(path.basename(inputFile) == 'main.js' || path.basename(inputFile) == path.basename(inputDir) + '.js') {
 				fileName = path.basename(inputFile).replace(/\.js$/, '-built.js')
 				outputFile = outputDir ? path.join(outputDir, baseName, fileName) : path.join(inputDir, fileName)
 				buildOne({input: inputFile, output: outputFile, exclude: info.exclude}, function() {
