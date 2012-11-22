@@ -8,6 +8,7 @@
 var os = require('os')
 var fs = require('fs')
 var path = require('path')
+var uglify = require('./uglify-js')
 
 process.on('uncaughtException', function(err) {
 	try {
@@ -23,6 +24,8 @@ var charset = 'utf-8'
 var buildFileName = process.argv[2] || 'build.json'
 var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
 var logs = []
+var globalUglifyLevel = 0
+var globalExclude = {}
 
 function exit(code) {
 	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
@@ -69,13 +72,28 @@ function isSrcDir(outputDir) {
 	return true
 }
 
-function getDeps(def, relative, exclude, globalExclude) {
+function getUglified(content, level) {
+	var ast
+	level = typeof level != 'undefined' ? level :  globalUglifyLevel
+	if(!(level > 0)) {
+		return content
+	}
+	ast = uglify.parser.parse(content)
+	if(level > 1) {
+		ast = uglify.uglify.ast_mangle(ast, {except: ['require']})
+	}
+	if(level > 2) {
+		ast = uglify.uglify.ast_squeeze(ast)
+	}
+	return uglify.uglify.gen_code(ast)
+}
+
+function getDeps(def, relative, exclude) {
 	var deps = []
 	var got = {}
 	var depArr = def.match(/\bdefine\s*\([^\[\{]*(\[[^\[\]]*\])/m)
 	depArr = depArr && depArr[1]
 	exclude = exclude || {}
-	globalExclude = globalExclude || {}
 	relative && depArr && depArr.replace(new RegExp('["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']', 'mg'), function(m, dep) {
 		got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
@@ -159,7 +177,7 @@ function fixDefineParams(def, depId) {
 	return def
 }
 
-function buildOneDir(info, exclude, callback, baseName) {
+function buildOneDir(info, callback, baseName) {
 	var inputDir = path.resolve(buildDir, info.input)
 	var outputDir = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
 	var buildList = fs.readdirSync(inputDir)
@@ -173,20 +191,21 @@ function buildOneDir(info, exclude, callback, baseName) {
 			if(path.basename(inputFile) == 'main.js' || path.basename(inputFile) == path.basename(inputDir) + '.js') {
 				fileName = path.basename(inputFile).replace(/\.js$/, '-built.js')
 				outputFile = outputDir ? path.join(outputDir, baseName, fileName) : path.join(inputDir, fileName)
-				buildOne({input: inputFile, output: outputFile, exclude: info.exclude}, exclude, function() {
+				buildOne({input: inputFile, output: outputFile, exclude: info.exclude}, function() {
 					build()
 				}, true)
 			} else if((/\.tpl.html?$/).test(inputFile)) {
-				outputFile = inputFile + '.js'
+				fileName = path.basename(inputFile) + '.js'
+				outputFile = outputDir ? path.join(outputDir, baseName, fileName) : path.join(inputDir, fileName)
 				printLine()
 				log('Build')
 				log('Input: ' + inputFile)
 				log('Output: ' + outputFile)
-				fs.writeFileSync(outputFile, compileTmpl(fs.readFileSync(inputFile, charset)), charset)
+				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset)), info.uglify), charset)
 				log('Done!')
 				build()
 			} else if(!path.extname(inputFile) && !(/^\.|~$/).test(path.basename(inputFile))) {
-				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude}, exclude, function() {
+				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude}, function() {
 					build()
 				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile))
 			} else {
@@ -198,7 +217,7 @@ function buildOneDir(info, exclude, callback, baseName) {
 	}
 }
 
-function buildOne(info, exclude, callback, ignoreSrc) {
+function buildOne(info, callback, ignoreSrc) {
 	var input = path.resolve(buildDir, info.input)
 	var inputDir = path.dirname(input)
 	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
@@ -212,7 +231,7 @@ function buildOne(info, exclude, callback, ignoreSrc) {
 		throw new Error('Input and output must not be the same!')
 	}
 	if(!path.extname(input)) {//build dir
-		buildOneDir(info, exclude, callback)
+		buildOneDir(info, callback)
 		return
 	}
 	printLine()
@@ -233,7 +252,7 @@ function buildOne(info, exclude, callback, ignoreSrc) {
 		if((/\.tpl.html?$/).test(input)) {
 			fileContent.push(compileTmpl(content))
 		} else {
-			deps = getDeps(content, true, info.exclude, exclude)
+			deps = getDeps(content, true, info.exclude)
 			while(deps.length) {
 				depId = deps.shift()
 				if((/\.tpl.html?$/).test(depId)) {
@@ -251,7 +270,7 @@ function buildOne(info, exclude, callback, ignoreSrc) {
 		log('Merging: ' + input)
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), charset)
+			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info.uglify), charset)
 			log('Done!')
 			callback()
 		})
@@ -283,7 +302,11 @@ function combineOne(info, callback) {
 	}
 	log('Writing: ' + output)
 	mkdirs(outputDir, 0777, function() {
-		fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), charset)
+		if((/.js$/).test(output)) {
+			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info.uglify), charset)
+		} else {
+			fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), charset)
+		}
 		log('Done!')
 		callback()
 	})
@@ -302,13 +325,15 @@ fs.readFile(buildFileName, charset, function(err, data) {
 		printLine()
 		throw new Error('Illegal json format build file!' + os.EOL + e.toString())
 	}
+	globalUglifyLevel = buildJson.uglify || 0
+	globalExclude = buildJson.exclude || {}
 	buildList = buildJson.builds || []
 	combineList = buildJson.combines || []
 	combineTotal = combineList.length
 	build()
 	function build() {
 		if(buildList.length) {
-			buildOne(buildList.shift(), buildJson.exclude, function() {
+			buildOne(buildList.shift(), function() {
 				build()
 			})
 		} else {
