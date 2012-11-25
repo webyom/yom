@@ -13,7 +13,7 @@ var uglify = require('./uglify-js')
 process.on('uncaughtException', function(err) {
 	try {
 		dealErr(err)
-	} catch(e) {
+n	} catch(e) {
 		console.error(e.toString())
 		process.exit(1)
 	}
@@ -201,7 +201,7 @@ function buildOneDir(info, callback, baseName) {
 			inputFile = path.join(inputDir, buildList.shift())
 			if(ignore[inputFile]) {
 				build()
-			} else if(path.basename(inputFile) == 'main.js' || path.basename(inputFile) == path.basename(inputDir) + '.js') {
+			} else if(path.basename(inputFile) == 'main.js' || (/-main.js$/).test(inputFile) ||  path.basename(inputFile) == path.basename(inputDir) + '.js') {
 				fileName = path.basename(inputFile).replace(/\.js$/, '-built.js')
 				outputFile = outputDir ? path.join(outputDir, baseName, fileName) : path.join(inputDir, fileName)
 				buildOne({input: inputFile, output: outputFile, exclude: info.exclude}, function() {
