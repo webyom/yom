@@ -74,7 +74,7 @@ define(['../core/core-built'], function(YOM) {
 							'</script>',
 						'</body>',
 					'</html>'
-				].join(''))
+				].join('\n'))
 				doc.close()
 			} else {
 				setTimeout(function() {
