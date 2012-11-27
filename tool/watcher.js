@@ -61,7 +61,7 @@ function watch(dir, confPath) {
 			fs.watch(dir, function(evt, file) {
 				if(evt == 'change' && !building) {
 					building = true
-					console.log('Build: ' + confPath)
+					console.log('Build ' + confPath + ' at ' + new Date())
 					exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
 						building = false
 						if(err) {
