@@ -38,6 +38,18 @@ var building = false
 	}
 })()
 
+function log(content, err) {
+	if(err) {
+		console.error(content)
+	} else {
+		console.log(content)
+	}
+}
+
+function printLine(c) {
+	log(('-----------------------------------------------------------------------').replace(/\-/g, c || '-'))
+}
+
 function getConfPath(dir) {
 	var res = path.join(dir, BUILD_CONF_FILE_NAME)
 	return fs.existsSync(res) && res
@@ -61,23 +73,26 @@ function watch(dir, confPath) {
 		}
 		confPath = getConfPath(dir) || confPath
 		if(confPath) {
-			console.log('Watching Dir: ' + dir)
+			log('Watching Dir: ' + dir)
 			fs.watch(dir, function(evt, file) {
 				if((evt == 'change' || evt == 'rename') && !building) {
 					if(file && !(/^\./).test(file)) {
 						if(!(/\.(js|json|css|tpl\.html?)$/).test(file)) {
 							return
 						}
-						console.log(path.join(dir, file) + ' changed!')
+						printLine('-')
+						log(path.join(dir, file) + ' changed!')
+					} else {
+						printLine('-')
 					}
 					building = true
-					console.log('Building ' + confPath + ' at ' + new Date())
+					log('Building ' + confPath + ' at ' + new Date())
 					exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
 						building = false
 						if(err) {
-							console.error(err.toString())
+							log(err.toString(), 1)
 						} else {
-							console.log('Done!')
+							log('Done!')
 						}
 					})
 				}
@@ -110,6 +125,10 @@ function traversalWatch(dir, confPath, callback) {
 		callback()
 	}
 }
+
+printLine('+')
+log('Start! Time: ' + new Date())
+printLine('+')
 
 traversalWatch(watchDirPath, getConfPath(watchDirPath), function() {
 	for(var dir in includeDir) {
