@@ -64,12 +64,18 @@ function watch(dir, confPath) {
 			console.log('Watching Dir: ' + dir)
 			fs.watch(dir, function(evt, file) {
 				if((evt == 'change' || evt == 'rename') && !building) {
+					if(file && !(/^\./).test(file)) {
+						if(!(/\.(js|json|css|tpl\.html?)$/).test(file)) {
+							return
+						}
+						console.log(path.join(dir, file) + ' changed!')
+					}
 					building = true
 					console.log('Building ' + confPath + ' at ' + new Date())
 					exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
 						building = false
 						if(err) {
-							console.log(err)
+							console.error(err.toString())
 						} else {
 							console.log('Done!')
 						}
