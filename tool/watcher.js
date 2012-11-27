@@ -44,9 +44,6 @@ function getConfPath(dir) {
 }
 
 function isValidDir(dir) {
-	if(includeDir && !includeDir[dir]) {
-		return false
-	}
 	if(excludeDir && excludeDir[dir]) {
 		return false
 	}
@@ -55,17 +52,26 @@ function isValidDir(dir) {
 
 function watch(dir, confPath) {
 	if(isValidDir(dir)) {
+		if(includeDir) {
+			if(includeDir[dir]) {
+				includeDir[dir] = 0
+			} else {
+				return
+			}
+		}
 		confPath = getConfPath(dir) || confPath
 		if(confPath) {
 			console.log('Watching Dir: ' + dir)
 			fs.watch(dir, function(evt, file) {
-				if(evt == 'change' && !building) {
+				if((evt == 'change' || evt == 'rename') && !building) {
 					building = true
-					console.log('Build ' + confPath + ' at ' + new Date())
+					console.log('Building ' + confPath + ' at ' + new Date())
 					exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
 						building = false
 						if(err) {
 							console.log(err)
+						} else {
+							console.log('Done!')
 						}
 					})
 				}
@@ -74,17 +80,35 @@ function watch(dir, confPath) {
 	}
 }
 
-function traversalWatch(dir, confPath) {
+function traversalWatch(dir, confPath, callback) {
 	if(isValidDir(dir)) {
 		confPath = getConfPath(dir) || confPath
 		watch(dir, confPath)
 		fs.readdir(dir, function(err, files) {
 			var i, file
+			var cbcount = 0
+			if(!files || !files.length) {
+				callback()
+				return
+			}
 			for(i = 0; i < files.length; i++) {
-				traversalWatch(path.join(dir, files[i]), confPath)
+				traversalWatch(path.join(dir, files[i]), confPath, function() {
+					cbcount++
+					if(cbcount == files.length) {
+						callback()
+					}
+				})
 			}
 		})
+	} else {
+		callback()
 	}
 }
 
-traversalWatch(watchDirPath)
+traversalWatch(watchDirPath, getConfPath(watchDirPath), function() {
+	for(var dir in includeDir) {
+		if(includeDir[dir]) {
+			watch(dir, getConfPath(watchDirPath))
+		}
+	}
+})
