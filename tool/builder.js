@@ -217,7 +217,7 @@ function buildOneDir(info, callback, baseName) {
 				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset)), info), charset)
 				log('Done!')
 				build()
-			} else if(!path.extname(inputFile) && !(/^\.|~$/).test(path.basename(inputFile))) {
+			} else if(fs.statSync(inputFile).isDirectory() && !(/^\.|~$/).test(path.basename(inputFile))) {
 				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude}, function() {
 					build()
 				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile))
