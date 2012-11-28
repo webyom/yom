@@ -90,7 +90,7 @@ function watch(dir, confPath) {
 					exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
 						building = false
 						if(err) {
-							log(err.toString(), 1)
+							log('Exec Error:\n' + err.toString(), 1)
 						} else {
 							log('Done!')
 						}

@@ -199,7 +199,7 @@ function buildOneDir(info, callback, baseName) {
 		var inputFile, outputFile, fileName
 		if(buildList.length) {
 			inputFile = path.join(inputDir, buildList.shift())
-			if(ignore[inputFile]) {
+			if(ignore[inputFile] || (/^\.|~$/).test(path.basename(inputFile))) {
 				build()
 			} else if(path.basename(inputFile) == 'main.js' || (/-main.js$/).test(inputFile) ||  path.basename(inputFile) == path.basename(inputDir) + '.js') {
 				fileName = path.basename(inputFile).replace(/\.js$/, '-built.js')
@@ -217,7 +217,7 @@ function buildOneDir(info, callback, baseName) {
 				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset)), info), charset)
 				log('Done!')
 				build()
-			} else if(fs.statSync(inputFile).isDirectory() && !(/^\.|~$/).test(path.basename(inputFile))) {
+			} else if(fs.statSync(inputFile).isDirectory()) {
 				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude}, function() {
 					build()
 				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile))
