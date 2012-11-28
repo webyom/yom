@@ -98,7 +98,7 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 			var startRect = this._rect.start
 			var toLeft = startRect.left + moveX + fix
 			var toTop = startRect.top + moveY + fix
-			var viewRect
+			var viewRect, parentRect
 			if(boundary) {
 				if(boundary == 'PAGE') {
 					viewRect = YOM.Element.getViewRect()
@@ -133,7 +133,7 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 					}
 				}
 			}
-			var parentRect = this._el.getOffsetParent().getRect()
+			parentRect = this._el.getOffsetParent().getRect()
 			toLeft -= parentRect.left
 			toTop -= parentRect.top
 			return {
@@ -181,7 +181,7 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 			var maxStep = this._opts.scrollStep || 10
 			var scrollTop = 0
 			var scrollLeft = 0
-			var movePos
+			var movePos, parentRect
 			if(mouseY + advance > rect.bottom) {
 				scrollTop = Math.min(mouseY + advance - rect.bottom, maxStep)
 				scrollContainer.scrollTopBy(scrollTop, 0)
@@ -198,7 +198,8 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 			}
 			this._scrollToRef && clearTimeout(this._scrollToRef)
 			if(scrollTop !== 0 || scrollLeft !== 0) {
-				movePos = this._getMovePos(scrollLeft + this._pos.now.left - this._rect.start.left, scrollTop + this._pos.now.top - this._rect.start.top)
+				parentRect = this._el.getOffsetParent().getRect()
+				movePos = this._getMovePos(scrollLeft + parentRect.left + this._pos.now.left - this._rect.start.left, scrollTop + parentRect.top + this._pos.now.top - this._rect.start.top)
 				this._el.setStyle({
 					left: movePos.left + 'px',
 					top: movePos.top + 'px'
