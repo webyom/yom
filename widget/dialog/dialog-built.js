@@ -225,7 +225,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 				return
 			}
 			require(['yom/dragdrop/dragdrop-built'], function(dragdrop) {
-				self._draggable = new dragdrop.Draggable(self._el, {handles: handles, boundary: 'PAGE'})
+				self._draggable = new dragdrop.Draggable(self._el, {handles: handles, boundary: 'PAGE', scrollContainer: document.body})
 				self._draggable.addEventListener('dragstart', self._bound.dragstart)
 				self._draggable.addEventListener('dragstop', self._bound.dragstop)
 			})

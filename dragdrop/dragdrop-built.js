@@ -32,6 +32,7 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		}
 		this._handles = this._opts.handles ? YOM(this._opts.handles, this._el) : this._el
 		this._scrollContainer = this._opts.scrollContainer ? YOM(this._opts.scrollContainer) : null
+		this._scrollToRef = null
 		this.enable()
 	}
 	
@@ -91,20 +92,17 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 			return this._dragStarted
 		},
 		
-		_move: function(e) {
+		_getMovePos: function(moveX, moveY) {
 			var fix = this._fix
 			var boundary = this._opts.boundary
-			var mouseX = YOM.Event.getPageX(e)
-			var mouseY = YOM.Event.getPageY(e)
-			var moveX = mouseX - this._mouse.start.x
-			var moveY = mouseY - this._mouse.start.y
 			var startRect = this._rect.start
 			var toLeft = startRect.left + moveX + fix
 			var toTop = startRect.top + moveY + fix
+			var viewRect
 			if(boundary) {
 				if(boundary == 'PAGE') {
+					viewRect = YOM.Element.getViewRect()
 					boundary = YOM(document.body).getRect()
-					var viewRect = YOM.Element.getViewRect()
 					boundary.height = Math.max(boundary.height, viewRect.height)
 					boundary.width = Math.max(boundary.width, viewRect.width)
 					boundary.bottom = Math.max(boundary.bottom, viewRect.bottom)
@@ -138,11 +136,23 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 			var parentRect = this._el.getOffsetParent().getRect()
 			toLeft -= parentRect.left
 			toTop -= parentRect.top
+			return {
+				left: toLeft,
+				top: toTop
+			}
+		},
+		
+		_move: function(e) {
+			var mouseX = YOM.Event.getPageX(e)
+			var mouseY = YOM.Event.getPageY(e)
+			var moveX = mouseX - this._mouse.start.x
+			var moveY = mouseY - this._mouse.start.y
+			var movePos = this._getMovePos(moveX, moveY)
 			this._el.setStyle({
-				left: toLeft + 'px',
-				top: toTop + 'px'
+				left: movePos.left + 'px',
+				top: movePos.top + 'px'
 			})
-			this._pos.now = {left: toLeft, top: toTop}
+			this._pos.now = {left: movePos.left, top: movePos.top}
 			this._mouse.now = {x: mouseX, y: mouseY}
 			this._rect.now = this._el.getRect()
 			try {
@@ -161,22 +171,42 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		},
 		
 		_checkScroll: function(mouseX, mouseY) {
+			var self = this
 			var scrollContainer = this._scrollContainer
 			if(!scrollContainer) {
 				return
 			}
 			var rect = YOM.Element.isBody(scrollContainer.get()) ? YOM.Element.getViewRect() : scrollContainer.getRect()
 			var advance = this._opts.scrollAdvance || Math.floor(Math.min(30, rect.width / 10, rect.height / 10))
-			var maxStep = this._opts.scrollStep || 3
+			var maxStep = this._opts.scrollStep || 10
+			var scrollTop = 0
+			var scrollLeft = 0
+			var movePos
 			if(mouseY + advance > rect.bottom) {
-				scrollContainer.scrollTopBy(Math.min(mouseY + advance - rect.bottom, maxStep), 0)
+				scrollTop = Math.min(mouseY + advance - rect.bottom, maxStep)
+				scrollContainer.scrollTopBy(scrollTop, 0)
 			} else if(mouseY - advance < rect.top) {
-				scrollContainer.scrollTopBy(Math.max(mouseY - advance - rect.top, -maxStep), 0)
+				scrollTop = Math.max(mouseY - advance - rect.top, -maxStep)
+				scrollContainer.scrollTopBy(scrollTop, 0)
 			}
 			if(mouseX + advance > rect.right) {
-				scrollContainer.scrollLeftBy(Math.min(mouseX + advance - rect.right, maxStep), 0)
+				scrollLeft = Math.min(mouseX + advance - rect.right, maxStep)
+				scrollContainer.scrollLeftBy(scrollLeft, 0)
 			} else if(mouseX - advance < rect.left) {
-				scrollContainer.scrollLeftBy(Math.max(mouseX - advance - rect.left, -maxStep), 0)
+				scrollLeft = Math.max(mouseX - advance - rect.left, -maxStep)
+				scrollContainer.scrollLeftBy(scrollLeft, 0)
+			}
+			this._scrollToRef && clearTimeout(this._scrollToRef)
+			if(scrollTop !== 0 || scrollLeft !== 0) {
+				movePos = this._getMovePos(scrollLeft + this._pos.now.left - this._rect.start.left, scrollTop + this._pos.now.top - this._rect.start.top)
+				this._el.setStyle({
+					left: movePos.left + 'px',
+					top: movePos.top + 'px'
+				})
+				this._pos.now = {left: movePos.left, top: movePos.top}
+				this._scrollToRef = setTimeout(function() {
+					self._checkScroll(mouseX + scrollLeft, mouseY + scrollTop)
+				}, 50)
 			}
 		},
 		
@@ -190,13 +220,18 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 			return this
 		},
 		
-		stop: function() {
+		stop: function(e) {
+			this._scrollToRef && clearTimeout(this._scrollToRef)
 			YOM.Event.removeListener(document, 'mousemove', this._bound.startCheck)
 			YOM.Event.removeListener(document, 'mousemove', this._bound.move)
 			YOM.Event.removeListener(document, 'mouseup', this._bound.stop)
 			YOM.Event.removeListener(document, YOM.browser.ie ? 'selectstart' : 'mousedown', this._bound.preventSelect)
 			this._dragging = false
 			if(this._dragStarted && this._el) {
+				this._rect.now = this._el.getRect()
+				if(e) {
+					this._mouse.now = {x: YOM.Event.getPageX(e), y: YOM.Event.getPageY(e)}
+				}
 				this.dispatchEvent(this.createEvent('dragstop', {
 					el: this._el,
 					handles: this._handles,
