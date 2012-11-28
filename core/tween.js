@@ -229,10 +229,12 @@ define(['./browser', './object', './instance-manager', './element', './transitio
 		setter(_requestAnimationFrame(function() {
 			var now = $now()
 			var percent = now >= end ? 1 : (now - start) / duration
-			percent = Math.min(transition(percent), 1)
-			callback(percent)
-			if(percent < 1) {
+			percent = transition(percent) || 0
+			if(now < end) {
+				callback(percent, now - start)
 				setter(_requestAnimationFrame(arguments.callee))
+			} else {
+				callback(1, now - start)
 			}
 		}))
 	}
@@ -302,6 +304,7 @@ define(['./browser', './object', './instance-manager', './element', './transitio
 		this._status = _STATUS.TWEENING
 		this._el.setDatasetVal('yom-tween-oid', this._id)
 		var self = this
+		var duration = this._duration
 		var targetStyle = this._targetStyle
 		var originStyle = this._originStyle
 		var targetProp = this._targetProp
@@ -311,7 +314,7 @@ define(['./browser', './object', './instance-manager', './element', './transitio
 		if(this._css) {
 			this._cssTween()
 		} else {
-			Tween.setTimer(function(timer) {self._timer = timer}, this._duration, function(percent) {
+			Tween.setTimer(function(timer) {self._timer = timer}, duration, function(percent, pass) {
 				if(self._status == _STATUS.STOPPED) {
 					return
 				}
@@ -331,7 +334,7 @@ define(['./browser', './object', './instance-manager', './element', './transitio
 					}
 					self._el.setProp(prop, tVal.f(oVal.v, tVal.v, percent) + tVal.u)
 				}
-				if(percent === 1) {
+				if(pass >= duration) {
 					self.stop(true)
 				}
 			}, this._transition)
