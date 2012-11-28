@@ -75,6 +75,7 @@ function watch(dir, confPath) {
 		if(confPath) {
 			log('Watching Dir: ' + dir)
 			fs.watch(dir, function(evt, file) {
+				var startTime
 				if((evt == 'change' || evt == 'rename') && !building) {
 					if(file && !(/^\./).test(file)) {
 						if(!(/\.(js|json|css|tpl\.html?)$/).test(file)) {
@@ -86,13 +87,14 @@ function watch(dir, confPath) {
 						printLine('-')
 					}
 					building = true
-					log('Building ' + confPath + ' at ' + new Date())
+					startTime = new Date()
+					log('Building ' + confPath + ' at ' + startTime)
 					exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
 						building = false
 						if(err) {
 							log('Exec Error:\n' + err.toString(), 1)
 						} else {
-							log('Done!')
+							log('Done! Spent Time: ' + (new Date() - startTime) + 'ms')
 						}
 					})
 				}
