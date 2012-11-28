@@ -78,6 +78,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 	 * opt.src - url of the page to display in dialog content, the "content" option will not effect while "src" option was set
 	 * opt.fx - indicate use tween effect to show or hide, "fade" value indicate use fade effect
 	 * opt.fxDuration - duration of tween effect
+	 * opt.transition - fx transition
 	 * opt.beforeClose - callback function before dialog close, return "false" to cancel the close
 	 * opt.noBorder - when "src" and this option were set, the dialog just use the src page to display the apperance
 	 * opt.dragHandles - the handles of draggable dialog, the title area is the default handle
@@ -98,6 +99,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 		this._height = _INIT_HEIGHT
 		this._fx = opt.fx
 		this._fxDuration = opt.fxDuration || _FX_DURATION
+		this._transition = opt.transition
 		this._beforeClose = opt.beforeClose || $empty
 		this._draggable = null
 		this._dragging = false
@@ -377,6 +379,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 		 * @param {Object} opt
 		 * opt.fx - indicate use tween effect to show or hide, "fade" value indicate use fade effect
 		 * opt.fxDuration - duration of tween effect
+		 * opt.transition - fx transition
 		 * opt.leftFix - horizontal position fix
 		 * opt.topFix - vertical position fix
 		 */
@@ -386,6 +389,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 			var thisOpt = this._opt
 			var fx = opt.fx || this._fx
 			var fxDuration = opt.fxDuration || this._fxDuration
+			var transition = opt.transition || this._transition
 			var elTop, elRect, viewRect, docSize, oStyle
 			if(!this._el) {
 				return this
@@ -416,7 +420,8 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 					complete: function() {
 						self.focus()
 					},
-					css: true,
+					css: !YOM.transition.css[transition] ? false : true,
+					transition: transition,
 					prior: true
 				})
 			} else if(fx) {
@@ -444,6 +449,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 		 * @param {Object} opt
 		 * opt.fx - indicate use tween effect to show or hide, "fade" value indicate use fade effect
 		 * opt.fxDuration - duration of tween effect
+		 * opt.transition - fx transition
 		 * opt.leftFix - horizontal position fix
 		 * opt.topFix - vertical position fix
 		 */
@@ -451,6 +457,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 			opt = opt || {}
 			var fx = opt.fx || this._fx
 			var fxDuration = opt.fxDuration || this._fxDuration
+			var transition = opt.transition || this._transition
 			var elTop, elRect, viewRect, docSize
 			if(this.isClosed() || !this._el) {
 				return this
@@ -485,7 +492,8 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 					complete: function() {
 						self._hide()
 					},
-					css: true,
+					css: !YOM.transition.css[transition] ? false : true,
+					transition: transition,
 					prior: true
 				})
 			} else if(fx) {

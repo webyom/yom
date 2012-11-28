@@ -147,7 +147,7 @@ define(['../core/core-built', './droppable'], function(YOM, Droppable) {
 			var targetRect = e.oriEl.getRect()
 			var parentRect = this._opts.cloneContainer && (e.el.getOffsetParent() || e.oriEl.getOffsetParent() || YOM(document.body)).getRect() || YOM(document.body).getRect()
 			var transition = this._opts.transition
-			e.el.clone(true).appendTo(this._opts.cloneContainer || document.body).tween(this._opts.tweenDuration || 300, {
+			e.el.clone(true).appendTo(this._opts.cloneContainer || document.body).tween(this._opts.fxDuration || 300, {
 				origin: {
 					style: {
 						left: e.rect.now.left - parentRect.left + 'px',
