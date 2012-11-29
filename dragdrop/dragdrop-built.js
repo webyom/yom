@@ -2,6 +2,8 @@
  * @class YOM.dragdrop.Draggable
  */
 define('./draggable', ['../core/core-built'], function(YOM) {
+	var _DIRECTION_MAP = {'H': 'H', 'V': 'V'}
+	
 	function Draggable(el, opts) {
 		Draggable.superClass.constructor.call(this, {
 			dragmousedown: new YOM.Observer(),
@@ -11,6 +13,7 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		})
 		this._el = YOM(el)
 		this._opts = opts || {}
+		this._dragDirection = _DIRECTION_MAP[this._opts.dragDirection] || 'V'
 		this._dragging = false
 		this._dragStarted = false
 		this._fix = this._opts.fix || 0
@@ -94,10 +97,11 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		
 		_getMovePos: function(moveX, moveY) {
 			var fix = this._fix
+			var dragDirection = this._dragDirection
 			var boundary = this._opts.boundary
 			var startRect = this._rect.start
-			var toLeft = startRect.left + moveX + fix
-			var toTop = startRect.top + moveY + fix
+			var toLeft = startRect.left + (dragDirection == 'V' ? 0 : moveX + fix)
+			var toTop = startRect.top + (dragDirection == 'H' ? 0 : moveY + fix)
 			var viewRect, parentRect
 			if(boundary) {
 				if(boundary == 'PAGE') {
@@ -117,14 +121,14 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 					boundary = null
 				}
 				if(boundary && boundary.width > 0 && boundary.height > 0) {
-					if(boundary.width >= startRect.width) {
+					if(boundary.width >= startRect.width && dragDirection != 'V') {
 						if(startRect.left + moveX + fix < boundary.left) {
 							toLeft += boundary.left - startRect.left - moveX - fix
 						} else if(startRect.right + moveX + fix > boundary.right) {
 							toLeft += boundary.right - startRect.right - moveX - fix
 						}
 					}
-					if(boundary.height >= startRect.height) {
+					if(boundary.height >= startRect.height && dragDirection != 'H') {
 						if(startRect.top + moveY + fix < boundary.top) {
 							toTop += boundary.top - startRect.top - moveY - fix
 						} else if(startRect.bottom + moveY + fix > boundary.bottom) {

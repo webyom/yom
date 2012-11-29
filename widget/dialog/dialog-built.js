@@ -385,26 +385,26 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 			this._shaking = true
 			if(s == 'V') {
 				top = this._el.getStyle('top')
-				this._el.tween(500, {
+				this._el.tween(400, {
 						origin: {style: 'top: ' + (parseInt(top) - 20) + 'px'},
 						target: {style: 'top: ' + top},
 						prior: true,
 						transition: 'elasticOut',
 						complete: function() {
 							self._shaking = false
-							callback()
+							callback && callback()
 						}
 					})
 			} else {
 				left = this._el.getStyle('left')
-				this._el.tween(500, {
+				this._el.tween(400, {
 						origin: {style: 'left: ' + (parseInt(left) - 20) + 'px'},
 						target: {style: 'left: ' + left},
 						prior: true,
 						transition: 'elasticOut',
 						complete: function() {
 							self._shaking = false
-							callback()
+							callback && callback()
 						}
 					})
 			}
