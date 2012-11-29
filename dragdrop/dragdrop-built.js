@@ -222,9 +222,15 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		},
 		
 		stop: function(e) {
+			if(!this._dragging) {
+				return
+			}
 			this._scrollToRef && clearTimeout(this._scrollToRef)
-			YOM.Event.removeListener(document, 'mousemove', this._bound.startCheck)
-			YOM.Event.removeListener(document, 'mousemove', this._bound.move)
+			if(this._dragStarted) {
+				YOM.Event.removeListener(document, 'mousemove', this._bound.move)
+			} else {
+				YOM.Event.removeListener(document, 'mousemove', this._bound.startCheck)
+			}
 			YOM.Event.removeListener(document, 'mouseup', this._bound.stop)
 			YOM.Event.removeListener(document, YOM.browser.ie ? 'selectstart' : 'mousedown', this._bound.preventSelect)
 			this._dragging = false
@@ -245,7 +251,9 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		
 		destory: function() {
 			this.disable()
-			this.stop()
+			if(this._dragging) {
+				this.stop()
+			}
 			this._el = null
 			this._handles = null
 		}
