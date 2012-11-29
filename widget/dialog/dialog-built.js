@@ -103,6 +103,7 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 		this._beforeClose = opt.beforeClose || $empty
 		this._draggable = null
 		this._dragging = false
+		this._shaking = false
 		this._bound = {
 			dragstart: YOM.object.bind(this, this._dragstart),
 			dragstop: YOM.object.bind(this, this._dragstop)
@@ -373,6 +374,41 @@ define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) 
 			if(holder) {
 				holder.innerHTML = content
 			}
+		},
+		
+		shake: function(s, callback) {
+			var self = this
+			var left, top
+			if(this._shaking) {
+				return this
+			}
+			this._shaking = true
+			if(s == 'V') {
+				top = this._el.getStyle('top')
+				this._el.tween(500, {
+						origin: {style: 'top: ' + (parseInt(top) - 20) + 'px'},
+						target: {style: 'top: ' + top},
+						prior: true,
+						transition: 'elasticOut',
+						complete: function() {
+							self._shaking = false
+							callback()
+						}
+					})
+			} else {
+				left = this._el.getStyle('left')
+				this._el.tween(500, {
+						origin: {style: 'left: ' + (parseInt(left) - 20) + 'px'},
+						target: {style: 'left: ' + left},
+						prior: true,
+						transition: 'elasticOut',
+						complete: function() {
+							self._shaking = false
+							callback()
+						}
+					})
+			}
+			return this
 		},
 		
 		/**
