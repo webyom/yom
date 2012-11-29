@@ -13,7 +13,7 @@ define(['../core/core-built'], function(YOM) {
 		})
 		this._el = YOM(el)
 		this._opts = opts || {}
-		this._dragDirection = _DIRECTION_MAP[this._opts.dragDirection] || 'V'
+		this._dragDirection = _DIRECTION_MAP[this._opts.dragDirection] || 'ALL'
 		this._dragging = false
 		this._dragStarted = false
 		this._fix = this._opts.fix || 0
@@ -183,34 +183,36 @@ define(['../core/core-built'], function(YOM) {
 			var rect = YOM.Element.isBody(scrollContainer.get()) ? YOM.Element.getViewRect() : scrollContainer.getRect()
 			var advance = this._opts.scrollAdvance || Math.floor(Math.min(30, rect.width / 10, rect.height / 10))
 			var maxStep = this._opts.scrollStep || 10
-			var scrollTop = 0
-			var scrollLeft = 0
+			var scrollTop = scrollContainer.getScrollTop()
+			var scrollLeft = scrollContainer.getScrollLeft()
+			var scrollTopBy = 0
+			var scrollLeftBy = 0
 			var movePos, parentRect
 			if(mouseY + advance > rect.bottom) {
-				scrollTop = Math.min(mouseY + advance - rect.bottom, maxStep)
-				scrollContainer.scrollTopBy(scrollTop, 0)
+				scrollTopBy = Math.min(mouseY + advance - rect.bottom, maxStep)
+				scrollContainer.scrollTopBy(scrollTopBy, 0)
 			} else if(mouseY - advance < rect.top) {
-				scrollTop = Math.max(mouseY - advance - rect.top, -maxStep)
-				scrollContainer.scrollTopBy(scrollTop, 0)
+				scrollTopBy = Math.max(mouseY - advance - rect.top, -maxStep)
+				scrollContainer.scrollTopBy(scrollTopBy, 0)
 			}
 			if(mouseX + advance > rect.right) {
-				scrollLeft = Math.min(mouseX + advance - rect.right, maxStep)
-				scrollContainer.scrollLeftBy(scrollLeft, 0)
+				scrollLeftBy = Math.min(mouseX + advance - rect.right, maxStep)
+				scrollContainer.scrollLeftBy(scrollLeftBy, 0)
 			} else if(mouseX - advance < rect.left) {
-				scrollLeft = Math.max(mouseX - advance - rect.left, -maxStep)
-				scrollContainer.scrollLeftBy(scrollLeft, 0)
+				scrollLeftBy = Math.max(mouseX - advance - rect.left, -maxStep)
+				scrollContainer.scrollLeftBy(scrollLeftBy, 0)
 			}
 			this._scrollToRef && clearTimeout(this._scrollToRef)
-			if(scrollTop !== 0 || scrollLeft !== 0) {
+			if(scrollTopBy !== 0 && scrollTop != scrollContainer.getScrollTop() || scrollLeftBy !== 0 && scrollLeft != scrollContainer.getScrollLeft()) {
 				parentRect = this._el.getOffsetParent().getRect()
-				movePos = this._getMovePos(scrollLeft + parentRect.left + this._pos.now.left - this._rect.start.left, scrollTop + parentRect.top + this._pos.now.top - this._rect.start.top)
+				movePos = this._getMovePos(scrollLeftBy + parentRect.left + this._pos.now.left - this._rect.start.left, scrollTopBy + parentRect.top + this._pos.now.top - this._rect.start.top)
 				this._el.setStyle({
 					left: movePos.left + 'px',
 					top: movePos.top + 'px'
 				})
 				this._pos.now = {left: movePos.left, top: movePos.top}
 				this._scrollToRef = setTimeout(function() {
-					self._checkScroll(mouseX + scrollLeft, mouseY + scrollTop)
+					self._checkScroll(mouseX + scrollLeftBy, mouseY + scrollTopBy)
 				}, 50)
 			}
 		},
