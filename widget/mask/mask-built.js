@@ -15,7 +15,7 @@ define([], function(require) {
 	
 	function Mask(opt) {
 		opt = opt || {}
-		var style = YOM.object.extend(_defaultStyle, opt.style)
+		var style = YOM.object.extend(YOM.object.clone(_defaultStyle), opt.style)
 		this._opacity = style.opacity || '1'
 		this._target = YOM(opt.target || document.body)
 		this._el = YOM(document.body).append(YOM.Element.create('div', {}, style))
@@ -36,7 +36,11 @@ define([], function(require) {
 		
 		setStyle: function(name, val) {
 			this._el.setStyle(name, val)
-			this._opacity = this._el.getStyle('opacity')
+			if(name == 'opacity') {
+				this._opacity = val
+			} else if(typeof name == 'object' && typeof name['opacity'] != 'undefined') {
+				this._opacity = name['opacity']
+			}
 		},
 		
 		setContent: function(content) {
@@ -73,7 +77,9 @@ define([], function(require) {
 						style: {
 							opacity: this._opacity
 						}
-					}
+					},
+					css: true,
+					prior: true
 				})
 			} else {
 				this.setStyle('opacity', this._opacity)
@@ -96,7 +102,9 @@ define([], function(require) {
 					},
 					complete: function() {
 						self._el.hide()
-					}
+					},
+					css: true,
+					prior: true
 				})
 			} else {
 				this._el.hide()
