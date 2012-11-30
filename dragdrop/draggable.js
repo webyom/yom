@@ -16,7 +16,7 @@ define(['../core/core-built'], function(YOM) {
 		this._dragDirection = _DIRECTION_MAP[this._opts.dragDirection] || 'ALL'
 		this._dragging = false
 		this._dragStarted = false
-		this._fix = this._opts.fix || 0
+		this._fix = parseInt(this._opts.fix) || 0
 		this._pos = {
 			start: {left: 0, top: 0},
 			now: {left: 0, top: 0}
@@ -100,8 +100,8 @@ define(['../core/core-built'], function(YOM) {
 			var dragDirection = this._dragDirection
 			var boundary = this._opts.boundary
 			var startRect = this._rect.start
-			var toLeft = startRect.left + (dragDirection == 'V' ? 0 : moveX + fix)
-			var toTop = startRect.top + (dragDirection == 'H' ? 0 : moveY + fix)
+			var toLeft = startRect.left + (dragDirection == 'V' ? 0 : (moveX + fix))
+			var toTop = startRect.top + (dragDirection == 'H' ? 0 : (moveY + fix))
 			var viewRect, parentRect
 			if(boundary) {
 				if(boundary == 'PAGE') {

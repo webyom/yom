@@ -18,6 +18,8 @@ define(['../core/core-built', './draggable'], function(YOM, Draggable) {
 		this._dropboxes = YOM(dropboxes)
 		this._clone = this._opts.clone
 		this._startOff = typeof this._opts.startOff == 'number' ? {left: this._opts.startOff, top: this._opts.startOff} : this._opts.startOff || {left: 0, top: 0}//the distance of cloned el off the original one while mousedown
+		this._startOff.left = this._startOff.left || 0
+		this._startOff.top = this._startOff.top || 0
 		this._lastCalMouse = this._mouse.now//the last mouse position calculating overlap
 		this._lastCalTime = $now()//the last time calculating overlap
 		this._calSpaceInterval = this._opts.calSpaceInterval || 10

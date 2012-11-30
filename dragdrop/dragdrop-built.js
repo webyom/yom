@@ -16,7 +16,7 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		this._dragDirection = _DIRECTION_MAP[this._opts.dragDirection] || 'ALL'
 		this._dragging = false
 		this._dragStarted = false
-		this._fix = this._opts.fix || 0
+		this._fix = parseInt(this._opts.fix) || 0
 		this._pos = {
 			start: {left: 0, top: 0},
 			now: {left: 0, top: 0}
@@ -100,8 +100,8 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 			var dragDirection = this._dragDirection
 			var boundary = this._opts.boundary
 			var startRect = this._rect.start
-			var toLeft = startRect.left + (dragDirection == 'V' ? 0 : moveX + fix)
-			var toTop = startRect.top + (dragDirection == 'H' ? 0 : moveY + fix)
+			var toLeft = startRect.left + (dragDirection == 'V' ? 0 : (moveX + fix))
+			var toTop = startRect.top + (dragDirection == 'H' ? 0 : (moveY + fix))
 			var viewRect, parentRect
 			if(boundary) {
 				if(boundary == 'PAGE') {
@@ -290,6 +290,8 @@ define('./droppable', ['../core/core-built', './draggable'], function(YOM, Dragg
 		this._dropboxes = YOM(dropboxes)
 		this._clone = this._opts.clone
 		this._startOff = typeof this._opts.startOff == 'number' ? {left: this._opts.startOff, top: this._opts.startOff} : this._opts.startOff || {left: 0, top: 0}//the distance of cloned el off the original one while mousedown
+		this._startOff.left = this._startOff.left || 0
+		this._startOff.top = this._startOff.top || 0
 		this._lastCalMouse = this._mouse.now//the last mouse position calculating overlap
 		this._lastCalTime = $now()//the last time calculating overlap
 		this._calSpaceInterval = this._opts.calSpaceInterval || 10

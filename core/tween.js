@@ -103,21 +103,27 @@ define(['./browser', './object', './instance-manager', './element', './transitio
 	
 	function _getStyle(style) {
 		var res = {}
-		var parserEl
+		var parserEl, styleObj
 		if(!style) {
 			return res
 		}
 		if(typeof style == 'string') {
 			parserEl = _getParserEl()
 			parserEl.innerHTML = '<div style="' + style + '"></div>'
-			style = parserEl.firstChild.style
+			styleObj = parserEl.firstChild.style
+		} else {
+			styleObj = style
 		}
 		YOM.object.each(_STYLE_PROPS, function(prop) {
-			var val = style[prop]
+			var val = styleObj[prop]
 			if(val || val === 0) {
 				res[prop] = _parsePropVal(val)
 			}
 		})
+		if(typeof style == 'string') {
+			//the parserEl in ie has default z-index value
+			delete res.zIndex
+		}
 		return res
 	}
 	
