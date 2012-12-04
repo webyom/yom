@@ -216,12 +216,21 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 			return this._items.length
 		},
 		
-		each: function(fn, bind) {
-			var item
-			for(var i = 0, l = this._items.length; i < l; i++) {
-				item = this._getItem(i)
-				if(fn.call(bind || this, item.get(), i, item) === false) {
-					return this
+		each: function(fn, bind, reverse) {
+			var item, i, l
+			if(reverse) {
+				for(i = this._items.length - 1; i >= 0; i--) {
+					item = this._getItem(i)
+					if(fn.call(bind || this, item.get(), i, item) === false) {
+						return this
+					}
+				}
+			} else {
+				for(i = 0, l = this._items.length; i < l; i++) {
+					item = this._getItem(i)
+					if(fn.call(bind || this, item.get(), i, item) === false) {
+						return this
+					}
 				}
 			}
 			return this
@@ -600,16 +609,8 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 		},
 		
 		setHtml: function(html) {
-			this.get().innerHTML = html
-			return this
-		},
-		
-		removeChild: function(el) {
-			if(!(el instanceof Elem)) {
-				el = this.find(el)
-			}
-			el.each(function(child) {
-				child.parentNode.removeChild(child)
+			this.each(function(el) {
+				el.innerHTML = html
 			})
 			return this
 		},
@@ -619,113 +620,140 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 			return this
 		},
 		
-		remove: function() {
-			var el = this.get()
-			if(!el || Elem.isBody(el)) {
-				return null
+		remove: function(query) {
+			var res = []
+			if(query) {
+				this.find(query).each(function(el) {
+					res.push(el.parentNode.removeChild(el))
+				})
+			} else {
+				this.each(function(el) {
+					res.push(el.parentNode.removeChild(el))
+				})
 			}
-			return new Elem(el.parentNode.removeChild(el))
+			return new Elem(res)
 		},
 		
 		first: function() {
-			var res = null
-			var el = this.get()
-			if(!el) {
-				return res
-			}
-			new Elem(el.childNode || el.children).each(function(item) {
-				if(_isElementNode(item)) {
-					res = item
-					return false
-				}
-				return true
+			var res = []
+			this.each(function(el) {
+				new Elem(el.childNodes || el.children).each(function(el) {
+					if(_isElementNode(el)) {
+						res.push(el)
+						return false
+					}
+					return true
+				})
 			})
-			return res
+			return new Elem(res)
 		},
 		
 		next: function() {
-			var el = this.get()
-			if(!el) {
-				return null
-			}
-			return el.nextElementSibling || Elem.searchChain(el, 'nextSibling', function(el) {
-				return _isElementNode(el)
+			var res = []
+			this.each(function(el) {
+				el = el.nextElementSibling || Elem.searchChain(el, 'nextSibling', function(el) {
+					return _isElementNode(el)
+				})
+				el && res.push(el)
 			})
+			return new Elem(res)
 		},
 		
 		previous: function() {
-			var el = this.get()
-			if(!el) {
-				return null
-			}
-			return el.previousElementSibling || Elem.searchChain(el, 'previousSibling', function(el) {
-				return _isElementNode(el)
+			var res = []
+			this.each(function(el) {
+				el = el.previousElementSibling || Elem.searchChain(el, 'previousSibling', function(el) {
+					return _isElementNode(el)
+				})
+				el && res.push(el)
 			})
+			return new Elem(res)
 		},
 		
-		head: function(tar) {
-			var firstChild = this.first()
-			if(firstChild) {
-				return new Elem(this.get().insertBefore(tar, firstChild))
-			} else {
-				return this.append(tar)
-			}
+		head: function(target) {
+			var res = []
+			target = Elem.query(target)
+			this.each(function(el) {
+				target.each(function(tar) {
+					var firstChild = new Elem(el).first().get()
+					if(firstChild) {
+						res.push(el.insertBefore(tar, firstChild))
+					} else {
+						res.push(el.appendChild(tar))
+					}
+				}, target, true)
+			})
+			return new Elem(res)
 		},
 		
-		headTo: function(tar) {
-			tar = Elem.query(tar)
-			var firstChild = tar.first()
-			if(firstChild) {
-				return new Elem(tar.get().insertBefore(this.get(), firstChild))
-			} else {
-				return tar.append(this.get())
-			}
+		headTo: function(target) {
+			var res = []
+			target = Elem.query(target)
+			target.each(function(tar) {
+				this.each(function(el) {
+					var firstChild = new Elem(tar).first().get()
+					if(firstChild) {
+						res.push(tar.insertBefore(el, firstChild))
+					} else {
+						res.push(tar.appendChild(el))
+					}
+				}, this, true)
+			}, this)
+			return new Elem(res)
 		},
 		
-		append: function(el) {
-			if(_isElementNode(el)) {
-				return new Elem(this.get().appendChild(el))
-			} else if(el instanceof Elem) {
-				return new Elem(this.get().appendChild(el.get()))
-			}
-			return null
+		append: function(target) {
+			var res = []
+			target = Elem.query(target)
+			this.each(function(el) {
+				target.each(function(tar) {
+					res.push(el.appendChild(tar))
+				}, this)
+			})
+			return new Elem(res)
 		},
 		
-		appendTo: function(parent) {
-			var child = this.get()
-			if(!child) {
-				return null
-			}
-			if(_isElementNode(parent)) {
-				return new Elem(parent.appendChild(child))
-			} else if(parent instanceof Elem) {
-				return new Elem(parent.append(child))
-			}
-			return null
+		appendTo: function(target) {
+			var res = []
+			target = Elem.query(target)
+			target.each(function(tar) {
+				this.each(function(el) {
+					res.push(tar.appendChild(el))
+				})
+			}, this)
+			return new Elem(res)
 		},
 		
 		before: function(target) {
-			var el = this.get()
-			target = Elem.query(target).get()
-			if(!el || !target || Elem.isBody(target)) {
+			var res = []
+			target = Elem.query(target)
+			if(Elem.isBody(target)) {
 				return this
 			}
-			target.parentNode.insertBefore(el, target)
-			return this
+			target.each(function(tar) {
+				this.each(function(el) {
+					res.push(tar.parentNode.insertBefore(el, tar))
+				})
+			}, this)
+			return new Elem(res)
 		},
 		
 		after: function(target) {
-			var el = this.get()
-			target = Elem.query(target).get()
-			if(!el || !target || Elem.isBody(target)) {
+			var res = []
+			target = Elem.query(target)
+			if(Elem.isBody(target)) {
 				return this
 			}
-			if(target.nextSibling) {
-				target.parentNode.insertBefore(el, target.nextSibling)
-			} else {
-				target.parentNode.appendChild(el)
-			}
-			return this
+			target.each(function(tar) {
+				this.each(function(el) {
+					if(tar.nextSibling) {
+						res.push(tar.parentNode.insertBefore(el, tar.nextSibling))
+					} else {
+						res.push(tar.parentNode.appendChild(el))
+					}
+				}, this, true)
+			}, this)
+			return new Elem(res)
 		},
 		
 		clone: function(bool) {
@@ -919,4 +947,3 @@ define(['./browser', './string', './object', './array', './event'], function(bro
 	
 	return Elem
 })
-
