@@ -3921,14 +3921,15 @@ define('./widget', [], {
 /**
  * @class YOM.Event.Delegator
  */
-define('./event-delegator', ['./object', './event', './element'], function(object, Evt, Elem) {
+define('./event-delegator', ['./object', './instance-manager', './event', './element'], function(object, InstanceManager, Evt, Elem) {
 	var YOM = {
 		'object': object,
+		'InstanceManager': InstanceManager,
 		'Event': Evt,
 		'Element': Elem
 	}
 	
-	var _pageDelegator
+	var _im = new YOM.InstanceManager()
 	
 	/**
 	 * @class
@@ -3939,35 +3940,26 @@ define('./event-delegator', ['./object', './event', './element'], function(objec
 		this._delegatedTypes = {}
 		this._handlers = {}
 		this._eventHook = opt.eventHook
+		this._id = _im.add(this)
+		this._ele.setDatasetVal('yom-delegator-id', this._id)
+	}
+	
+	Delegator._im = _im
+	
+	Delegator.getDelegator = function(ele) {
+		ele = YOM.Element.query(ele)
+		var delegator = _im.get(ele.getDatasetVal('yom-delegator-id'))
+		if(!delegator) {
+			delegator = new Delegator(ele)
+		}
+		return delegator
 	}
 	
 	Delegator.getPageDelegator = function() {
-		_pageDelegator = _pageDelegator || new Delegator(document.body)
-		return _pageDelegator
+		return Delegator.getDelegator(document.body)
 	}
 	
 	Delegator.prototype = {
-		delegate: function(type, handlerName, handler, opt) {
-			type = type.toLowerCase()
-			opt = opt || {}
-			this._delegateEvent(type, opt.maxBubble >= 0 ? opt.maxBubble : 1983)
-			this._handlers[type][handlerName] = handler
-			return this
-		},
-		
-		remove: function(type, handlerName) {
-			if(!this._delegatedTypes[type]) {
-				return
-			}
-			if(handlerName) {
-				delete this._handlers[type][handlerName]
-			} else {
-				this._ele.removeEventListener(type, this._delegatedTypes[type].listener)
-				delete this._handlers[type]
-				delete this._delegatedTypes[type]
-			}
-		},
-		
 		_delegateEvent: function(type, maxBubble) {
 			var flag = this._delegatedTypes[type]
 			if(flag) {
@@ -4012,12 +4004,43 @@ define('./event-delegator', ['./object', './event', './element'], function(objec
 			}
 		},
 		
+		getId: function() {
+			return this._id
+		},
+		
+		delegate: function(type, handlerName, handler, opt) {
+			type = type.toLowerCase()
+			opt = opt || {}
+			this._delegateEvent(type, opt.maxBubble >= 0 ? opt.maxBubble : 1983)
+			this._handlers[type][handlerName] = handler
+			return this
+		},
+		
+		remove: function(type, handlerName) {
+			if(!this._delegatedTypes[type]) {
+				return
+			}
+			if(handlerName) {
+				delete this._handlers[type][handlerName]
+			} else {
+				this._ele.removeEventListener(type, this._delegatedTypes[type].listener)
+				delete this._handlers[type]
+				delete this._delegatedTypes[type]
+			}
+		},
+		
+		destroy: function() {
+			for(var type in this._delegatedTypes) {
+				this.remove(type)
+			}
+			_im.remove(this.getId())
+		},
+		
 		constructor: Delegator
 	}
 	
 	return Delegator
 })
-
 
 
 /**
