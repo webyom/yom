@@ -3206,7 +3206,7 @@ define('./pos', ['./object'], function(object) {
 		
 		getPos: function(onSuccess, onFail) {
 			if(navigator.geolocation && navigator.geolocation.getCurrentPosition) {
-				navigator.geolocation.getCurrentPosition(function (position) {
+				navigator.geolocation.getCurrentPosition(function(position) {
 					if(YOM.object.isFunction(onSuccess)) {
 						onSuccess.call(position, position.coords.latitude, position.coords.longitude)
 					}
@@ -3221,7 +3221,7 @@ define('./pos', ['./object'], function(object) {
 		
 		watchPos: function(onSuccess, onFail) {
 			if(navigator.geolocation && navigator.geolocation.watchPosition) {
-				return navigator.geolocation.watchPosition(function (position) {
+				return navigator.geolocation.watchPosition(function(position) {
 					if(YOM.object.isFunction(onSuccess)) {
 						onSuccess.call(position, position.coords.latitude, position.coords.longitude)
 					}
