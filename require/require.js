@@ -1062,5 +1062,25 @@ var define, require
 		plugin: _plugin,
 		depReverseMap: _depReverseMap
 	}
+	
+	;(function() {
+		var scripts, script, i, main, baseUrl
+		scripts = document.getElementsByTagName('script')
+		for(i = scripts.length - 1; i >= 0; i--) {
+			script = scripts[i]
+			main = script.getAttribute('data-main')
+			if(main) {
+				baseUrl = script.getAttribute('data-base-url')
+				if(baseUrl) {
+					_gcfg.baseUrl = _getFullBaseUrl(baseUrl)
+				}
+				require([main], function(main) {
+					if(_isFunction(main.init)) {
+						main.init()
+					}
+				})
+				return
+			}
+		}
+	})()
 })(this)
-
