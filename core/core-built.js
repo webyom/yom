@@ -1,4 +1,424 @@
 /**
+ * @class YOM.Error
+ */
+/*
+Code Description:
+YOM.Class
+	10101: constructor - arguments length error
+YOM.JsLoader
+	10201: load fail
+	10202: callback fail
+YOM.Xhr
+	10401: onerror
+*/
+define('./error', [], function() {
+	var YomError = function(code, opt) {
+		if(typeof opt == 'string') {
+			opt = {message: opt}
+		}
+		this.opt = opt || {}
+		if(code instanceof YomError) {
+			this.name = code.name
+			this.code = code.code
+			this.message = code.message
+		} else if(code instanceof Error || Object.prototype.toString.call(code) == '[object Error]') {
+			this.name = code.name
+			this.code = 0
+			this.message = code.message
+		} else {
+			this.name = this.opt.name || 'YOM Error'
+			this.code = +code
+			this.message = this.opt.message || ''
+		}
+	}
+	
+	YomError._ID = 101
+	
+	YomError.getCode = function(id, code) {
+		if(code < 10) {
+			code = '0' + code
+		}
+		return parseInt(id + '' + code)
+	}
+	
+	YomError.prototype.toString = function() {
+		return this.name + ': ' + this.message + (this.code ? ' [' + this.code + ']' : '')
+	}
+	
+	return YomError
+})
+
+
+/**
+ * @class YOM.Observer
+ */
+define('./observer', ['./object'], function(object) {
+	var Observer = function () {
+		this._subscribers = []
+	}
+	
+	Observer.prototype = {
+		subscribe: function(subscriber, bind) {
+			subscriber = bind ? object.bind(bind, subscriber) : subscriber
+			for(var i = 0, l = this._subscribers.length; i < l; i++) {
+				if(subscriber == this._subscribers[i]) {
+					return null
+				}
+			}
+			this._subscribers.push(subscriber)
+			return subscriber
+		},
+		
+		remove: function(subscriber) {
+			var res = []
+			if(subscriber) {
+				for(var i = this._subscribers.length - 1; i >= 0; i--) {
+					if(subscriber == this._subscribers[i]) {
+						res = res.concat(this._subscribers.splice(i, 1))
+					}
+				}
+			} else {
+				res = this._subscribers
+				this._subscribers = []
+			}
+			return res
+		},
+		
+		dispatch: function(e, bind) {
+			var res, tmp, subscriber
+			for(var i = this._subscribers.length - 1; i >= 0; i--) {
+				subscriber = this._subscribers[i]
+				if(!subscriber) {
+					continue			
+				}
+				tmp = subscriber.call(bind, e)
+				res = tmp === false || res === false ? false : tmp
+			}
+			return res
+		},
+		
+		constructor: Observer
+	}
+	
+	Observer._ID = 111
+	
+	return Observer
+})
+
+
+/**
+ * @namespace YOM.browser
+ */
+define('./browser', [], function() {
+	var _ua = navigator.userAgent.toLowerCase()
+	
+	return {
+		_ID: 104,
+		v: +(_ua.match(/(?:version|firefox|chrome|safari|opera|msie)[\/: ]([\d]+)/) || [0, 0])[1],
+		ie: (/msie/).test(_ua) && !(/opera/).test(_ua),
+		opera: (/opera/).test(_ua),
+		firefox: (/firefox/).test(_ua),
+		chrome: (/chrome/).test(_ua),
+		safari: (/safari/).test(_ua) && !(/chrome/).test(_ua) && !(/android/).test(_ua),
+		iphone: (/iphone|ipod/).test(_ua),
+		ipad: (/ipad/).test(_ua),
+		android: (/android/).test(_ua),
+		
+		isQuirksMode: function() {
+			return document.compatMode != 'CSS1Compat'
+		}
+	}
+})
+
+
+
+/**
+ * @namespace YOM.string
+ */
+define('./string', [], {
+	_ID: 117,
+	
+	getByteLength: function(str) {
+		return str.replace(/[^\x00-\xff]/g, 'xx').length
+	},
+	
+	headByByte: function(str, len, postFix) {
+		if(this.getByteLength(str) <= len) {
+			return str
+		}
+		postFix = postFix || ''
+		var l
+		if(postFix) {
+			l = len = len - this.getByteLength(postFix)
+		} else {
+			l = len
+		}
+		do {
+			str = str.slice(0, l--)
+		} while(this.getByteLength(str) > len)
+		return str + postFix
+	},
+	
+	encodeHtml: function(str) {
+		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\x60/g, '&#96;').replace(/\x27/g, '&#39;').replace(/\x22/g, '&quot;')
+	},
+	
+	decodeHtml: function(str) {
+		return (str + '').replace(/&quot;/g, '\x22').replace(/&#0*39;/g, '\x27').replace(/&#0*96;/g, '\x60').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&')
+	},
+	
+	trim: function(str) {
+		if(str.trim) {
+			return str.trim()
+		} else {
+			return str.replace(/^\s+|\s+$/, '')
+		}
+	},
+	
+	toCamelCase: function(str) {
+		return str.replace(/[-_]+(\w)([^-_]*)/g, function($1, $2, $3) {return $2.toUpperCase() + $3.toLowerCase()})
+	},
+	
+	toJoinCase: function(str, joiner) {
+		joiner = joiner || '-'
+		return str.replace(/[A-Z]/g, function($1) {return joiner + $1.toLowerCase()}).replace(new RegExp("^" + joiner), '')
+	}
+})
+
+
+/**
+ * @class YOM.Event
+ */
+define('./event', ['./error', './object', './observer'], function(Err, object, Observer) {
+	var YOM = {
+		'Error': Err,
+		'object': object,
+		'Observer': Observer
+	}
+	
+	var _ID = 108
+	
+	var _elRefCount = 0
+	_customizedEventHash = {
+		
+	}
+	
+	function _getObserver(instance, type) {
+		if(!instance instanceof Evt) {
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1))
+		}
+		instance._observers = instance._observers || {}
+		instance._observers[type] = instance._observers[type] || new YOM.Observer()
+		return instance._observers[type]
+	}
+	
+	function _getObservers(instance) {
+		if(!instance instanceof Evt) {
+			throw new YOM.Error(YOM.Error.getCode(_ID, 1))
+		}
+		instance._observers = instance._observers || {}
+		return instance._observers
+	}
+	
+	function Evt(observers) {
+		this._observers = YOM.object.getClean(observers) || {}
+	}
+	
+	Evt.prototype = {
+		addObservers: function(newObservers) {
+			var observers = _getObservers(this)
+			newObservers = YOM.object.getClean(newObservers)
+			for(var type in newObservers) {
+				if(newObservers[type] instanceof YOM.Observer) {
+					observers[type] = newObservers[type]
+				}
+			}
+		},
+		
+		addEventListener: function(type, listener, bind) {
+			var observer = _getObserver(this, type)
+			if(!observer) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 1))
+			}
+			return observer.subscribe(listener, bind)
+		},
+		
+		removeEventListener: function(type, listener) {
+			var observer = _getObserver(this, type)
+			if(!observer) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 2))
+			}
+			return observer.remove(listener)
+		},
+		
+		dispatchEvent: function(e, asyn) {
+			if(typeof e == 'string') {
+				e = {type: e}
+			}
+			var self = this
+			var observer = _getObserver(this, e.type)
+			if(!observer) {
+				throw new YOM.Error(YOM.Error.getCode(_ID, 3))
+			}
+			if(asyn) {
+				setTimeout(function() {
+					observer.dispatch.call(observer, e, self)
+				}, 0)
+				return undefined
+			} else {
+				return observer.dispatch.call(observer, e, self)
+			}
+		},
+		
+		createEvent: function(type, opt) {
+			var e = YOM.object.clone(opt) || {}
+			e.type = type
+			return e
+		},
+		
+		constructor: Evt
+	}
+	
+	Evt.addListener = function(el, eType, listener, bind) {
+		var cEvent, cEventHandler
+		eType = eType.toLowerCase()
+		listener = bind ? YOM.object.bind(bind, listener) : listener
+		cEvent = _customizedEventHash[eType]
+		if(cEvent) {
+			el.elEventRef = el.elEventRef || ++_elRefCount
+			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef]
+			if(!cEventHandler) {
+				cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef] = new cEvent.Handler(el)
+			}
+			cEventHandler.addListener(listener)
+		} else if(el.addEventListener) {
+			el.addEventListener(eType, listener, false)
+		} else {
+			el.attachEvent('on' + eType, listener)
+		}
+		return listener
+	}
+	
+	Evt.removeListener = function(el, eType, listener) {
+		var cEvent, cEventHandler
+		eType = eType.toLowerCase()
+		cEvent = _customizedEventHash[eType]
+		if(cEvent) {
+			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef]
+			if(cEventHandler) {
+				cEventHandler.removeListener(listener)
+			}
+		} else if(el.removeEventListener) {
+			el.removeEventListener(eType, listener, false)
+		} else {
+			el.detachEvent('on' + eType, listener)
+		}
+	}
+	
+	Evt.addCustomizedEvent = function(type, Handler) {
+		_customizedEventHash[type] = {
+			Handler: Handler,
+			elEventRefHandlerHash: {}
+		}
+	}
+	
+	Evt.removeCustomizedEventHandler = function(type, ref) {
+		var cEvent = _customizedEventHash[type]
+		if(cEvent) {
+			cEvent.elEventRefHandlerHash[ref] = null
+		}
+	}
+	
+	Evt.cancelBubble = function(e) {
+		if(e.stopPropagation) {
+			e.stopPropagation()
+		} else {
+			e.cancelBubble = true
+		}
+	}
+	
+	Evt.preventDefault = function(e) {
+		if(e.preventDefault) {
+			e.preventDefault()
+		} else {
+			e.returnValue = false
+		}
+	}
+	
+	Evt.getTarget = function(e) {
+		return e.target || e.srcElement
+	}
+	
+	Evt.getPageX = function(e) {
+		return e.pageX != undefined ? e.pageX : e.clientX + Math.max(document.documentElement.scrollLeft, document.body.scrollLeft)
+	}
+	
+	Evt.getPageY = function(e) {
+		return e.pageY != undefined ? e.pageY : e.clientY + Math.max(document.documentElement.scrollTop, document.body.scrollTop)
+	}
+	
+	return Evt
+})
+
+
+/**
+ * @namespace YOM.array
+ */
+define('./array', ['require', './object'], function(require) {
+	return {
+		_ID: 103,
+		
+		isArray: Array.isArray || function(obj) {
+			var object = require('./object')
+			return object.toString(obj) == '[object Array]'
+		},
+	
+		each: function(arr, fn, bind) {
+			for(var i = 0, l = arr.length; i < l; i++) {
+				if(fn.call(bind || arr, arr[i], i, arr) === false) {
+					break
+				}
+			}
+		},
+		
+		remove: function(arr, item) {
+			var isFn = typeof item == 'function'
+			var flag
+			for(var i = arr.length - 1; i >= 0; i--) {
+				flag = isFn && item(arr[i], i, arr)
+				if(arr[i] == item || flag) {
+					arr.splice(i, 1)
+					if(flag === -1) {
+						break
+					}
+				}
+			}
+			return arr
+		},
+		
+		getArray: function(obj) {
+			return Array.prototype.slice.call(obj)
+		},
+		
+		filter: function(arr, fn) {
+			var object = require('./object')
+			if(typeof arr.filter == 'function') {
+				return arr.filter(fn)
+			} else {
+				var res = []
+				object.each(arr, function(item, i) {
+					if(fn(item, i, arr)) {
+						res.push(item)
+					}
+				})
+				return res
+			}
+		}
+	}
+})
+
+
+/**
  * @namespace YOM.object
  */
 define('./object', ['require', 'exports', 'module', './array'], function(require) {
@@ -1146,194 +1566,6 @@ define('./config', [], function() {
 
 
 /**
- * @class YOM.Error
- */
-/*
-Code Description:
-YOM.Class
-	10101: constructor - arguments length error
-YOM.JsLoader
-	10201: load fail
-	10202: callback fail
-YOM.Xhr
-	10401: onerror
-*/
-define('./error', [], function() {
-	var YomError = function(code, opt) {
-		if(typeof opt == 'string') {
-			opt = {message: opt}
-		}
-		this.opt = opt || {}
-		if(code instanceof YomError) {
-			this.name = code.name
-			this.code = code.code
-			this.message = code.message
-		} else if(code instanceof Error || Object.prototype.toString.call(code) == '[object Error]') {
-			this.name = code.name
-			this.code = 0
-			this.message = code.message
-		} else {
-			this.name = this.opt.name || 'YOM Error'
-			this.code = +code
-			this.message = this.opt.message || ''
-		}
-	}
-	
-	YomError._ID = 101
-	
-	YomError.getCode = function(id, code) {
-		if(code < 10) {
-			code = '0' + code
-		}
-		return parseInt(id + '' + code)
-	}
-	
-	YomError.prototype.toString = function() {
-		return this.name + ': ' + this.message + (this.code ? ' [' + this.code + ']' : '')
-	}
-	
-	return YomError
-})
-
-
-/**
- * @namespace YOM.browser
- */
-define('./browser', [], function() {
-	var _ua = navigator.userAgent.toLowerCase()
-	
-	return {
-		_ID: 104,
-		v: +(_ua.match(/(?:version|firefox|chrome|safari|opera|msie)[\/: ]([\d]+)/) || [0, 0])[1],
-		ie: (/msie/).test(_ua) && !(/opera/).test(_ua),
-		opera: (/opera/).test(_ua),
-		firefox: (/firefox/).test(_ua),
-		chrome: (/chrome/).test(_ua),
-		safari: (/safari/).test(_ua) && !(/chrome/).test(_ua) && !(/android/).test(_ua),
-		iphone: (/iphone|ipod/).test(_ua),
-		ipad: (/ipad/).test(_ua),
-		android: (/android/).test(_ua),
-		
-		isQuirksMode: function() {
-			return document.compatMode != 'CSS1Compat'
-		}
-	}
-})
-
-
-
-/**
- * @namespace YOM.string
- */
-define('./string', [], {
-	_ID: 117,
-	
-	getByteLength: function(str) {
-		return str.replace(/[^\x00-\xff]/g, 'xx').length
-	},
-	
-	headByByte: function(str, len, postFix) {
-		if(this.getByteLength(str) <= len) {
-			return str
-		}
-		postFix = postFix || ''
-		var l
-		if(postFix) {
-			l = len = len - this.getByteLength(postFix)
-		} else {
-			l = len
-		}
-		do {
-			str = str.slice(0, l--)
-		} while(this.getByteLength(str) > len)
-		return str + postFix
-	},
-	
-	encodeHtml: function(str) {
-		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\x60/g, '&#96;').replace(/\x27/g, '&#39;').replace(/\x22/g, '&quot;')
-	},
-	
-	decodeHtml: function(str) {
-		return (str + '').replace(/&quot;/g, '\x22').replace(/&#0*39;/g, '\x27').replace(/&#0*96;/g, '\x60').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&')
-	},
-	
-	trim: function(str) {
-		if(str.trim) {
-			return str.trim()
-		} else {
-			return str.replace(/^\s+|\s+$/, '')
-		}
-	},
-	
-	toCamelCase: function(str) {
-		return str.replace(/[-_]+(\w)([^-_]*)/g, function($1, $2, $3) {return $2.toUpperCase() + $3.toLowerCase()})
-	},
-	
-	toJoinCase: function(str, joiner) {
-		joiner = joiner || '-'
-		return str.replace(/[A-Z]/g, function($1) {return joiner + $1.toLowerCase()}).replace(new RegExp("^" + joiner), '')
-	}
-})
-
-
-/**
- * @namespace YOM.array
- */
-define('./array', ['require', './object'], function(require) {
-	return {
-		_ID: 103,
-		
-		isArray: Array.isArray || function(obj) {
-			var object = require('./object')
-			return object.toString(obj) == '[object Array]'
-		},
-	
-		each: function(arr, fn, bind) {
-			for(var i = 0, l = arr.length; i < l; i++) {
-				if(fn.call(bind || arr, arr[i], i, arr) === false) {
-					break
-				}
-			}
-		},
-		
-		remove: function(arr, item) {
-			var isFn = typeof item == 'function'
-			var flag
-			for(var i = arr.length - 1; i >= 0; i--) {
-				flag = isFn && item(arr[i], i, arr)
-				if(arr[i] == item || flag) {
-					arr.splice(i, 1)
-					if(flag === -1) {
-						break
-					}
-				}
-			}
-			return arr
-		},
-		
-		getArray: function(obj) {
-			return Array.prototype.slice.call(obj)
-		},
-		
-		filter: function(arr, fn) {
-			var object = require('./object')
-			if(typeof arr.filter == 'function') {
-				return arr.filter(fn)
-			} else {
-				var res = []
-				object.each(arr, function(item, i) {
-					if(fn(item, i, arr)) {
-						res.push(item)
-					}
-				})
-				return res
-			}
-		}
-	}
-})
-
-
-/**
  * @class YOM.Class
  */
 define('./class', ['./error', './object', './array'], function(Err, object, array) {
@@ -2000,238 +2232,6 @@ define('./json', ['./error', './object', './array', './json-sans-eval'], functio
 	}
 })
 
-
-
-/**
- * @class YOM.Observer
- */
-define('./observer', ['./object'], function(object) {
-	var Observer = function () {
-		this._subscribers = []
-	}
-	
-	Observer.prototype = {
-		subscribe: function(subscriber, bind) {
-			subscriber = bind ? object.bind(bind, subscriber) : subscriber
-			for(var i = 0, l = this._subscribers.length; i < l; i++) {
-				if(subscriber == this._subscribers[i]) {
-					return null
-				}
-			}
-			this._subscribers.push(subscriber)
-			return subscriber
-		},
-		
-		remove: function(subscriber) {
-			var res = []
-			if(subscriber) {
-				for(var i = this._subscribers.length - 1; i >= 0; i--) {
-					if(subscriber == this._subscribers[i]) {
-						res = res.concat(this._subscribers.splice(i, 1))
-					}
-				}
-			} else {
-				res = this._subscribers
-				this._subscribers = []
-			}
-			return res
-		},
-		
-		dispatch: function(e, bind) {
-			var res, tmp, subscriber
-			for(var i = this._subscribers.length - 1; i >= 0; i--) {
-				subscriber = this._subscribers[i]
-				if(!subscriber) {
-					continue			
-				}
-				tmp = subscriber.call(bind, e)
-				res = tmp === false || res === false ? false : tmp
-			}
-			return res
-		},
-		
-		constructor: Observer
-	}
-	
-	Observer._ID = 111
-	
-	return Observer
-})
-
-
-/**
- * @class YOM.Event
- */
-define('./event', ['./error', './object', './observer'], function(Err, object, Observer) {
-	var YOM = {
-		'Error': Err,
-		'object': object,
-		'Observer': Observer
-	}
-	
-	var _ID = 108
-	
-	var _elRefCount = 0
-	_customizedEventHash = {
-		
-	}
-	
-	function _getObserver(instance, type) {
-		if(!instance instanceof Evt) {
-			throw new YOM.Error(YOM.Error.getCode(_ID, 1))
-		}
-		instance._observers = instance._observers || {}
-		instance._observers[type] = instance._observers[type] || new YOM.Observer()
-		return instance._observers[type]
-	}
-	
-	function _getObservers(instance) {
-		if(!instance instanceof Evt) {
-			throw new YOM.Error(YOM.Error.getCode(_ID, 1))
-		}
-		instance._observers = instance._observers || {}
-		return instance._observers
-	}
-	
-	function Evt(observers) {
-		this._observers = YOM.object.getClean(observers) || {}
-	}
-	
-	Evt.prototype = {
-		addObservers: function(newObservers) {
-			var observers = _getObservers(this)
-			newObservers = YOM.object.getClean(newObservers)
-			for(var type in newObservers) {
-				if(newObservers[type] instanceof YOM.Observer) {
-					observers[type] = newObservers[type]
-				}
-			}
-		},
-		
-		addEventListener: function(type, listener, bind) {
-			var observer = _getObserver(this, type)
-			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(_ID, 1))
-			}
-			return observer.subscribe(listener, bind)
-		},
-		
-		removeEventListener: function(type, listener) {
-			var observer = _getObserver(this, type)
-			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(_ID, 2))
-			}
-			return observer.remove(listener)
-		},
-		
-		dispatchEvent: function(e, asyn) {
-			if(typeof e == 'string') {
-				e = {type: e}
-			}
-			var self = this
-			var observer = _getObserver(this, e.type)
-			if(!observer) {
-				throw new YOM.Error(YOM.Error.getCode(_ID, 3))
-			}
-			if(asyn) {
-				setTimeout(function() {
-					observer.dispatch.call(observer, e, self)
-				}, 0)
-				return undefined
-			} else {
-				return observer.dispatch.call(observer, e, self)
-			}
-		},
-		
-		createEvent: function(type, opt) {
-			var e = YOM.object.clone(opt) || {}
-			e.type = type
-			return e
-		},
-		
-		constructor: Evt
-	}
-	
-	Evt.addListener = function(el, eType, listener, bind) {
-		var cEvent, cEventHandler
-		eType = eType.toLowerCase()
-		listener = bind ? YOM.object.bind(bind, listener) : listener
-		cEvent = _customizedEventHash[eType]
-		if(cEvent) {
-			el.elEventRef = el.elEventRef || ++_elRefCount
-			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef]
-			if(!cEventHandler) {
-				cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef] = new cEvent.Handler(el)
-			}
-			cEventHandler.addListener(listener)
-		} else if(el.addEventListener) {
-			el.addEventListener(eType, listener, false)
-		} else {
-			el.attachEvent('on' + eType, listener)
-		}
-		return listener
-	}
-	
-	Evt.removeListener = function(el, eType, listener) {
-		var cEvent, cEventHandler
-		eType = eType.toLowerCase()
-		cEvent = _customizedEventHash[eType]
-		if(cEvent) {
-			cEventHandler = cEvent.elEventRefHandlerHash[el.elEventRef]
-			if(cEventHandler) {
-				cEventHandler.removeListener(listener)
-			}
-		} else if(el.removeEventListener) {
-			el.removeEventListener(eType, listener, false)
-		} else {
-			el.detachEvent('on' + eType, listener)
-		}
-	}
-	
-	Evt.addCustomizedEvent = function(type, Handler) {
-		_customizedEventHash[type] = {
-			Handler: Handler,
-			elEventRefHandlerHash: {}
-		}
-	}
-	
-	Evt.removeCustomizedEventHandler = function(type, ref) {
-		var cEvent = _customizedEventHash[type]
-		if(cEvent) {
-			cEvent.elEventRefHandlerHash[ref] = null
-		}
-	}
-	
-	Evt.cancelBubble = function(e) {
-		if(e.stopPropagation) {
-			e.stopPropagation()
-		} else {
-			e.cancelBubble = true
-		}
-	}
-	
-	Evt.preventDefault = function(e) {
-		if(e.preventDefault) {
-			e.preventDefault()
-		} else {
-			e.returnValue = false
-		}
-	}
-	
-	Evt.getTarget = function(e) {
-		return e.target || e.srcElement
-	}
-	
-	Evt.getPageX = function(e) {
-		return e.pageX != undefined ? e.pageX : e.clientX + Math.max(document.documentElement.scrollLeft, document.body.scrollLeft)
-	}
-	
-	Evt.getPageY = function(e) {
-		return e.pageY != undefined ? e.pageY : e.clientY + Math.max(document.documentElement.scrollTop, document.body.scrollTop)
-	}
-	
-	return Evt
-})
 
 
 define('./sizzle', [], function() {

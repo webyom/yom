@@ -8,7 +8,7 @@
 var define, require
 
 ;(function(global) {
-	if(require._YOM_) {
+	if(require && require._YOM_) {
 		return
 	}
 	
@@ -1076,7 +1076,7 @@ var define, require
 				}
 				require([main], function(main) {
 					if(_isFunction(main.init)) {
-						main.init()
+						main.init(script.getAttribute('data-param'))
 					}
 				})
 				return

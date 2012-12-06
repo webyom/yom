@@ -108,6 +108,28 @@ function getDeps(def, relative, exclude) {
 	return deps
 }
 
+function traversalGetRelativeDeps(inputDir, def, exclude, processed) {
+	var deps = getDeps(def, true, exclude)
+	var res = []
+	var depId, fileName
+	processed = processed || {}
+	while(deps.length) {
+		depId = deps.shift()
+		if(processed[depId]) {
+			continue
+		} else {
+			res.push(depId)
+			processed[depId] = 1
+		}
+		if(!(/\.tpl.html?$/).test(depId)) {
+			fileName = path.resolve(inputDir, depId + '.js')
+			def = fs.readFileSync(fileName, charset)
+			res = traversalGetRelativeDeps(inputDir, def, exclude, processed).concat(res)
+		}
+	}
+	return res
+}
+
 function getTmplFnName(str) {
 	var fnName = (str + '').replace(/(?:[-_\.]+|(?:\.*\/)+)(\w)([^-_\.\/]*)/g, function($1, $2, $3) {return $2.toUpperCase() + $3})
 	fnName = fnName.charAt(0).toLowerCase() + fnName.slice(1)
@@ -265,7 +287,7 @@ function buildOne(info, callback, ignoreSrc) {
 		if((/\.tpl.html?$/).test(input)) {
 			fileContent.push(compileTmpl(content))
 		} else {
-			deps = getDeps(content, true, info.exclude)
+			deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
 			while(deps.length) {
 				depId = deps.shift()
 				if((/\.tpl.html?$/).test(depId)) {
