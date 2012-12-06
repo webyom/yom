@@ -36,13 +36,17 @@ define(['./error', './object', './array', './json-sans-eval'], function(Err, obj
 		
 		stringify: function(obj, prettify, objIndentLevel) {
 			var self = this
-			var res, tmp, indent, newLine
+			var res, tmp, indent, newLine, colon, comma
 			if(prettify) {
 				objIndentLevel = objIndentLevel || 1
 				newLine = '\n'
+				colon = ': '
+				comma = ', '
 			} else {
 				objIndentLevel = 0
 				newLine = ''
+				colon = ':'
+				comma = ','
 			}
 			switch(typeof obj) {
 			case 'string':
@@ -75,7 +79,7 @@ define(['./error', './object', './array', './json-sans-eval'], function(Err, obj
 						var s = self.stringify(val, prettify, objIndentLevel)
 						s && tmp.push(s)
 					})
-					res = '[' + tmp.join(', ') + ']'
+					res = '[' + tmp.join(comma) + ']'
 				} else {
 					indent = []
 					for(var i = 0; i < objIndentLevel; i++) {
@@ -87,12 +91,12 @@ define(['./error', './object', './array', './json-sans-eval'], function(Err, obj
 						}
 						if(YOM.object.hasOwnProperty(obj, key)) {
 							var s = self.stringify(val, prettify, objIndentLevel + 1)
-							s && tmp.push(indent.join('') + _quote(key) + ': ' + s)
+							s && tmp.push(indent.join('') + _quote(key) + colon + s)
 						}
 					})
 					indent.pop()
 					if(tmp.length) {
-						res = '{' + newLine + tmp.join(', ' + newLine) + newLine + indent.join('') + '}'
+						res = '{' + newLine + tmp.join(comma + newLine) + newLine + indent.join('') + '}'
 					} else {
 						res = '{}'
 					}
