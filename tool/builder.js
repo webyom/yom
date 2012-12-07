@@ -208,7 +208,7 @@ function buildOneDir(info, callback, baseName) {
 	var buildTotal = buildList.length
 	var ignore = info.ignore || {}
 	baseName = baseName || ''
-	if(!baseName && info.ignore) {
+	if(!baseName/*avoid recalculating*/ && info.ignore) {
 		ignore = {}
 		for(var dir in info.ignore) {
 			if(info.ignore.hasOwnProperty(dir)) {
@@ -240,7 +240,7 @@ function buildOneDir(info, callback, baseName) {
 				log('Done!')
 				build()
 			} else if(fs.statSync(inputFile).isDirectory()) {
-				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude}, function() {
+				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude, ignore: ignore}, function() {
 					build()
 				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile))
 			} else {
