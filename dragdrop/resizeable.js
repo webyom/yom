@@ -73,8 +73,8 @@ define(['../core/core-built', './draggable'], function(YOM, Draggable) {
 		this._startPos = null
 		this._startRect = null
 		this.bound = {
-			mousedown: $bind(this, this._mousedown),
-			move: $bind(this, this._move)	
+			mousedown: YOM.object.bind(this, this._mousedown),
+			move: YOM.object.bind(this, this._move)	
 		}
 		this._resizeHandles = []
 		this._init()

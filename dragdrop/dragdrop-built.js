@@ -27,10 +27,10 @@ define('./draggable', ['../core/core-built'], function(YOM) {
 		}
 		this._rect = {start: null, now: null}
 		this._bound = {
-			mousedown: $bind(this, this._mousedown),
-			startCheck: $bind(this, this._startCheck),
-			move: $bind(this, this._move),
-			stop: $bind(this, this.stop),
+			mousedown: YOM.object.bind(this, this._mousedown),
+			startCheck: YOM.object.bind(this, this._startCheck),
+			move: YOM.object.bind(this, this._move),
+			stop: YOM.object.bind(this, this.stop),
 			preventSelect: function(e) {YOM.Event.preventDefault(e)}
 		}
 		this._handles = this._opts.handles ? YOM(this._opts.handles, this._el) : this._el
@@ -518,15 +518,15 @@ define('./sortable', ['../core/core-built', './droppable'], function(YOM, Droppa
 		})
 		this._id = $getUniqueId()
 		this._opts = opts || {}
-		this._opts.clone = typeof this._opts.clone == 'function' ? this._opts.clone : $bind(this, this._clone)
+		this._opts.clone = typeof this._opts.clone == 'function' ? this._opts.clone : YOM.object.bind(this, this._clone)
 		this._opts.enterDirection = _DIRECTION_MAP[this._opts.enterDirection]
 		this._sortDirection = this._opts.enterDirection || _DIRECTION_MAP[this._opts.sortDirection] || 'V'
 		this._droppables = []
 		this._bound = {
-			start: $bind(this, this._start),
-			enter: $bind(this, this._enter),
-			move: $bind(this, this._move),
-			release: $bind(this, this._release)
+			start: YOM.object.bind(this, this._start),
+			enter: YOM.object.bind(this, this._enter),
+			move: YOM.object.bind(this, this._move),
+			release: YOM.object.bind(this, this._release)
 		}
 		this._placeHolder = this._getHolder()
 		this._lastDropbox = null
@@ -539,7 +539,7 @@ define('./sortable', ['../core/core-built', './droppable'], function(YOM, Droppa
 	
 	YOM.Class.extend(Sortable, YOM.Event)
 	
-	Sortable.prototype = $extend(Sortable.prototype, {
+	Sortable.prototype = YOM.object.extend(Sortable.prototype, {
 		_clone: function(el, startRect) {
 			var w = parseInt(el.getStyle('width'))
 			var h = parseInt(el.getStyle('height'))
@@ -583,7 +583,7 @@ define('./sortable', ['../core/core-built', './droppable'], function(YOM, Droppa
 			var dropAfter = move > 0 ? 1 : 0
 			this._lastDropbox = e.dropbox.get()
 			this._lastMove = move
-			if(this.dispatchEvent(this.createEvent('sortenter', $extend(e, {dropAfter: dropAfter}))) ===  false) {
+			if(this.dispatchEvent(this.createEvent('sortenter', YOM.object.extend(e, {dropAfter: dropAfter}))) ===  false) {
 				return
 			}
 			if(dropAfter) {
@@ -622,7 +622,7 @@ define('./sortable', ['../core/core-built', './droppable'], function(YOM, Droppa
 				return
 			}
 			this._lastMove = move
-			if(this.dispatchEvent(this.createEvent('sortmove', $extend(e, {dropAfter: dropAfter}))) ===  false) {
+			if(this.dispatchEvent(this.createEvent('sortmove', YOM.object.extend(e, {dropAfter: dropAfter}))) ===  false) {
 				return
 			}
 			if(dropAfter) {
@@ -873,8 +873,8 @@ define('./resizeable', ['../core/core-built', './draggable'], function(YOM, Drag
 		this._startPos = null
 		this._startRect = null
 		this.bound = {
-			mousedown: $bind(this, this._mousedown),
-			move: $bind(this, this._move)	
+			mousedown: YOM.object.bind(this, this._mousedown),
+			move: YOM.object.bind(this, this._move)	
 		}
 		this._resizeHandles = []
 		this._init()

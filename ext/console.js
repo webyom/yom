@@ -21,7 +21,7 @@ define(['require', 'exports', 'module', 'global', '../core/core-built', './chunk
 	}
 	
 	function _colExp() {
-		$query(_el.output).toggle(function(type) {
+		YOM(_el.output).toggle(function(type) {
 			if(type == 'SHOW') {
 				_el.colExpBtn.innerHTML = '-'
 				_el.colExpBtn.title = 'Minimize'
@@ -224,12 +224,12 @@ define(['require', 'exports', 'module', 'global', '../core/core-built', './chunk
 	}
 	
 	function show() {
-		$query(_el.container).show()
+		YOM(_el.container).show()
 		return this
 	}
 	
 	function hide() {
-		$query(_el.container).hide()
+		YOM(_el.container).hide()
 		return this
 	}
 	

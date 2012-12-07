@@ -4349,7 +4349,7 @@ define('./element-fx', ['./object', './array', './element', './tween'], function
 /**
  * @namespace
  */
-define(['require', 'exports', 'module', './object', './element', './config', './error', './browser', './string', './array', './class', './hash-array', './instance-manager', './json-sans-eval', './json', './observer', './event', './sizzle', './transition', './tween', './cookie', './xhr', './cross-domain-poster', './pos', './util', './js-loader', './css', './tmpl', './flash', './widget', './event-delegator', './event-virtual-handler', './event-mouseenter', './event-mouseleave', './element-fx', 'yom/core/element', 'yom/core/object'], function(require) {
+define(['require', 'exports', 'module', './object', './element', './config', './error', './browser', './string', './array', './class', './hash-array', './instance-manager', './json-sans-eval', './json', './observer', './event', './sizzle', './transition', './tween', './cookie', './xhr', './cross-domain-poster', './pos', './util', './js-loader', './css', './tmpl', './flash', './widget', './event-delegator', './event-virtual-handler', './event-mouseenter', './event-mouseleave', './element-fx'], function(require) {
 	var YOM = function(sel, context) {
 		return Elem.query(sel, context)
 	}
@@ -4406,26 +4406,6 @@ function $id(id) {
 	return document.getElementById(id)
 }
 
-function $query(sel, context) {
-	var Element = require('yom/core/element')
-	return Element.query(sel, context)
-}
-
-function $getClean(obj) {
-	var object = require('yom/core/object')
-	return object.getClean(obj)
-}
-
-function $extend(origin, extend, check) {
-	var object = require('yom/core/object')
-	return object.extend(origin, extend, check)
-}
-
-function $bind(that, fn) {
-	var object = require('yom/core/object')
-	return object.bind(that, fn)
-}
-
 function $now() {
 	return +new Date()
 }
@@ -4436,4 +4416,3 @@ var _yom_unique_id_count = 0
 function $getUniqueId() {
 	return 'YOM_UNIQUE_ID_' + _yom_unique_id_count++	
 }
-

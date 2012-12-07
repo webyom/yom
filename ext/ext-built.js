@@ -113,7 +113,7 @@ define('./console', ['require', 'exports', 'module', 'global', '../core/core-bui
 	}
 	
 	function _colExp() {
-		$query(_el.output).toggle(function(type) {
+		YOM(_el.output).toggle(function(type) {
 			if(type == 'SHOW') {
 				_el.colExpBtn.innerHTML = '-'
 				_el.colExpBtn.title = 'Minimize'
@@ -316,12 +316,12 @@ define('./console', ['require', 'exports', 'module', 'global', '../core/core-bui
 	}
 	
 	function show() {
-		$query(_el.container).show()
+		YOM(_el.container).show()
 		return this
 	}
 	
 	function hide() {
-		$query(_el.container).hide()
+		YOM(_el.container).hide()
 		return this
 	}
 	

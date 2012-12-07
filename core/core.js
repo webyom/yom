@@ -58,26 +58,6 @@ function $id(id) {
 	return document.getElementById(id)
 }
 
-function $query(sel, context) {
-	var Element = require('yom/core/element')
-	return Element.query(sel, context)
-}
-
-function $getClean(obj) {
-	var object = require('yom/core/object')
-	return object.getClean(obj)
-}
-
-function $extend(origin, extend, check) {
-	var object = require('yom/core/object')
-	return object.extend(origin, extend, check)
-}
-
-function $bind(that, fn) {
-	var object = require('yom/core/object')
-	return object.bind(that, fn)
-}
-
 function $now() {
 	return +new Date()
 }
@@ -88,4 +68,3 @@ var _yom_unique_id_count = 0
 function $getUniqueId() {
 	return 'YOM_UNIQUE_ID_' + _yom_unique_id_count++	
 }
-

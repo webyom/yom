@@ -27,10 +27,10 @@ define(['../core/core-built'], function(YOM) {
 		}
 		this._rect = {start: null, now: null}
 		this._bound = {
-			mousedown: $bind(this, this._mousedown),
-			startCheck: $bind(this, this._startCheck),
-			move: $bind(this, this._move),
-			stop: $bind(this, this.stop),
+			mousedown: YOM.object.bind(this, this._mousedown),
+			startCheck: YOM.object.bind(this, this._startCheck),
+			move: YOM.object.bind(this, this._move),
+			stop: YOM.object.bind(this, this.stop),
 			preventSelect: function(e) {YOM.Event.preventDefault(e)}
 		}
 		this._handles = this._opts.handles ? YOM(this._opts.handles, this._el) : this._el
