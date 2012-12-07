@@ -93,6 +93,22 @@ var define, require
 		return script
 	}
 	
+	function _getUrlParamObj(str) {
+		if(!str) {
+			return {}
+		}
+		var param = {}
+		var tmp = str.replace(/^[?#]/, '').split('&')
+		var i, item, key, val
+		for(i = 0; i < tmp.length; i++) {
+			item = tmp[i].split('=')
+			key = item[0]
+			val = decodeURIComponent(item[1] || '')
+			param[key] = val
+		}
+		return param
+	}
+	
 	/**
 	 * config
 	 */
@@ -623,7 +639,11 @@ var define, require
 		} else if(_gcfg.errCallback) {
 			_gcfg.errCallback(code, opt)
 		} else {
-			throw new Error('Load error.')
+			if(opt.uri) {
+				throw new Error('Failed to load ' + opt.uri)
+			} else {
+				throw new Error('Load Error')
+			}
 		}
 	}
 	
@@ -1077,7 +1097,7 @@ var define, require
 				}
 				require([main], function(main) {
 					if(_isFunction(main.init)) {
-						main.init(script.getAttribute('data-param'))
+						main.init(_getUrlParamObj(script.getAttribute('data-param')))
 					}
 				})
 				return
