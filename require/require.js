@@ -800,6 +800,7 @@ var define, require
 			if(deps[2] == 'module') {
 				args[2] = module
 			}
+			exports = args[1]
 			if(_isFunction(factory)) {
 				exports = factory.apply(null, args) || exports
 			} else {

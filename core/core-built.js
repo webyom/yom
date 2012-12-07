@@ -11,7 +11,7 @@ YOM.JsLoader
 YOM.Xhr
 	10401: onerror
 */
-define('./error', [], function() {
+define('./error', ['require', 'exports', 'module'], function() {
 	var YomError = function(code, opt) {
 		if(typeof opt == 'string') {
 			opt = {message: opt}
@@ -109,7 +109,7 @@ define('./observer', ['./object'], function(object) {
 /**
  * @namespace YOM.browser
  */
-define('./browser', [], function() {
+define('./browser', ['require', 'exports', 'module'], function() {
 	var _ua = navigator.userAgent.toLowerCase()
 	
 	return {
@@ -135,7 +135,7 @@ define('./browser', [], function() {
 /**
  * @namespace YOM.string
  */
-define('./string', [], {
+define('./string', ['require', 'exports', 'module'], {
 	_ID: 117,
 	
 	getByteLength: function(str) {
@@ -1555,7 +1555,7 @@ ID LIST:
 /**
  * @namespace YOM.config
  */
-define('./config', [], function() {
+define('./config', ['require', 'exports', 'module'], function() {
 	var t = document.domain.split('.'), l = t.length
 	return {
 		debug: location.href.indexOf('yom-debug=1') > 0,
@@ -1617,7 +1617,7 @@ define('./class', ['./error', './object', './array'], function(Err, object, arra
 /**
  * @class YOM.HashArray
  */
-define('./hash-array', [], function() {
+define('./hash-array', ['require', 'exports', 'module'], function() {
 	var HashArray = function() {
 		this._items = []
 		this._k2i = {}
@@ -1937,7 +1937,7 @@ define('./instance-manager', ['./object', './array'], function(object, array) {
  * @return {Object|Array}
  * @author Mike Samuel <mikesamuel@gmail.com>
  */
-define('./json-sans-eval', [], function() {
+define('./json-sans-eval', ['require', 'exports', 'module'], function() {
 var jsonParse = (function () {
   var number
       = '(?:-?\\b(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b)';
@@ -2238,7 +2238,7 @@ define('./json', ['./error', './object', './array', './json-sans-eval'], functio
 
 
 
-define('./sizzle', [], function() {
+define('./sizzle', ['require', 'exports', 'module'], function() {
 ;(function(){function y(a,b,c,d,f,e){f=a=="previousSibling"&&!e;for(var h=0,j=d.length;h<j;h++){var g=d[h];if(g){if(f&&g.nodeType===1){g.sizcache=c;g.sizset=h}g=g[a];for(var l=false;g;){if(g.sizcache===c){l=d[g.sizset];break}if(g.nodeType===1&&!e){g.sizcache=c;g.sizset=h}if(g.nodeName===b){l=g;break}g=g[a]}d[h]=l}}}function z(a,b,c,d,f,e){f=a=="previousSibling"&&!e;for(var h=0,j=d.length;h<j;h++){var g=d[h];if(g){if(f&&g.nodeType===1){g.sizcache=c;g.sizset=h}g=g[a];for(var l=false;g;){if(g.sizcache===
 c){l=d[g.sizset];break}if(g.nodeType===1){if(!e){g.sizcache=c;g.sizset=h}if(typeof b!=="string"){if(g===b){l=true;break}}else if(k.filter(b,[g]).length>0){l=g;break}}g=g[a]}d[h]=l}}}var v=/((?:\((?:\([^()]+\)|[^()]+)+\)|\[(?:\[[^[\]]*\]|['"][^'"]*['"]|[^[\]'"]+)+\]|\\.|[^ >+~,(\[\\]+)+|[>+~])(\s*,\s*)?/g,w=0,A=Object.prototype.toString,n=false,k=function(a,b,c,d){c=c||[];var f=b=b||document;if(b.nodeType!==1&&b.nodeType!==9)return[];if(!a||typeof a!=="string")return c;var e=[],h,j,g,l,o=true,p=s(b);
 for(v.lastIndex=0;(h=v.exec(a))!==null;){e.push(h[1]);if(h[2]){l=RegExp.rightContext;break}}if(e.length>1&&D.exec(a))if(e.length===2&&i.relative[e[0]])j=B(e[0]+e[1],b);else for(j=i.relative[e[0]]?[b]:k(e.shift(),b);e.length;){a=e.shift();if(i.relative[a])a+=e.shift();j=B(a,j)}else{if(!d&&e.length>1&&b.nodeType===9&&!p&&i.match.ID.test(e[0])&&!i.match.ID.test(e[e.length-1])){h=k.find(e.shift(),b,p);b=h.expr?k.filter(h.expr,h.set)[0]:h.set[0]}if(b){h=d?{expr:e.pop(),set:q(d)}:k.find(e.pop(),e.length===
@@ -2272,7 +2272,7 @@ return Sizzle
  * Inspired by KISSY
  * @namespace YOM.transition
  */
-define('./transition', [], function() {
+define('./transition', ['require', 'exports', 'module'], function() {
 	var _BACK_CONST = 1.70158
 	
 	var transition = {
@@ -3916,7 +3916,7 @@ define('./flash', ['./browser', './object'], function(browser, object) {
 /**
  * @namespace
  */
-define('./widget', [], {
+define('./widget', ['require', 'exports', 'module'], {
 	_ID: 128
 })
 

@@ -196,7 +196,7 @@ function fixDefineParams(def, depId) {
 				deps = "['require', 'exports', 'module', " + bodyDeps + "], "
 			}
 		}
-		return [d, id || depId && ("'" + depId + "', "), deps || '[], '].join('')
+		return [d, id || depId && ("'" + depId + "', "), deps || "['require', 'exports', 'module'], "].join('')
 	})
 	return def
 }
