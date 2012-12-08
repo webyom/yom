@@ -128,7 +128,7 @@ var define, require
 	
 	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
 		charset: 'utf-8',
-		baseUrl: location.href.split('/').slice(0, -1).join('/'),
+		baseUrl: '',
 		source: {},
 		path: {},//match by id removed prefix
 		shim: {},//match by id removed prefix
@@ -1094,6 +1094,12 @@ var define, require
 				baseUrl = script.getAttribute('data-base-url')
 				if(baseUrl) {
 					_gcfg.baseUrl = _getFullBaseUrl(baseUrl)
+				} else if(!_gcfg.baseUrl) {
+					if(_isUnnormalId(main)) {
+						_gcfg.baseUrl = _getFullBaseUrl(main.split('/').slice(0, -1).join('/'))
+					} else {
+						_gcfg.baseUrl = location.href.split('/').slice(0, -1).join('/')
+					}
 				}
 				require([main], function(main) {
 					if(_isFunction(main.init)) {
@@ -1102,6 +1108,9 @@ var define, require
 				})
 				return
 			}
+		}
+		if(!_gcfg.baseUrl) {
+			_gcfg.baseUrl = location.href.split('/').slice(0, -1).join('/')
 		}
 	})()
 })(this)
