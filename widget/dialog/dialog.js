@@ -180,7 +180,7 @@ define(function(require) {
 			if(!handles.size()) {
 				return
 			}
-			require(['yom/dragdrop/dragdrop-built'], function(dragdrop) {
+			require(['../../dragdrop/dragdrop-built'], function(dragdrop) {
 				self._draggable = new dragdrop.Draggable(self._el, {handles: handles, boundary: 'PAGE', scrollContainer: document.body})
 				self._draggable.addEventListener('dragstart', self._bound.dragstart)
 				self._draggable.addEventListener('dragstop', self._bound.dragstop)
