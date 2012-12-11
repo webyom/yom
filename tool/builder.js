@@ -13,7 +13,7 @@ var uglify = require('./uglify-js')
 process.on('uncaughtException', function(err) {
 	try {
 		dealErr(err)
-n	} catch(e) {
+	} catch(e) {
 		console.error(e.toString())
 		process.exit(1)
 	}
