@@ -236,6 +236,8 @@ function buildOneDir(info, callback, baseName) {
 				log('Build')
 				log('Input: ' + inputFile)
 				log('Output: ' + outputFile)
+				log('Merging: ' + inputFile)
+				log('Writing: ' + outputFile)
 				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset)), info), charset)
 				log('Done!')
 				build()
