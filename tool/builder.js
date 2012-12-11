@@ -97,12 +97,12 @@ function getDeps(def, relative, exclude) {
 	depArr = depArr && depArr[1]
 	exclude = exclude || {}
 	relative && depArr && depArr.replace(new RegExp('["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']', 'mg'), function(m, dep) {
-		got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep)
+		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
 	def.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
 		.replace(new RegExp('\\brequire\\s*\\(\\s*["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']\\s*\\)', 'mg'), function(m, dep) {//extract dependencies
-			got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep)
+			got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
 			got[dep] = 1
 		})
 	return deps

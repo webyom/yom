@@ -48,7 +48,7 @@ define('./dialog.tpl.html', [], function() {
 /**
  * @namespace YOM.widget.Dialog
  */
-define(['require', 'exports', 'module', './dialog.tpl.html'], function(require) {
+define(['require', 'exports', 'module', '../../core/core-built', './dialog.tpl.html'], function(require) {
 	var YOM = require('../../core/core-built')
 	
 	var _ID = 128002

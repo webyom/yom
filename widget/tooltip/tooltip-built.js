@@ -20,7 +20,7 @@ define('./tooltip.tpl.html', [], function() {
 /**
  * @namespace YOM.widget.Tooltip
  */
-define(['require', 'exports', 'module', './tooltip.tpl.html'], function(require) {
+define(['require', 'exports', 'module', '../../core/core-built', './tooltip.tpl.html'], function(require) {
 	var YOM = require('../../core/core-built')
 	
 	var _ID = 128003

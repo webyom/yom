@@ -1,7 +1,7 @@
 /**
  * @fileoverview ImgOdl Widget
  */
-define(['require', 'exports', 'module'], function(require) {
+define(['require', 'exports', 'module', '../../core/core-built'], function(require) {
 	var YOM = require('../../core/core-built')
 	
 	var _ID = 128005
