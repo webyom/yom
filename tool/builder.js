@@ -161,10 +161,11 @@ function compileTmpl(tmpl, depId, notAmdModule) {
 		"		var $print = function(str) {_$out_.push(str)}",
 		"		" + (strict ? "" : "with($data) {"),
 		"		_$out_.push('" + tmpl
-				.replace(/[\r\t\n]/g, "")
+				.replace(/\r\n|\n|\r/g, "\v")
 				.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
-					return $0.replace(/('|\\)/g, '\\$1')
+					return $0.replace(/('|\\)/g, "\\$1").replace(/[\v\t]/g, "").replace(/\s+/g, " ")
 				})
+				.replace(/[\v]/g, os.EOL)
 				.replace(/<%==(.*?)%>/g, "', $encodeHtml($1), '")
 				.replace(/<%=(.*?)%>/g, "', $1, '")
 				.split("<%").join("')" + os.EOL + "		")

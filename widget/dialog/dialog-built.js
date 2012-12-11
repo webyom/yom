@@ -30,7 +30,8 @@ define('./dialog.tpl.html', [], function() {
 		_$out_.push('')
 		if(btns) {
 		_$out_.push('<div data-type="yom-dialog-btns" class="yom-dialog-btns">')
-		for(var i = 0, l = btns.length; i < l; i++) {var btn = btns[i]
+		for(var i = 0, l = btns.length; i < l; i++) {
+							var btn = btns[i]
 		_$out_.push('<button class="', btn.className, '" title="', btn.title || btn.text, '">', btn.text, '</button>')
 		}
 		_$out_.push('</div>')

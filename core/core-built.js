@@ -3770,26 +3770,28 @@ define('./tmpl', ['./browser', './string', './object'], function(browser, string
 			str = _getMixinTmplStr(str, opt.mixinTmpl)
 		}
 		fn = _useArrayJoin ? 
-		new Function("$data", "$opt", "var YOM=this,_$out_=[],$print=function(str){_$out_.push(str)}" + (strict ? "" : "with($data){") + "_$out_.push('" + str
-			.replace(/[\r\t\n]/g, "")
+		new Function("$data", "$opt", "var YOM=this,_$out_=[],$print=function(str){_$out_.push(str)};" + (strict ? "" : "with($data){") + "_$out_.push('" + str
+			.replace(/\r\n|\n|\r/g, "\v")
 			.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
-				return $0.replace(/('|\\)/g, '\\$1')
+				return $0.replace(/('|\\)/g, "\\$1").replace(/[\v]/g, "")
 			})
+			.replace(/[\v]/g, "\n")
 			.replace(/<%==(.*?)%>/g, "',YOM.string.encodeHtml($1),'")
 			.replace(/<%=(.*?)%>/g, "',$1,'")
-			.split("<%").join("')")
-			.split("%>").join("_$out_.push('")
-		+ "')" + (strict ? "" : "}") + "return _$out_.join('')") : 
-		new Function("$data", "$opt", "var YOM=this,_$out_='',$print=function(str){_$out_+=str}" + (strict ? "" : "with($data){") + "_$out_+='" + str
-			.replace(/[\r\t\n]/g, "")
+			.split("<%").join("');")
+			.split("%>").join(";_$out_.push('")
+		+ "');" + (strict ? "" : "}") + "return _$out_.join('')") : 
+		new Function("$data", "$opt", "var YOM=this,_$out_='',$print=function(str){_$out_+=str};" + (strict ? "" : "with($data){") + "_$out_+='" + str
+			.replace(/\r\n|\n|\r/g, "\v")
 			.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
-				return $0.replace(/('|\\)/g, '\\$1')
+				return $0.replace(/('|\\)/g, "\\$1").replace(/[\v]/g, "")
 			})
+			.replace(/[\v]/g, "\n")
 			.replace(/<%==(.*?)%>/g, "'+YOM.string.encodeHtml($1)+'")
 			.replace(/<%=(.*?)%>/g, "'+($1)+'")
-			.split("<%").join("'")
-			.split("%>").join("_$out_+='")
-		+ "'" + (strict ? "" : "}") + "return _$out_")
+			.split("<%").join("';")
+			.split("%>").join(";_$out_+='")
+		+ "';" + (strict ? "" : "}") + "return _$out_")
 		if(key) {
 			_cache[key] = fn
 		}
