@@ -72,7 +72,7 @@ define(function(require) {
 			margin: '0',
 			border: 'none'
 		} : {})))
-		this._el.setHtml((opt.tmpl || _tmpl)({
+		this._el.setHtml((opt.tmpl || _tmpl).render({
 			id: this._id,
 			title: opt.title,
 			content: opt.content,

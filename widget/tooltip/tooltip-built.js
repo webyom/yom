@@ -1,21 +1,23 @@
-define('./tooltip.tpl.html', [], function() {
-	function $encodeHtml(str) {
-		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/`/g, '&#96;').replace(/'/g, '&#39;').replace(/"/g, '&quot;')
-	}
-	return function($data, $opt) {
-		$data = $data || {}
-		var _$out_= []
-		var $print = function(str) {_$out_.push(str)}
-		with($data) {
-		_$out_.push('<div data-type="yom-tooltip-inner" class="yom-tooltip-inner"><div data-type="yom-tooltip-content" class="yom-tooltip-content">', content, '</div><div data-type="yom-tooltip-arrow-outer" class="yom-tooltip-arrow-outer"></div><div data-type="yom-tooltip-arrow-inner" class="yom-tooltip-arrow-inner"></div>')
-		if(!noCloseBtn) {
-		_$out_.push('<span data-type="yom-tooltip-close-btn" class="yom-tooltip-close-btn">\\u00d7</span>')
-		}
-		_$out_.push('</div>')
-		}
-		return _$out_.join('')
-	}
-})
+define("./tooltip.tpl.html", [ "require", "exports", "module" ], function(require, exports, module) {
+    function $encodeHtml(str) {
+        return (str + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/`/g, "&#96;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+    }
+    exports.render = function($data, $opt) {
+        $data = $data || {};
+        var _$out_ = [];
+        var $print = function(str) {
+            _$out_.push(str);
+        };
+        with ($data) {
+            _$out_.push('<div data-type="yom-tooltip-inner" class="yom-tooltip-inner"><div data-type="yom-tooltip-content" class="yom-tooltip-content">', content, '</div><div data-type="yom-tooltip-arrow-outer" class="yom-tooltip-arrow-outer"></div><div data-type="yom-tooltip-arrow-inner" class="yom-tooltip-arrow-inner"></div>');
+            if (!noCloseBtn) {
+                _$out_.push('<span data-type="yom-tooltip-close-btn" class="yom-tooltip-close-btn">\\u00d7</span>');
+            }
+            _$out_.push("</div>");
+        }
+        return _$out_.join("");
+    };
+});
 
 /**
  * @namespace YOM.widget.Tooltip
@@ -57,7 +59,7 @@ define(['require', 'exports', 'module', '../../core/core-built', './tooltip.tpl.
 			position: 'absolute',
 			display: 'none'
 		}))
-		this._el.setHtml((opt.tmpl || _tmpl)({
+		this._el.setHtml((opt.tmpl || _tmpl).render({
 			id: this._id,
 			content: opt.content,
 			noCloseBtn: opt.noCloseBtn

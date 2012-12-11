@@ -38,7 +38,7 @@ define(function(require) {
 			position: 'absolute',
 			display: 'none'
 		}))
-		this._el.setHtml((opt.tmpl || _tmpl)({
+		this._el.setHtml((opt.tmpl || _tmpl).render({
 			id: this._id,
 			content: opt.content,
 			noCloseBtn: opt.noCloseBtn

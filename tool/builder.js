@@ -90,21 +90,24 @@ function getUglified(content, info) {
 	return copyright + uglify.uglify.gen_code(ast, {beautify: level < 0})
 }
 
+function removeComments(content) {
+	return content.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')
+}
+
 function getDeps(def, relative, exclude) {
 	var deps = []
 	var got = {}
-	var depArr = def.match(/\bdefine\s*\([^\[\{]*(\[[^\[\]]*\])/m)
+	var depArr = removeComments(def).match(/\bdefine\s*\([^\[\{]*(\[[^\[\]]*\])/m)
 	depArr = depArr && depArr[1]
 	exclude = exclude || {}
 	relative && depArr && depArr.replace(new RegExp('["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']', 'mg'), function(m, dep) {
 		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
-	def.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
-		.replace(new RegExp('\\brequire\\s*\\(\\s*["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']\\s*\\)', 'mg'), function(m, dep) {//extract dependencies
-			got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
-			got[dep] = 1
-		})
+	removeComments(def).replace(new RegExp('\\brequire\\s*\\(\\s*["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']\\s*\\)', 'mg'), function(m, dep) {//extract dependencies
+		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
+		got[dep] = 1
+	})
 	return deps
 }
 
@@ -192,7 +195,15 @@ function compileTmpl(tmpl, type, depId) {
 }
 
 function fixDefineParams(def, depId) {
-	var bodyDeps = getDeps(def)
+	var bodyDeps
+	if(!(/\bdefine\b/m).test(removeComments(def))) {
+		def = [
+			'define(function(require, exports, module)) {',
+				def,
+			'})'
+		].join(os.EOL)
+	}
+	bodyDeps = getDeps(def)
 	def = def.replace(/\b(define\s*\()\s*(["'][^"'\s]+["']\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(m, d, id, deps) {
 		if(bodyDeps.length) {
 			bodyDeps = "'" + bodyDeps.join("', '") + "'"
@@ -304,6 +315,13 @@ function buildOne(info, callback, ignoreSrc) {
 		if((/\.tpl.html?$/).test(input)) {
 			fileContent.push(compileTmpl(content, 'AMD'))
 		} else {
+			if(!(/\bdefine\b/m).test(removeComments(content))) {
+				content = [
+					'define(function(require, exports, module)) {',
+						content,
+					'})'
+				].join(os.EOL)
+			}
 			deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
 			while(deps.length) {
 				depId = deps.shift()
