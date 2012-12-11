@@ -130,32 +130,34 @@ function traversalGetRelativeDeps(inputDir, def, exclude, processed) {
 	return res
 }
 
-function getTmplFnName(str) {
-	var fnName = (str + '').replace(/(?:[-_\.]+|(?:\.*\/)+)(\w)([^-_\.\/]*)/g, function($1, $2, $3) {return $2.toUpperCase() + $3})
-	fnName = fnName.charAt(0).toLowerCase() + fnName.slice(1)
-	return fnName
+function getTmplObjName(str) {
+	var tmplObjName = (str + '').replace(/(?:[-_\.]+|(?:\.*\/)+)(\w)([^-_\.\/]*)/g, function($1, $2, $3) {return $2.toUpperCase() + $3})
+	tmplObjName = tmplObjName.charAt(0).toLowerCase() + tmplObjName.slice(1)
+	return tmplObjName
 }
 
-function compileTmpl(tmpl, depId, notAmdModule) {
-	var fnName = notAmdModule && getTmplFnName(depId)
+function compileTmpl(tmpl, type, depId) {
 	var strict = (/\$data\b/).test(tmpl)
 	var res = []
-	if(notAmdModule) {
+	if(type == 'NODE') {
+		//do nothing
+	} else if(type == 'AMD') {
 		res.push([
-			"var " + fnName + " = (function() {"
+			depId ? 
+			"define('" + depId + "', ['require', 'exports', 'module'], function(require, exports, module) {" :
+			"define(function(require, exports, module) {"
 		].join(os.EOL))
 	} else {
 		res.push([
-			depId ? 
-			"define('" + depId + "', [], function() {" :
-			"define(function() {"
+			"var " + getTmplObjName(depId) + " = (function() {",
+			"	var exports = {}"
 		].join(os.EOL))
 	}
 	res.push([
 		"	function $encodeHtml(str) {",
 		"		return (str + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\x60/g, '&#96;').replace(/\x27/g, '&#39;').replace(/\x22/g, '&quot;')",
 		"	}",
-		"	return function($data, $opt) {",
+		"	exports.render = function($data, $opt) {",
 		"		$data = $data || {}",
 		"		var _$out_= []",
 		"		var $print = function(str) {_$out_.push(str)}",
@@ -174,16 +176,19 @@ function compileTmpl(tmpl, depId, notAmdModule) {
 		"		return _$out_.join('')",
 		"	}"
 	].join(os.EOL))
-	if(notAmdModule) {
-		res.push([
-			"})()"
-		].join(os.EOL))
-	} else {
+	if(type == 'NODE') {
+		//do nothing
+	} else if(type == 'AMD') {
 		res.push([
 			"})"
 		].join(os.EOL))
+	} else {
+		res.push([
+			"	return exports",
+			"})()"
+		].join(os.EOL))
 	}
-	return res.join(os.EOL)
+	return uglify.uglify.gen_code(uglify.parser.parse(res.join(os.EOL)), {beautify: true})
 }
 
 function fixDefineParams(def, depId) {
@@ -208,6 +213,7 @@ function buildOneDir(info, callback, baseName) {
 	var buildList = fs.readdirSync(inputDir)
 	var buildTotal = buildList.length
 	var ignore = info.ignore || {}
+	var buildNodeTpl = info.buildNodeTpl
 	baseName = baseName || ''
 	if(!baseName/*avoid recalculating*/ && info.ignore) {
 		ignore = {}
@@ -219,7 +225,7 @@ function buildOneDir(info, callback, baseName) {
 	}
 	build()
 	function build() {
-		var inputFile, outputFile, fileName
+		var inputFile, outputFile, nodeTplOutputFile, fileName
 		if(buildList.length) {
 			inputFile = path.join(inputDir, buildList.shift())
 			if(ignore[inputFile] || (/^\.|~$/).test(path.basename(inputFile))) {
@@ -237,13 +243,21 @@ function buildOneDir(info, callback, baseName) {
 				log('Build')
 				log('Input: ' + inputFile)
 				log('Output: ' + outputFile)
+				if(buildNodeTpl) {
+					nodeTplOutputFile = outputFile.replace('.tpl.', '.node.tpl.')
+					log('Output: ' + nodeTplOutputFile)
+				}
 				log('Merging: ' + inputFile)
 				log('Writing: ' + outputFile)
-				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset)), info), charset)
+				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset), 'AMD'), info), charset)
+				if(buildNodeTpl) {
+					log('Writing: ' + nodeTplOutputFile)
+					fs.writeFileSync(nodeTplOutputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset), 'NODE'), info), charset)
+				}
 				log('Done!')
 				build()
 			} else if(fs.statSync(inputFile).isDirectory()) {
-				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude, ignore: ignore}, function() {
+				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude, ignore: ignore, buildNodeTpl: buildNodeTpl}, function() {
 					build()
 				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile))
 			} else {
@@ -288,7 +302,7 @@ function buildOne(info, callback, ignoreSrc) {
 		}
 		var deps, fileName, fileContent = []
 		if((/\.tpl.html?$/).test(input)) {
-			fileContent.push(compileTmpl(content))
+			fileContent.push(compileTmpl(content, 'AMD'))
 		} else {
 			deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
 			while(deps.length) {
@@ -296,7 +310,7 @@ function buildOne(info, callback, ignoreSrc) {
 				if((/\.tpl.html?$/).test(depId)) {
 					fileName = path.resolve(inputDir, depId)
 					log('Merging: ' + fileName)
-					fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId))
+					fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'AMD', depId))
 				} else {
 					fileName = path.resolve(inputDir, depId + '.js')
 					log('Merging: ' + fileName)
@@ -333,7 +347,7 @@ function combineOne(info, callback) {
 		fileName = path.resolve(buildDir, depId)
 		log('Merging: ' + fileName)
 		if((/\.tpl.html?$/).test(depId)) {
-			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), depId, true))
+			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'NONE_AMD', depId))
 		} else {
 			fileContent.push(fs.readFileSync(fileName, charset))
 		}
