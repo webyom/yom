@@ -51,7 +51,7 @@ function dealErr(err) {
 }
 
 function printLine(c) {
-	log(('-----------------------------------------------------------------------').replace(/\-/g, c || '-'))
+	log(new Array(73).join('-').replace(/\-/g, c || '-'))
 }
 
 function mkdirs(dirpath, mode, callback) {
