@@ -6,11 +6,20 @@ define(function() {
 		this._items = []
 		this._k2i = {}
 		this._i2k = []
-		for(var i = 0, l = arguments.length; i < l; i += 2) {
-			if(this._isValidKey(arguments[i])) {
-				this._items.push(arguments[i + 1])
-				this._i2k.push(arguments[i])
-				this._k2i[arguments[i]] = this.size() - 1
+		var obj = arguments[0]
+		if(typeof obj == 'object') {
+			for(var p in obj) {
+				this._items.push(obj[p])
+				this._i2k.push(p)
+				this._k2i[p] = this.size() - 1
+			}
+		} else {
+			for(var i = 0, l = arguments.length; i < l; i += 2) {
+				if(this._isValidKey(arguments[i])) {
+					this._items.push(arguments[i + 1])
+					this._i2k.push(arguments[i])
+					this._k2i[arguments[i]] = this.size() - 1
+				}
 			}
 		}
 	}
