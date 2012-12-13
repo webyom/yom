@@ -847,7 +847,7 @@ var define, require
 				deps = id
 				id = ''
 			}
-			if(!_isArray(deps)) {
+			if(typeof factory == 'undefined' || !_isArray(deps)) {
 				factory = deps
 				deps = []
 			}
