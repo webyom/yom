@@ -10,10 +10,19 @@ define(['require'], function(require) {
 			return object.toString(obj) == '[object Array]'
 		},
 	
-		each: function(arr, fn, bind) {
-			for(var i = 0, l = arr.length; i < l; i++) {
-				if(fn.call(bind || arr, arr[i], i, arr) === false) {
-					break
+		each: function(arr, fn, bind, reverse) {
+			var i, l
+			if(reverse) {
+				for(i = arr.length - 1; i >= 0; i--) {
+					if(fn.call(bind || arr, arr[i], i, arr) === false) {
+						break
+					}
+				}
+			} else {
+				for(i = 0, l = arr.length; i < l; i++) {
+					if(fn.call(bind || arr, arr[i], i, arr) === false) {
+						break
+					}
 				}
 			}
 		},

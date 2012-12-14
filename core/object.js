@@ -28,7 +28,7 @@ define(function(require) {
 			var array = require('./array')
 			var val
 			if(array.isArray(obj)) {
-				array.each(obj, fn, bind)
+				array.each.apply(array, array.getArray(arguments))
 			} else {
 				for(var p in obj) {
 					if(this.hasOwnProperty(obj, p)) {
