@@ -142,6 +142,9 @@ function getTmplObjName(str) {
 function compileTmpl(tmpl, type, depId) {
 	var strict = (/\$data\b/).test(tmpl)
 	var res = []
+	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
+		return startTag + uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true}) + endTag
+	})
 	if(type == 'NODE') {
 		//do nothing
 	} else if(type == 'AMD') {
