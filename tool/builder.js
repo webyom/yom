@@ -9,6 +9,7 @@ var os = require('os')
 var fs = require('fs')
 var path = require('path')
 var uglify = require('./uglify-js')
+var argsGetter = require('./args').get
 
 process.on('uncaughtException', function(err) {
 	try {
@@ -29,7 +30,8 @@ var DEFAULT_BUILD_JSON = {
 
 var startTime = new Date()
 var charset = 'utf-8'
-var buildFileName = process.argv[2] || 'build.json'
+var args = argsGetter()
+var buildFileName = args['config-file'] || 'build.json'
 var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
 var logs = []
 var globalUglifyLevel = 0
@@ -239,7 +241,7 @@ function buildOneDir(info, callback, baseName) {
 	var buildList = fs.readdirSync(inputDir)
 	var buildTotal = buildList.length
 	var ignore = info.ignore || {}
-	var buildNodeTpl = info.buildNodeTpl
+	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : args['build-node-tpl']
 	baseName = baseName || ''
 	if(!baseName/*avoid recalculating*/ && info.ignore) {
 		ignore = {}
