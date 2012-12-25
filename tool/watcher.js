@@ -52,7 +52,7 @@ function printLine(c) {
 
 function getConfPath(dir) {
 	var res = path.join(dir, BUILD_CONF_FILE_NAME)
-	return fs.existsSync(res) && res
+	return fs.existsSync(res) && res || ''
 }
 
 function isValidDir(dir) {
@@ -72,34 +72,32 @@ function watch(dir, confPath) {
 			}
 		}
 		confPath = getConfPath(dir) || confPath
-		if(confPath) {
-			log('Watching Dir: ' + dir)
-			fs.watch(dir, function(evt, file) {
-				var startTime
-				if((evt == 'change' || evt == 'rename') && !building) {
-					if(file && !(/^\./).test(file)) {
-						if(!(/\.(js|json|css|tpl\.html?)$/).test(file)) {
-							return
-						}
-						printLine('-')
-						log(path.join(dir, file) + ' changed!')
-					} else {
-						printLine('-')
+		log('Watching Dir: ' + dir)
+		fs.watch(dir, function(evt, file) {
+			var startTime
+			if((evt == 'change' || evt == 'rename') && !building) {
+				if(file && !(/^\./).test(file)) {
+					if(!(/\.(js|json|css|tpl\.html?)$/).test(file)) {
+						return
 					}
-					building = true
-					startTime = new Date()
-					log('Building ' + confPath + ' at ' + startTime)
-					exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
-						building = false
-						if(err) {
-							log('Exec Error:\n' + err.toString(), 1)
-						} else {
-							log('Done! Spent Time: ' + (new Date() - startTime) + 'ms')
-						}
-					})
+					printLine('-')
+					log(path.join(dir, file) + ' changed!')
+				} else {
+					printLine('-')
 				}
-			})
-		}
+				building = true
+				startTime = new Date()
+				log('Building ' + confPath + ' at ' + startTime)
+				exec('node ' + builderPath + ' ' + confPath, function(err, stdout, stderr) {
+					building = false
+					if(err) {
+						log('Exec Error:\n' + err.toString(), 1)
+					} else {
+						log('Done! Spent Time: ' + (new Date() - startTime) + 'ms')
+					}
+				})
+			}
+		})
 	}
 }
 

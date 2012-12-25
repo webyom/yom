@@ -19,6 +19,14 @@ process.on('uncaughtException', function(err) {
 	}
 })
 
+var DEFAULT_BUILD_JSON = {
+	builds: [
+		{
+			input: './'
+		}
+	]
+}
+
 var startTime = new Date()
 var charset = 'utf-8'
 var buildFileName = process.argv[2] || 'build.json'
@@ -394,43 +402,53 @@ function combineOne(info, callback) {
 
 printLine('+')
 log('Start! Time: ' + startTime)
-fs.readFile(buildFileName, charset, function(err, data) {
-	if(err) {
-		throw err
+fs.exists(buildFileName, function(exists) {
+	if(exists) {
+		fs.readFile(buildFileName, charset, function(err, data) {
+			var buildJson
+			if(err) {
+				throw err
+			}
+			try {
+				buildJson = JSON.parse(data)
+			} catch(e) {
+				printLine()
+				throw new Error('Illegal json format build file!' + os.EOL + e.toString())
+			}
+			start(buildJson)
+		})
+	} else {
+		start(DEFAULT_BUILD_JSON)
 	}
-	var buildJson, buildList, combineList, combineTotal
-	try {
-		buildJson = JSON.parse(data)
-	} catch(e) {
-		printLine()
-		throw new Error('Illegal json format build file!' + os.EOL + e.toString())
-	}
-	globalUglifyLevel = buildJson.uglify || 0
-	globalExclude = buildJson.exclude || {}
-	globalCopyright = buildJson.copyright || ''
-	buildList = buildJson.builds || []
-	combineList = buildJson.combines || []
-	combineTotal = combineList.length
-	build()
-	function build() {
-		if(buildList.length) {
-			buildOne(buildList.shift(), function() {
-				build()
-			})
-		} else {
-			combine()
-		}
-	}
-	function combine() {
-		if(combineList.length) {
-			combineOne(combineList.shift(), function() {
+	function start(buildJson) {
+		var buildList, combineList, combineTotal
+		globalUglifyLevel = buildJson.uglify || 0
+		globalExclude = buildJson.exclude || {}
+		globalCopyright = buildJson.copyright || ''
+		buildList = buildJson.builds || []
+		combineList = buildJson.combines || []
+		combineTotal = combineList.length
+		build()
+		function build() {
+			if(buildList.length) {
+				buildOne(buildList.shift(), function() {
+					build()
+				})
+			} else {
 				combine()
-			})
-		} else {
-			printLine()
-			log('Finished! Spent Time: ' + (new Date() - startTime) + 'ms')
-			printLine('+')
-			exit()
+			}
+		}
+		function combine() {
+			if(combineList.length) {
+				combineOne(combineList.shift(), function() {
+					combine()
+				})
+			} else {
+				printLine()
+				log('Finished! Spent Time: ' + (new Date() - startTime) + 'ms')
+				printLine('+')
+				exit()
+			}
 		}
 	}
 })
