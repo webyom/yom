@@ -111,13 +111,17 @@ function getDeps(def, relative, exclude) {
 	return deps
 }
 
-function traversalGetRelativeDeps(inputDir, def, exclude, processed) {
+function traversalGetRelativeDeps(inputDir, def, exclude, processed, curDir) {
 	var deps = getDeps(def, true, exclude)
 	var res = []
 	var depId, fileName
 	processed = processed || {}
+	curDir = curDir || inputDir
 	while(deps.length) {
-		depId = deps.shift()
+		depId = path.join(path.relative(inputDir, curDir), deps.shift()).split(path.sep).join('/')
+		if(!(/^\./).test(depId)) {
+			depId = './' + depId
+		}
 		if(processed[depId]) {
 			continue
 		} else {
@@ -125,9 +129,9 @@ function traversalGetRelativeDeps(inputDir, def, exclude, processed) {
 			processed[depId] = 1
 		}
 		if(!(/\.tpl.html?$/).test(depId)) {
-			fileName = path.resolve(inputDir, depId + '.js')
+			fileName = path.resolve(curDir, depId + '.js')
 			def = fs.readFileSync(fileName, charset)
-			res = traversalGetRelativeDeps(inputDir, def, exclude, processed).concat(res)
+			res = traversalGetRelativeDeps(inputDir, def, exclude, processed, path.dirname(fileName)).concat(res)
 		}
 	}
 	return res
@@ -334,6 +338,9 @@ function buildOne(info, callback, ignoreSrc) {
 					fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'AMD', depId))
 				} else {
 					fileName = path.resolve(inputDir, depId + '.js')
+					if(fileName == input) {
+						continue
+					}
 					log('Merging: ' + fileName)
 					fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId))
 				}
