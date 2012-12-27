@@ -392,7 +392,7 @@ var define, require
 				if(exports) {
 					module = {
 						id: nrmId,
-						uri: _getFullUrl(nrmId, baseUrl)
+						uri: _getFullUrl(nrmId, config.baseUrl)
 					}
 					def = new Def(nrmId, config.baseUrl, exports, module)
 				}
