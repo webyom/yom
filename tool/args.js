@@ -5,6 +5,10 @@
  * https://github.com/webyom/yom
  */
 
+function isArgName(str) {
+	return (/^-/).test(str) && !(/^-+\d/).test(str)
+}
+
 exports.get = function() {
 	var args = {}
 	var argv = Array.prototype.slice.call(process.argv)
@@ -13,8 +17,8 @@ exports.get = function() {
 		if(!argv[i]) {
 			break
 		}
-		if((/^-/).test(argv[i])) {
-			if(!argv[i + 1] || (/^-/).test(argv[i + 1])) {
+		if(isArgName(argv[i])) {
+			if(!argv[i + 1] || isArgName(argv[i + 1])) {
 				args[argv[i].replace(/^-+/, '')] = true
 				i++
 			} else {
