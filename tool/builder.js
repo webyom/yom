@@ -402,6 +402,18 @@ function combineOne(info, callback) {
 	})
 }
 
+function getHashFromString(str, val) {
+	var res = {}
+	if(!str) {
+		return null
+	}
+	str = str.split(/\s*,\s*/)
+	for(var i = 0; i < str.length; i++) {
+		res[str[i]] = typeof val != 'undefined' ? val : 1
+	}
+	return res
+}
+
 printLine('+')
 log('Start! Time: ' + startTime)
 fs.exists(buildFileName, function(exists) {
@@ -424,8 +436,8 @@ fs.exists(buildFileName, function(exists) {
 	}
 	function start(buildJson) {
 		var buildList, combineList, combineTotal
-		globalUglifyLevel = buildJson.uglify || 0
-		globalExclude = buildJson.exclude || {}
+		globalUglifyLevel = buildJson.uglify || parseInt(args['uglify']) || 0
+		globalExclude = buildJson.exclude || getHashFromString(args['exclude']) || {}
 		globalCopyright = buildJson.copyright || ''
 		buildList = buildJson.builds || []
 		combineList = buildJson.combines || []

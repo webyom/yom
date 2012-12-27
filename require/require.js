@@ -255,15 +255,6 @@ var define, require
 	}
 	
 	Hold.prototype = {
-		_getShimExports: function(name) {
-			var exports = global
-			name = name.split('.')
-			while(exports && name.length) {
-				exports = exports[name.shift()]
-			}
-			return exports
-		},
-		
 		push: function(onRequire) {
 			this._queue.push(onRequire)
 		},
@@ -324,7 +315,7 @@ var define, require
 				return false
 			}
 			if(shim.exports) {
-				exports = this._getShimExports(shim.exports)
+				exports = _getShimExports(shim.exports)
 				if(!exports) {
 					return false
 				}
@@ -390,15 +381,39 @@ var define, require
 		return _hold[url]
 	}
 	
-	function _getDefined(nrmId, baseUrl) {
-		var url = _getFullUrl(nrmId, baseUrl)
-		return _defined[url]
+	function _getDefined(id, nrmId, config) {
+		var def, shim, exports, module
+		var url = _getFullUrl(nrmId, config.baseUrl)
+		def = _defined[url]
+		if(!def) {
+			shim = config.shim[_removeIdPrefix(id)]
+			if(shim && shim.exports) {
+				exports = _getShimExports(shim.exports)
+				if(exports) {
+					module = {
+						id: nrmId,
+						uri: _getFullUrl(nrmId, baseUrl)
+					}
+					def = new Def(nrmId, config.baseUrl, exports, module)
+				}
+			}
+		}
+		return def
 	}
 	
 	function _getPlugin(pluginName) {
 		return _plugin[pluginName]
 	}
-	
+
+	function _getShimExports(name) {
+		var exports = global
+		name = name.split('.')
+		while(exports && name.length) {
+			exports = exports[name.shift()]
+		}
+		return exports
+	}
+		
 	function _getInteractiveDefQueue(nrmId, baseUrl) {
 		var fullUrl = _getFullUrl(nrmId, baseUrl) || 'require'
 		_interactiveDefQueue[fullUrl] = _interactiveDefQueue[fullUrl] || {
@@ -724,7 +739,7 @@ var define, require
 	
 	function _load(id, nrmId, config, onRequire) {
 		var baseUrl = config.baseUrl,
-			def = _getDefined(nrmId, baseUrl),
+			def = _getDefined(id, nrmId, config),
 			hold = _getHold(nrmId, baseUrl),
 			jsNode, urlArg
 		if(def) {
@@ -918,7 +933,7 @@ var define, require
 			if(_isRelativePath(id)) {
 				conf = base && base.config || conf
 			}
-			def = _getDefined(nrmId, conf.baseUrl)
+			def = _getDefined(id, nrmId, conf)
 			fullUrl = _getFullUrl(nrmId, conf.baseUrl)
 			if(base) {
 				baseFullUrl = _getFullUrl(base.nrmId, base.baseUrl)
@@ -1023,7 +1038,7 @@ var define, require
 										plugin = _getPlugin(arg.pluginName)
 										callArgs[i] = plugin.require(arg.id, config)
 									} else {
-										def = _getDefined(arg.nrmId, arg.config.baseUrl)
+										def = _getDefined(arg.id, arg.nrmId, arg.config)
 										callArgs[i] = def.getDef(context)
 									}
 								}
