@@ -66,7 +66,7 @@ define(['require', 'exports', 'module', '../../core/core-built', './tooltip.tpl.
 		}))
 		this._bindEvent()
 		this.setZIndex(opt.zIndex)
-		YOM.css.load(require.toUrl('./tooltip.css'))
+		YOM.css.load(require.toUrl('./tooltip-min.css'))
 	}
 	
 	YOM.Class.extend(Tooltip, YOM.Event)

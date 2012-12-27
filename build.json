@@ -4,8 +4,7 @@
 			"input": "./",
 			"ignore": {
 				"./tool": 1
-			},
-			"buildNodeTpl": true
+			}
 		}
 	]
 }

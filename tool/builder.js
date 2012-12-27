@@ -9,6 +9,7 @@ var os = require('os')
 var fs = require('fs')
 var path = require('path')
 var uglify = require('./uglify-js')
+var cssmin = require('./cssmin').cssmin
 var argsGetter = require('./args').get
 
 process.on('uncaughtException', function(err) {
@@ -35,6 +36,7 @@ var buildFileName = args['config-file'] || 'build.json'
 var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
 var logs = []
 var globalUglifyLevel = 0
+var globalCssmin = false
 var globalExclude = {}
 var globalCopyright = ''
 
@@ -236,13 +238,14 @@ function fixDefineParams(def, depId) {
 }
 
 function buildOneDir(info, callback, baseName) {
+	baseName = baseName || ''
 	var inputDir = path.resolve(buildDir, info.input)
-	var outputDir = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
+	var outputDir = typeof info.output == 'undefined' ? inputDir : path.resolve(buildDir, info.output, baseName)
 	var buildList = fs.readdirSync(inputDir)
 	var buildTotal = buildList.length
 	var ignore = info.ignore || {}
 	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : args['build-node-tpl']
-	baseName = baseName || ''
+	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	if(!baseName/*avoid recalculating*/ && info.ignore) {
 		ignore = {}
 		for(var dir in info.ignore) {
@@ -253,20 +256,20 @@ function buildOneDir(info, callback, baseName) {
 	}
 	build()
 	function build() {
-		var inputFile, outputFile, nodeTplOutputFile, fileName
+		var inputFile, outputFile, nodeTplOutputFile, fileName, rawFile, tmp
 		if(buildList.length) {
 			inputFile = path.join(inputDir, buildList.shift())
 			if(ignore[inputFile] || (/^\.|~$/).test(path.basename(inputFile))) {
 				build()
 			} else if(path.basename(inputFile) == 'main.js' || (/-main.js$/).test(inputFile) ||  path.basename(inputFile) == path.basename(inputDir) + '.js') {
 				fileName = path.basename(inputFile).replace(/\.js$/, '-built.js')
-				outputFile = outputDir ? path.join(outputDir, baseName, fileName) : path.join(inputDir, fileName)
+				outputFile = path.join(outputDir, fileName)
 				buildOne({input: inputFile, output: outputFile, exclude: info.exclude}, function() {
 					build()
 				}, true)
 			} else if((/\.tpl.html?$/).test(inputFile)) {
 				fileName = path.basename(inputFile) + '.js'
-				outputFile = outputDir ? path.join(outputDir, baseName, fileName) : path.join(inputDir, fileName)
+				outputFile = path.join(outputDir, fileName)
 				printLine()
 				log('Build')
 				log('Input: ' + inputFile)
@@ -275,17 +278,37 @@ function buildOneDir(info, callback, baseName) {
 					nodeTplOutputFile = outputFile.replace('.tpl.', '.node.tpl.')
 					log('Output: ' + nodeTplOutputFile)
 				}
+				rawFile = fs.readFileSync(inputFile, charset)
 				log('Merging: ' + inputFile)
+				tmp = getUglified(compileTmpl(rawFile, 'AMD'), info)
 				log('Writing: ' + outputFile)
-				fs.writeFileSync(outputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset), 'AMD'), info), charset)
-				if(buildNodeTpl) {
-					log('Writing: ' + nodeTplOutputFile)
-					fs.writeFileSync(nodeTplOutputFile, getUglified(compileTmpl(fs.readFileSync(inputFile, charset), 'NODE'), info), charset)
-				}
-				log('Done!')
-				build()
+				mkdirs(outputDir, 0777, function() {
+					fs.writeFileSync(outputFile, tmp, charset)
+					if(buildNodeTpl) {
+						log('Writing: ' + nodeTplOutputFile)
+						fs.writeFileSync(nodeTplOutputFile, getUglified(compileTmpl(rawFile, 'NODE'), info), charset)
+					}
+					log('Done!')
+					build()
+				})
+			} else if(compressCss && path.extname(inputFile) == '.css' && !(/-min.css$/).test(inputFile)) {
+				fileName = path.basename(inputFile).replace(/.css$/, '-min.css')
+				outputFile = path.join(outputDir, fileName)
+				printLine()
+				log('Build')
+				log('Input: ' + inputFile)
+				log('Output: ' + outputFile)
+				tmp = fs.readFileSync(inputFile, charset)
+				log('Merging: ' + inputFile)
+				tmp = cssmin(tmp)
+				log('Writing: ' + outputFile)
+				mkdirs(outputDir, 0777, function() {
+					fs.writeFileSync(outputFile, tmp, charset)
+					log('Done!')
+					build()
+				})
 			} else if(fs.statSync(inputFile).isDirectory()) {
-				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude, ignore: ignore, buildNodeTpl: buildNodeTpl}, function() {
+				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude, ignore: ignore, buildNodeTpl: buildNodeTpl, cssmin: compressCss}, function() {
 					build()
 				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile))
 			} else {
@@ -318,7 +341,7 @@ function buildOne(info, callback, ignoreSrc) {
 	log('Build')
 	log('Input: ' + input)
 	log('Output: ' + output)
-	if(!(/\.js$/).test(input) || !(/\.js$/).test(output)) {
+	if(path.extname(input) != '.js' || path.extname(output) != '.js') {
 		throw new Error('Input and output must be both js file name or dir name!')
 	}
 	if(!ignoreSrc && !isSrcDir(outputDir)) {
@@ -392,11 +415,14 @@ function combineOne(info, callback) {
 	}
 	log('Writing: ' + output)
 	mkdirs(outputDir, 0777, function() {
-		if((/.js$/).test(output)) {
-			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info), charset)
+		if(path.extname(output) == '.js') {
+			fileContent = getUglified(fileContent.join(os.EOL + os.EOL), info)
+		} else if(path.extname(output) == '.css' && (globalCssmin || (/-min.css$/).test(output))) {
+			fileContent = cssmin(fileContent.join(os.EOL + os.EOL))
 		} else {
-			fs.writeFileSync(output, fileContent.join(os.EOL + os.EOL), charset)
+			fileContent = fileContent.join(os.EOL + os.EOL)
 		}
+		fs.writeFileSync(output, fileContent, charset)
 		log('Done!')
 		callback()
 	})
@@ -437,6 +463,7 @@ fs.exists(buildFileName, function(exists) {
 	function start(buildJson) {
 		var buildList, combineList, combineTotal
 		globalUglifyLevel = buildJson.uglify || parseInt(args['uglify']) || 0
+		globalCssmin = buildJson.cssmin || args['cssmin']
 		globalExclude = buildJson.exclude || getHashFromString(args['exclude']) || {}
 		globalCopyright = buildJson.copyright || ''
 		buildList = buildJson.builds || []

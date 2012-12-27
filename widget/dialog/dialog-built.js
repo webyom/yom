@@ -140,7 +140,7 @@ define(['require', 'exports', 'module', '../../core/core-built', './dialog.tpl.h
 		if(this._fx && this._fx != 'fade' || opt.src) {
 			opt.height = Math.max(opt.height || _DEFAULT_HEIGHT, _MIN_HEIGHT)
 		}
-		YOM.css.load(require.toUrl('./dialog.css'))
+		YOM.css.load(require.toUrl('./dialog-min.css'))
 	}
 	
 	YOM.Class.extend(Dialog, YOM.Event)
