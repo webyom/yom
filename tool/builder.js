@@ -112,11 +112,11 @@ function getDeps(def, relative, exclude) {
 	var depArr = removeComments(def).match(/\bdefine\s*\([^\[\{]*(\[[^\[\]]*\])/m)
 	depArr = depArr && depArr[1]
 	exclude = exclude || {}
-	relative && depArr && depArr.replace(new RegExp('["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']', 'mg'), function(m, dep) {
+	relative && depArr && depArr.replace(new RegExp('(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1', 'mg'), function(m, quote, dep) {
 		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
-	removeComments(def).replace(new RegExp('\\brequire\\s*\\(\\s*["\'](' + (relative ? '\\.' : '') + '[^"\'\\s]+)["\']\\s*\\)', 'mg'), function(m, dep) {//extract dependencies
+	removeComments(def).replace(new RegExp('\\brequire\\s*\\(\\s*(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1\\s*\\)', 'mg'), function(m, quote, dep) {//extract dependencies
 		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
@@ -156,7 +156,9 @@ function getTmplObjName(str) {
 }
 
 function compileTmpl(input, type, opt) {
+	input = path.resolve(input)
 	opt = opt || {}
+	var reverseDepMap = opt.reverseDepMap || {}
 	var tmpl = fs.readFileSync(input, charset)
 	var strict = (/\$data\b/).test(tmpl)
 	var res = []
@@ -225,7 +227,7 @@ function fixDefineParams(def, depId) {
 		].join(os.EOL)
 	}
 	bodyDeps = getDeps(def)
-	def = def.replace(/\b(define\s*\()\s*(["'][^"'\s]+["']\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(m, d, id, deps) {
+	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(m, d, quote, id, deps) {
 		if(bodyDeps.length) {
 			bodyDeps = "'" + bodyDeps.join("', '") + "'"
 			if(deps) {
@@ -322,12 +324,19 @@ function buildOneDir(info, callback, baseName) {
 }
 
 function getBuiltAmdModContent(input, opt) {
+	input = path.resolve(input)
 	opt = opt || {}
 	var inputDir = path.dirname(input)
 	var fileContent = []
 	var depId, deps, fileName, content
+	var reverseDepMap = opt.reverseDepMap || {}
+	if(reverseDepMap[input]) {
+		log('Warn: "' + input + '" have circular reference!')
+		return ''
+	}
+	reverseDepMap[input] = 1
 	if((/\.tpl.html?$/).test(input)) {
-		fileContent.push(compileTmpl(input, 'AMD'))
+		fileContent.push(compileTmpl(input, 'AMD', {reverseDepMap: reverseDepMap}))
 	} else {
 		content = fs.readFileSync(input, charset)
 		if(!(/\bdefine\b/m).test(removeComments(content))) {
@@ -342,11 +351,16 @@ function getBuiltAmdModContent(input, opt) {
 			depId = deps.shift()
 			if((/\.tpl.html?$/).test(depId)) {
 				fileName = path.resolve(inputDir, depId)
+				if(reverseDepMap[fileName]) {
+					log('Warn: "' + fileName + '" and "' + input + '" have circular reference!')
+					continue
+				}
 				log('Merging: ' + fileName)
-				fileContent.push(compileTmpl(fileName, 'AMD', {id: depId}))
+				fileContent.push(compileTmpl(fileName, 'AMD', {id: depId, reverseDepMap: reverseDepMap}))
 			} else {
 				fileName = path.resolve(inputDir, depId + '.js')
-				if(fileName == input) {
+				if(reverseDepMap[fileName]) {
+					log('Warn: "' + fileName + '" and "' + input + '" have circular reference!')
 					continue
 				}
 				log('Merging: ' + fileName)
