@@ -801,7 +801,7 @@ var define, require
 		config = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], baseConfig, config)
 		loadHold = _getHold(loadInfo.nrmId, baseUrl)
 		nrmId = _normalizeId(id, loadInfo, config.path)
-		if(!nrmId || nrmId == loadInfo.nrmId) {
+		if((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
 			nrmId = loadInfo.nrmId
 			hold = loadHold
 			hold.defineCall()
