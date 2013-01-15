@@ -510,18 +510,6 @@ function combineOne(info, callback) {
 	})
 }
 
-function getHashFromString(str, val) {
-	var res = {}
-	if(!str) {
-		return null
-	}
-	str = str.split(/\s*,\s*/)
-	for(var i = 0; i < str.length; i++) {
-		res[str[i]] = typeof val != 'undefined' ? val : 1
-	}
-	return res
-}
-
 printLine('+')
 log('Start! Time: ' + startTime)
 fs.exists(buildFileName, function(exists) {
@@ -547,7 +535,7 @@ fs.exists(buildFileName, function(exists) {
 		globalUglifyLevel = buildJson.uglify || parseInt(args['uglify']) || 0
 		globalBuildNodeTpl = buildJson.buildNodeTpl || args['build-node-tpl']
 		globalCssmin = buildJson.cssmin || args['cssmin']
-		globalExclude = buildJson.exclude || getHashFromString(args['exclude']) || {}
+		globalExclude = buildJson.exclude || utils.getHashFromString(args['exclude']) || {}
 		globalCopyright = buildJson.copyright || ''
 		buildList = buildJson.builds || []
 		combineList = buildJson.combines || []

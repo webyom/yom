@@ -50,5 +50,18 @@ function cloneObject(obj, deep, _level) {
 	return res
 }
 
+function getHashFromString(str, val) {
+	var res = {}
+	if(!str) {
+		return null
+	}
+	str = str.split(/\s*,\s*/)
+	for(var i = 0; i < str.length; i++) {
+		res[str[i]] = typeof val != 'undefined' ? val : 1
+	}
+	return res
+}
+
 exports.extendObject = extendObject
 exports.cloneObject = cloneObject
+exports.getHashFromString = getHashFromString
