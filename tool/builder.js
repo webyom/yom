@@ -287,6 +287,9 @@ function fixDefineParams(def, depId, baseId) {
 		}
 		id = id || depId || ''
 		id = id && baseId ? path.join(path.dirname(baseId), id) : id
+		if(id && !(/^\./).test(id)) {
+			id = './' + id
+		}
 		return [d, id && ("'" + id + "', "), deps || "['require', 'exports', 'module'], "].join('')
 	})
 	return def
