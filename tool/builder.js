@@ -8,6 +8,7 @@
 var os = require('os')
 var fs = require('fs')
 var path = require('path')
+var utils = require('./utils')
 var uglify = require('./uglify-js')
 var cssmin = require('./cssmin').cssmin
 var argsGetter = require('./args').get
@@ -36,6 +37,7 @@ var buildFileName = args['config-file'] || 'build.json'
 var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
 var logs = []
 var globalUglifyLevel = 0
+var globalBuildNodeTpl = false
 var globalCssmin = false
 var globalExclude = {}
 var globalCopyright = ''
@@ -248,7 +250,7 @@ function buildOneDir(info, callback, baseName) {
 	var buildList = fs.readdirSync(inputDir)
 	var buildTotal = buildList.length
 	var ignore = info.ignore || {}
-	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : args['build-node-tpl']
+	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : globalBuildNodeTpl
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	if(!baseName/*avoid recalculating*/ && info.ignore) {
 		ignore = {}
@@ -268,32 +270,15 @@ function buildOneDir(info, callback, baseName) {
 			} else if(path.basename(inputFile) == 'main.js' || (/-main.js$/).test(inputFile) ||  path.basename(inputFile) == path.basename(inputDir) + '.js') {
 				fileName = path.basename(inputFile).replace(/\.js$/, '-built.js')
 				outputFile = path.join(outputDir, fileName)
-				buildOne({input: inputFile, output: outputFile, exclude: info.exclude}, function() {
+				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
 					build()
 				}, true)
 			} else if((/\.tpl.html?$/).test(inputFile)) {
 				fileName = path.basename(inputFile) + '.js'
 				outputFile = path.join(outputDir, fileName)
-				printLine()
-				log('Build')
-				log('Input: ' + inputFile)
-				log('Output: ' + outputFile)
-				if(buildNodeTpl) {
-					nodeTplOutputFile = outputFile.replace('.tpl.', '.node.tpl.')
-					log('Output: ' + nodeTplOutputFile)
-				}
-				log('Merging: ' + inputFile)
-				tmp = getUglified(compileTmpl(inputFile, 'AMD'), info)
-				log('Writing: ' + outputFile)
-				mkdirs(outputDir, 0777, function() {
-					fs.writeFileSync(outputFile, tmp, charset)
-					if(buildNodeTpl) {
-						log('Writing: ' + nodeTplOutputFile)
-						fs.writeFileSync(nodeTplOutputFile, getUglified(compileTmpl(inputFile, 'NODE'), info), charset)
-					}
-					log('Done!')
+				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
 					build()
-				})
+				}, true)
 			} else if(compressCss && path.extname(inputFile) == '.css' && !(/-min.css$/).test(inputFile)) {
 				fileName = path.basename(inputFile).replace(/.css$/, '-min.css')
 				outputFile = path.join(outputDir, fileName)
@@ -335,40 +320,36 @@ function getBuiltAmdModContent(input, opt) {
 		return ''
 	}
 	reverseDepMap[input] = 1
-	if((/\.tpl.html?$/).test(input)) {
-		fileContent.push(compileTmpl(input, 'AMD', {reverseDepMap: reverseDepMap}))
-	} else {
-		content = fs.readFileSync(input, charset)
-		if(!(/\bdefine\b/m).test(removeComments(content))) {
-			content = [
-				'define(function(require, exports, module)) {',
-					content,
-				'})'
-			].join(os.EOL)
-		}
-		deps = traversalGetRelativeDeps(inputDir, content, opt.exclude)
-		while(deps.length) {
-			depId = deps.shift()
-			if((/\.tpl.html?$/).test(depId)) {
-				fileName = path.resolve(inputDir, depId)
-				if(reverseDepMap[fileName]) {
-					log('Warn: "' + fileName + '" and "' + input + '" have circular reference!')
-					continue
-				}
-				log('Merging: ' + fileName)
-				fileContent.push(compileTmpl(fileName, 'AMD', {id: depId, reverseDepMap: reverseDepMap}))
-			} else {
-				fileName = path.resolve(inputDir, depId + '.js')
-				if(reverseDepMap[fileName]) {
-					log('Warn: "' + fileName + '" and "' + input + '" have circular reference!')
-					continue
-				}
-				log('Merging: ' + fileName)
-				fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId))
-			}
-		}
-		fileContent.push(fixDefineParams(content, opt.id))
+	content = fs.readFileSync(input, charset)
+	if(!(/\bdefine\b/m).test(removeComments(content))) {
+		content = [
+			'define(function(require, exports, module)) {',
+				content,
+			'})'
+		].join(os.EOL)
 	}
+	deps = traversalGetRelativeDeps(inputDir, content, opt.exclude)
+	while(deps.length) {
+		depId = deps.shift()
+		if((/\.tpl.html?$/).test(depId)) {
+			fileName = path.resolve(inputDir, depId)
+			if(reverseDepMap[fileName]) {
+				log('Warn: "' + fileName + '" and "' + input + '" have circular reference!')
+				continue
+			}
+			log('Merging: ' + fileName)
+			fileContent.push(compileTmpl(fileName, 'AMD', {id: depId, reverseDepMap: reverseDepMap}))
+		} else {
+			fileName = path.resolve(inputDir, depId + '.js')
+			if(reverseDepMap[fileName]) {
+				log('Warn: "' + fileName + '" and "' + input + '" have circular reference!')
+				continue
+			}
+			log('Merging: ' + fileName)
+			fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId))
+		}
+	}
+	fileContent.push(fixDefineParams(content, opt.id))
 	return fileContent.join(os.EOL + os.EOL)
 }
 
@@ -376,7 +357,8 @@ function buildOne(info, callback, ignoreSrc) {
 	var input = path.resolve(buildDir, info.input)
 	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
 	var outputDir = path.dirname(output)
-	var fileContent
+	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : globalBuildNodeTpl
+	var fileContent, nodeTplOutput
 	if(input == output) {
 		printLine()
 		log('Build')
@@ -392,20 +374,38 @@ function buildOne(info, callback, ignoreSrc) {
 	log('Build')
 	log('Input: ' + input)
 	log('Output: ' + output)
-	if(path.extname(input) != '.js' || path.extname(output) != '.js') {
-		throw new Error('Input and output must be both js file name or dir name!')
-	}
 	if(!ignoreSrc && !isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!')
 	}
-	fileContent = getBuiltAmdModContent(input, '', {exclude: info.exclude})
-	log('Merging: ' + input)
-	log('Writing: ' + output)
-	mkdirs(outputDir, 0777, function() {
-		fs.writeFileSync(output, getUglified(fileContent, info), charset)
-		log('Done!')
-		callback()
-	})
+	if((/\.tpl.html?$/).test(input)) {
+		if(buildNodeTpl) {
+			nodeTplOutput = output.replace('.tpl.', '.node.tpl.')
+			log('Output: ' + nodeTplOutput)
+		}
+		log('Merging: ' + output)
+		fileContent = getUglified(compileTmpl(input, 'AMD'), info)
+		log('Writing: ' + output)
+		mkdirs(outputDir, 0777, function() {
+			fs.writeFileSync(output, fileContent, charset)
+			if(buildNodeTpl) {
+				log('Merging: ' + nodeTplOutput)
+				fileContent = getUglified(compileTmpl(input, 'NODE'), info)
+				log('Writing: ' + nodeTplOutput)
+				fs.writeFileSync(nodeTplOutput, fileContent, charset)
+			}
+			log('Done!')
+			callback()
+		})
+	} else {
+		log('Merging: ' + input)
+		fileContent = getUglified(getBuiltAmdModContent(input, '', {exclude: info.exclude}), info)
+		log('Writing: ' + output)
+		mkdirs(outputDir, 0777, function() {
+			fs.writeFileSync(output, fileContent, charset)
+			log('Done!')
+			callback()
+		})
+	}
 }
 
 function combineOne(info, callback) {
@@ -481,6 +481,7 @@ fs.exists(buildFileName, function(exists) {
 	function start(buildJson) {
 		var buildList, combineList, combineTotal
 		globalUglifyLevel = buildJson.uglify || parseInt(args['uglify']) || 0
+		globalBuildNodeTpl = buildJson.buildNodeTpl || args['build-node-tpl']
 		globalCssmin = buildJson.cssmin || args['cssmin']
 		globalExclude = buildJson.exclude || getHashFromString(args['exclude']) || {}
 		globalCopyright = buildJson.copyright || ''
