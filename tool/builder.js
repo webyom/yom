@@ -155,8 +155,9 @@ function getTmplObjName(str) {
 	return tmplObjName
 }
 
-function compileTmpl(tmpl, type, opt) {
+function compileTmpl(input, type, opt) {
 	opt = opt || {}
+	var tmpl = fs.readFileSync(input, charset)
 	var strict = (/\$data\b/).test(tmpl)
 	var res = []
 	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
@@ -257,7 +258,7 @@ function buildOneDir(info, callback, baseName) {
 	}
 	build()
 	function build() {
-		var inputFile, outputFile, nodeTplOutputFile, fileName, rawFile, tmp
+		var inputFile, outputFile, nodeTplOutputFile, fileName, tmp
 		if(buildList.length) {
 			inputFile = path.join(inputDir, buildList.shift())
 			if(ignore[inputFile] || (/^\.|~$/).test(path.basename(inputFile))) {
@@ -279,15 +280,14 @@ function buildOneDir(info, callback, baseName) {
 					nodeTplOutputFile = outputFile.replace('.tpl.', '.node.tpl.')
 					log('Output: ' + nodeTplOutputFile)
 				}
-				rawFile = fs.readFileSync(inputFile, charset)
 				log('Merging: ' + inputFile)
-				tmp = getUglified(compileTmpl(rawFile, 'AMD'), info)
+				tmp = getUglified(compileTmpl(inputFile, 'AMD'), info)
 				log('Writing: ' + outputFile)
 				mkdirs(outputDir, 0777, function() {
 					fs.writeFileSync(outputFile, tmp, charset)
 					if(buildNodeTpl) {
 						log('Writing: ' + nodeTplOutputFile)
-						fs.writeFileSync(nodeTplOutputFile, getUglified(compileTmpl(rawFile, 'NODE'), info), charset)
+						fs.writeFileSync(nodeTplOutputFile, getUglified(compileTmpl(inputFile, 'NODE'), info), charset)
 					}
 					log('Done!')
 					build()
@@ -325,11 +325,11 @@ function getBuiltAmdModContent(input, opt) {
 	opt = opt || {}
 	var inputDir = path.dirname(input)
 	var fileContent = []
-	var content = fs.readFileSync(input, charset)
-	var depId, deps, fileName
+	var depId, deps, fileName, content
 	if((/\.tpl.html?$/).test(input)) {
-		fileContent.push(compileTmpl(content, 'AMD'))
+		fileContent.push(compileTmpl(input, 'AMD'))
 	} else {
+		content = fs.readFileSync(input, charset)
 		if(!(/\bdefine\b/m).test(removeComments(content))) {
 			content = [
 				'define(function(require, exports, module)) {',
@@ -343,7 +343,7 @@ function getBuiltAmdModContent(input, opt) {
 			if((/\.tpl.html?$/).test(depId)) {
 				fileName = path.resolve(inputDir, depId)
 				log('Merging: ' + fileName)
-				fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'AMD', {id: depId}))
+				fileContent.push(compileTmpl(fileName, 'AMD', {id: depId}))
 			} else {
 				fileName = path.resolve(inputDir, depId + '.js')
 				if(fileName == input) {
@@ -412,7 +412,7 @@ function combineOne(info, callback) {
 		fileName = path.resolve(buildDir, depId)
 		log('Merging: ' + fileName)
 		if((/\.tpl.html?$/).test(depId)) {
-			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'NONE_AMD', {id: depId}))
+			fileContent.push(compileTmpl(fileName, 'NONE_AMD', {id: depId}))
 		} else {
 			fileContent.push(fs.readFileSync(fileName, charset))
 		}
