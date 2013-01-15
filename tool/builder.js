@@ -199,7 +199,7 @@ function getIncProcessed(input, info, opt) {
 		var file = path.join(inputDir, id)
 		var res = [
 			'<script type="text/javascript">',
-			getUglified(getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}), info),
+			getUglified(getBuiltAmdModContent(file, info, {id: id.replace(/\.js$/, ''), reverseDepMap: reverseDepMap}), info),
 			'</script>'
 		].join(os.EOL)
 		return res
