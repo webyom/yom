@@ -320,12 +320,48 @@ function buildOneDir(info, callback, baseName) {
 	}
 }
 
+function getBuiltAmdModContent(input, opt) {
+	opt = opt || {}
+	var inputDir = path.dirname(input)
+	var fileContent = []
+	var content = fs.readFileSync(input, charset)
+	var depId, deps, fileName
+	if((/\.tpl.html?$/).test(input)) {
+		fileContent.push(compileTmpl(content, 'AMD'))
+	} else {
+		if(!(/\bdefine\b/m).test(removeComments(content))) {
+			content = [
+				'define(function(require, exports, module)) {',
+					content,
+				'})'
+			].join(os.EOL)
+		}
+		deps = traversalGetRelativeDeps(inputDir, content, opt.exclude)
+		while(deps.length) {
+			depId = deps.shift()
+			if((/\.tpl.html?$/).test(depId)) {
+				fileName = path.resolve(inputDir, depId)
+				log('Merging: ' + fileName)
+				fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'AMD', depId))
+			} else {
+				fileName = path.resolve(inputDir, depId + '.js')
+				if(fileName == input) {
+					continue
+				}
+				log('Merging: ' + fileName)
+				fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId))
+			}
+		}
+		fileContent.push(fixDefineParams(content, opt.id))
+	}
+	return fileContent.join(os.EOL + os.EOL)
+}
+
 function buildOne(info, callback, ignoreSrc) {
 	var input = path.resolve(buildDir, info.input)
-	var inputDir = path.dirname(input)
 	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
 	var outputDir = path.dirname(output)
-	var depId
+	var fileContent
 	if(input == output) {
 		printLine()
 		log('Build')
@@ -347,46 +383,13 @@ function buildOne(info, callback, ignoreSrc) {
 	if(!ignoreSrc && !isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!')
 	}
-	fs.readFile(input, charset, function(err, content) {
-		if(err) {
-			throw err
-		}
-		var deps, fileName, fileContent = []
-		if((/\.tpl.html?$/).test(input)) {
-			fileContent.push(compileTmpl(content, 'AMD'))
-		} else {
-			if(!(/\bdefine\b/m).test(removeComments(content))) {
-				content = [
-					'define(function(require, exports, module)) {',
-						content,
-					'})'
-				].join(os.EOL)
-			}
-			deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
-			while(deps.length) {
-				depId = deps.shift()
-				if((/\.tpl.html?$/).test(depId)) {
-					fileName = path.resolve(inputDir, depId)
-					log('Merging: ' + fileName)
-					fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'AMD', depId))
-				} else {
-					fileName = path.resolve(inputDir, depId + '.js')
-					if(fileName == input) {
-						continue
-					}
-					log('Merging: ' + fileName)
-					fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId))
-				}
-			}
-			fileContent.push(fixDefineParams(content))
-		}
-		log('Merging: ' + input)
-		log('Writing: ' + output)
-		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, getUglified(fileContent.join(os.EOL + os.EOL), info), charset)
-			log('Done!')
-			callback()
-		})
+	fileContent = getBuiltAmdModContent(input, '', {exclude: info.exclude})
+	log('Merging: ' + input)
+	log('Writing: ' + output)
+	mkdirs(outputDir, 0777, function() {
+		fs.writeFileSync(output, getUglified(fileContent, info), charset)
+		log('Done!')
+		callback()
 	})
 }
 
