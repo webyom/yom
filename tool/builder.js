@@ -155,7 +155,8 @@ function getTmplObjName(str) {
 	return tmplObjName
 }
 
-function compileTmpl(tmpl, type, depId) {
+function compileTmpl(tmpl, type, opt) {
+	opt = opt || {}
 	var strict = (/\$data\b/).test(tmpl)
 	var res = []
 	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
@@ -165,13 +166,13 @@ function compileTmpl(tmpl, type, depId) {
 		//do nothing
 	} else if(type == 'AMD') {
 		res.push([
-			depId ? 
-			"define('" + depId + "', ['require', 'exports', 'module'], function(require, exports, module) {" :
+			opt.id ? 
+			"define('" + opt.id + "', ['require', 'exports', 'module'], function(require, exports, module) {" :
 			"define(function(require, exports, module) {"
 		].join(os.EOL))
 	} else {
 		res.push([
-			"var " + getTmplObjName(depId) + " = (function() {",
+			"var " + getTmplObjName(opt.id) + " = (function() {",
 			"	var exports = {}"
 		].join(os.EOL))
 	}
@@ -342,7 +343,7 @@ function getBuiltAmdModContent(input, opt) {
 			if((/\.tpl.html?$/).test(depId)) {
 				fileName = path.resolve(inputDir, depId)
 				log('Merging: ' + fileName)
-				fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'AMD', depId))
+				fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'AMD', {id: depId}))
 			} else {
 				fileName = path.resolve(inputDir, depId + '.js')
 				if(fileName == input) {
@@ -411,7 +412,7 @@ function combineOne(info, callback) {
 		fileName = path.resolve(buildDir, depId)
 		log('Merging: ' + fileName)
 		if((/\.tpl.html?$/).test(depId)) {
-			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'NONE_AMD', depId))
+			fileContent.push(compileTmpl(fs.readFileSync(fileName, charset), 'NONE_AMD', {id: depId}))
 		} else {
 			fileContent.push(fs.readFileSync(fileName, charset))
 		}
