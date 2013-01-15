@@ -142,7 +142,7 @@ function traversalGetRelativeDeps(inputDir, def, exclude, processed, curDir) {
 			res.push(depId)
 			processed[depId] = 1
 		}
-		if(!(/\.tpl.html?$/).test(depId)) {
+		if(!(/\.tpl\.html?$/).test(depId)) {
 			fileName = path.resolve(curDir, depId + '.js')
 			def = fs.readFileSync(fileName, charset)
 			res = traversalGetRelativeDeps(inputDir, def, exclude, processed, path.dirname(fileName)).concat(res)
@@ -157,16 +157,63 @@ function getTmplObjName(str) {
 	return tmplObjName
 }
 
-function compileTmpl(input, type, opt) {
+function getIncProcessed(input, info, opt) {
 	input = path.resolve(input)
 	opt = opt || {}
-	var reverseDepMap = opt.reverseDepMap || {}
+	var inputDir = path.dirname(input)
+	var tmpl = opt.tmpl || fs.readFileSync(input, charset)
+	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
+	var reverseDepMap = utils.cloneObject(opt.reverseDepMap) || {}
+	if(reverseDepMap[input]) {
+		log('Warn: "' + input + '" have circular reference!')
+		return ''
+	}
+	reverseDepMap[input] = 1
+	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
+		content = content.replace(/^\s+$/, '')
+		return startTag + (content ? os.EOL : '') + uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true}) + (content ? os.EOL : '') + endTag
+	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1\s*-->/mg, function(inc, quote, file) {
+		var res, extName
+		file = path.join(inputDir, file)
+		extName = path.extname(file)
+		if((/\.inc\.html?$/).test(file)) {
+			res = getIncProcessed(file, info, {reverseDepMap: reverseDepMap})
+		} else {
+			res = fs.readFileSync(file, charset)
+			if(extName == '.js') {
+				res = [
+					'<script type="text/javascript">',
+					getUglified(res, info),
+					'</script>'
+				].join(os.EOL)
+			} else if(extName == '.css') {
+				res = [
+					'<style type="text/css">',
+					compressCss ? cssmin(res) : res,
+					'</style>'
+				].join(os.EOL)
+			}
+		}
+		return res
+	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1\s*-->/mg, function(inc, quote, id) {
+		var file = path.join(inputDir, id)
+		var res = [
+			'<script type="text/javascript">',
+			getUglified(getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}), info),
+			'</script>'
+		].join(os.EOL)
+		return res
+	})
+	return tmpl
+}
+
+function compileTmpl(input, type, info, opt) {
+	input = path.resolve(input)
+	opt = opt || {}
 	var tmpl = fs.readFileSync(input, charset)
 	var strict = (/\$data\b/).test(tmpl)
 	var res = []
-	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
-		return startTag + uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true}) + endTag
-	})
+	tmpl = getIncProcessed(input, info, utils.extendObject(opt, {tmpl: tmpl}))
 	if(type == 'NODE') {
 		//do nothing
 	} else if(type == 'AMD') {
@@ -219,7 +266,7 @@ function compileTmpl(input, type, opt) {
 	return uglify.uglify.gen_code(uglify.parser.parse(res.join(os.EOL)), {beautify: true})
 }
 
-function fixDefineParams(def, depId) {
+function fixDefineParams(def, depId, baseId) {
 	var bodyDeps
 	if(!(/\bdefine\b/m).test(removeComments(def))) {
 		def = [
@@ -238,7 +285,9 @@ function fixDefineParams(def, depId) {
 				deps = "['require', 'exports', 'module', " + bodyDeps + "], "
 			}
 		}
-		return [d, id || depId && ("'" + depId + "', "), deps || "['require', 'exports', 'module'], "].join('')
+		id = id || depId || ''
+		id = id && baseId ? path.join(path.dirname(baseId), id) : id
+		return [d, id && ("'" + id + "', "), deps || "['require', 'exports', 'module'], "].join('')
 	})
 	return def
 }
@@ -273,8 +322,14 @@ function buildOneDir(info, callback, baseName) {
 				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
 					build()
 				}, true)
-			} else if((/\.tpl.html?$/).test(inputFile)) {
+			} else if((/\.tpl\.html?$/).test(inputFile)) {
 				fileName = path.basename(inputFile) + '.js'
+				outputFile = path.join(outputDir, fileName)
+				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
+					build()
+				}, true)
+			} else if((/\.inc\.html?$/).test(inputFile)) {
+				fileName = path.basename(inputFile).replace('.inc.htm', '.htm')
 				outputFile = path.join(outputDir, fileName)
 				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
 					build()
@@ -308,13 +363,13 @@ function buildOneDir(info, callback, baseName) {
 	}
 }
 
-function getBuiltAmdModContent(input, opt) {
+function getBuiltAmdModContent(input, info, opt) {
 	input = path.resolve(input)
 	opt = opt || {}
 	var inputDir = path.dirname(input)
 	var fileContent = []
 	var depId, deps, fileName, content
-	var reverseDepMap = opt.reverseDepMap || {}
+	var reverseDepMap = utils.cloneObject(opt.reverseDepMap) || {}
 	if(reverseDepMap[input]) {
 		log('Warn: "' + input + '" have circular reference!')
 		return ''
@@ -328,17 +383,17 @@ function getBuiltAmdModContent(input, opt) {
 			'})'
 		].join(os.EOL)
 	}
-	deps = traversalGetRelativeDeps(inputDir, content, opt.exclude)
+	deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
 	while(deps.length) {
 		depId = deps.shift()
-		if((/\.tpl.html?$/).test(depId)) {
+		if((/\.tpl\.html?$/).test(depId)) {
 			fileName = path.resolve(inputDir, depId)
 			if(reverseDepMap[fileName]) {
 				log('Warn: "' + fileName + '" and "' + input + '" have circular reference!')
 				continue
 			}
 			log('Merging: ' + fileName)
-			fileContent.push(compileTmpl(fileName, 'AMD', {id: depId, reverseDepMap: reverseDepMap}))
+			fileContent.push(compileTmpl(fileName, 'AMD', info, {id: depId, reverseDepMap: reverseDepMap}))
 		} else {
 			fileName = path.resolve(inputDir, depId + '.js')
 			if(reverseDepMap[fileName]) {
@@ -346,7 +401,7 @@ function getBuiltAmdModContent(input, opt) {
 				continue
 			}
 			log('Merging: ' + fileName)
-			fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId))
+			fileContent.push(fixDefineParams(fs.readFileSync(fileName, charset), depId, opt.id))
 		}
 	}
 	fileContent.push(fixDefineParams(content, opt.id))
@@ -377,28 +432,37 @@ function buildOne(info, callback, ignoreSrc) {
 	if(!ignoreSrc && !isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!')
 	}
-	if((/\.tpl.html?$/).test(input)) {
+	if((/\.tpl\.html?$/).test(input)) {
 		if(buildNodeTpl) {
 			nodeTplOutput = output.replace('.tpl.', '.node.tpl.')
 			log('Output: ' + nodeTplOutput)
 		}
 		log('Merging: ' + output)
-		fileContent = getUglified(compileTmpl(input, 'AMD'), info)
+		fileContent = getUglified(compileTmpl(input, 'AMD', info), info)
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
 			fs.writeFileSync(output, fileContent, charset)
 			if(buildNodeTpl) {
 				log('Merging: ' + nodeTplOutput)
-				fileContent = getUglified(compileTmpl(input, 'NODE'), info)
+				fileContent = getUglified(compileTmpl(input, 'NODE', info), info)
 				log('Writing: ' + nodeTplOutput)
 				fs.writeFileSync(nodeTplOutput, fileContent, charset)
 			}
 			log('Done!')
 			callback()
 		})
+	} else if((/\.inc\.html?$/).test(input)) {
+		log('Merging: ' + input)
+		fileContent = getIncProcessed(input, info)
+		log('Writing: ' + output)
+		mkdirs(outputDir, 0777, function() {
+			fs.writeFileSync(output, fileContent, charset)
+			log('Done!')
+			callback()
+		})
 	} else {
 		log('Merging: ' + input)
-		fileContent = getUglified(getBuiltAmdModContent(input, '', {exclude: info.exclude}), info)
+		fileContent = getUglified(getBuiltAmdModContent(input, info), info)
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
 			fs.writeFileSync(output, fileContent, charset)
@@ -425,8 +489,8 @@ function combineOne(info, callback) {
 		depId = info.inputs.shift()
 		fileName = path.resolve(buildDir, depId)
 		log('Merging: ' + fileName)
-		if((/\.tpl.html?$/).test(depId)) {
-			fileContent.push(compileTmpl(fileName, 'NONE_AMD', {id: depId}))
+		if((/\.tpl\.html?$/).test(depId)) {
+			fileContent.push(compileTmpl(fileName, 'NONE_AMD', info, {id: depId}))
 		} else {
 			fileContent.push(fs.readFileSync(fileName, charset))
 		}
