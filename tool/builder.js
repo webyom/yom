@@ -170,8 +170,13 @@ function getIncProcessed(input, info, opt) {
 	}
 	reverseDepMap[input] = 1
 	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
+		var eol
 		content = content.replace(/^\s+$/, '')
-		return startTag + (content ? os.EOL : '') + uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true}) + (content ? os.EOL : '') + endTag
+		eol = content ? os.EOL : ''
+		if(opt.tmpl) {
+			content = uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true})
+		}
+		return startTag + eol + getUglified(content, info) + eol + endTag
 	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1\s*-->/mg, function(inc, quote, file) {
 		var res, extName
 		file = path.join(inputDir, file)
