@@ -22,6 +22,8 @@ process.on('uncaughtException', function(err) {
 	}
 })
 
+var EOL = '\n'
+var EOLEOL = EOL + EOL
 var DEFAULT_BUILD_JSON = {
 	builds: [
 		{
@@ -43,7 +45,7 @@ var globalExclude = {}
 var globalCopyright = ''
 
 function exit(code) {
-	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
+	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(EOL), charset)
 	process.exit(code)
 }
 
@@ -161,6 +163,7 @@ function getIncProcessed(input, info, opt) {
 	input = path.resolve(input)
 	opt = opt || {}
 	var inputDir = path.dirname(input)
+	var outputDir = opt.outputDir || inputDir
 	var tmpl = opt.tmpl || fs.readFileSync(input, charset)
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	var reverseDepMap = utils.cloneObject(opt.reverseDepMap) || {}
@@ -172,7 +175,7 @@ function getIncProcessed(input, info, opt) {
 	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
 		var eol
 		content = content.replace(/^\s+$/, '')
-		eol = content ? os.EOL : ''
+		eol = content ? EOL : ''
 		if(opt.tmpl) {
 			content = uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true})
 		}
@@ -182,7 +185,7 @@ function getIncProcessed(input, info, opt) {
 		file = path.join(inputDir, file)
 		extName = path.extname(file)
 		if((/\.inc\.html?$/).test(file)) {
-			res = getIncProcessed(file, info, {reverseDepMap: reverseDepMap})
+			res = getIncProcessed(file, info, {reverseDepMap: reverseDepMap, outputDir: outputDir})
 		} else {
 			res = fs.readFileSync(file, charset)
 			if(extName == '.js') {
@@ -190,24 +193,28 @@ function getIncProcessed(input, info, opt) {
 					'<script type="text/javascript">',
 					getUglified(res, info),
 					'</script>'
-				].join(os.EOL)
+				].join(EOL)
 			} else if(extName == '.css') {
 				res = [
 					'<style type="text/css">',
 					compressCss ? cssmin(res) : res,
 					'</style>'
-				].join(os.EOL)
+				].join(EOL)
 			}
 		}
 		return res
 	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1\s*-->/mg, function(inc, quote, id) {
 		var file = path.join(inputDir, id)
-		var res = [
+		id = id.replace(/\.js$/, '')
+		id = path.join(path.relative(outputDir, inputDir), id)
+		return [
 			'<script type="text/javascript">',
-			getUglified(getBuiltAmdModContent(file, info, {id: id.replace(/\.js$/, ''), reverseDepMap: reverseDepMap}), info),
+			getUglified([
+				getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}),
+				'require.processDefQueue(\'\', require.PAGE_BASE_URL)'
+			].join(EOL), info),
 			'</script>'
-		].join(os.EOL)
-		return res
+		].join(EOL)
 	})
 	return tmpl
 }
@@ -226,12 +233,12 @@ function compileTmpl(input, type, info, opt) {
 			opt.id ? 
 			"define('" + opt.id + "', ['require', 'exports', 'module'], function(require, exports, module) {" :
 			"define(function(require, exports, module) {"
-		].join(os.EOL))
+		].join(EOL))
 	} else {
 		res.push([
 			"var " + getTmplObjName(opt.id) + " = (function() {",
 			"	var exports = {}"
-		].join(os.EOL))
+		].join(EOL))
 	}
 	res.push([
 		"	function $encodeHtml(str) {",
@@ -247,28 +254,28 @@ function compileTmpl(input, type, info, opt) {
 				.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
 					return $0.replace(/('|\\)/g, "\\$1").replace(/[\v\t]/g, "").replace(/\s+/g, " ")
 				})
-				.replace(/[\v]/g, os.EOL)
+				.replace(/[\v]/g, EOL)
 				.replace(/<%==(.*?)%>/g, "', $encodeHtml($1), '")
 				.replace(/<%=(.*?)%>/g, "', $1, '")
-				.split("<%").join("')" + os.EOL + "		")
-				.split("%>").join(os.EOL + "		_$out_.push('") + "')",
+				.split("<%").join("')" + EOL + "		")
+				.split("%>").join(EOL + "		_$out_.push('") + "')",
 		"		" + (strict ? "" : "}"),
 		"		return _$out_.join('')",
 		"	}"
-	].join(os.EOL))
+	].join(EOL))
 	if(type == 'NODE') {
 		//do nothing
 	} else if(type == 'AMD') {
 		res.push([
 			"})"
-		].join(os.EOL))
+		].join(EOL))
 	} else {
 		res.push([
 			"	return exports",
 			"})()"
-		].join(os.EOL))
+		].join(EOL))
 	}
-	return uglify.uglify.gen_code(uglify.parser.parse(res.join(os.EOL)), {beautify: true})
+	return uglify.uglify.gen_code(uglify.parser.parse(res.join(EOL)), {beautify: true})
 }
 
 function fixDefineParams(def, depId, baseId) {
@@ -278,7 +285,7 @@ function fixDefineParams(def, depId, baseId) {
 			'define(function(require, exports, module)) {',
 				def,
 			'})'
-		].join(os.EOL)
+		].join(EOL)
 	}
 	bodyDeps = getDeps(def)
 	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(m, d, quote, id, deps) {
@@ -389,7 +396,7 @@ function getBuiltAmdModContent(input, info, opt) {
 			'define(function(require, exports, module)) {',
 				content,
 			'})'
-		].join(os.EOL)
+		].join(EOL)
 	}
 	deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
 	while(deps.length) {
@@ -413,7 +420,7 @@ function getBuiltAmdModContent(input, info, opt) {
 		}
 	}
 	fileContent.push(fixDefineParams(content, opt.id))
-	return fileContent.join(os.EOL + os.EOL)
+	return fileContent.join(EOLEOL)
 }
 
 function buildOne(info, callback, ignoreSrc) {
@@ -461,7 +468,7 @@ function buildOne(info, callback, ignoreSrc) {
 		})
 	} else if((/\.inc\.html?$/).test(input)) {
 		log('Merging: ' + input)
-		fileContent = getIncProcessed(input, info)
+		fileContent = getIncProcessed(input, info, {outputDir: outputDir})
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
 			fs.writeFileSync(output, fileContent, charset)
@@ -506,11 +513,11 @@ function combineOne(info, callback) {
 	log('Writing: ' + output)
 	mkdirs(outputDir, 0777, function() {
 		if(path.extname(output) == '.js') {
-			fileContent = getUglified(fileContent.join(os.EOL + os.EOL), info)
+			fileContent = getUglified(fileContent.join(EOLEOL), info)
 		} else if(path.extname(output) == '.css' && (globalCssmin || (/-min.css$/).test(output))) {
-			fileContent = cssmin(fileContent.join(os.EOL + os.EOL))
+			fileContent = cssmin(fileContent.join(EOLEOL))
 		} else {
-			fileContent = fileContent.join(os.EOL + os.EOL)
+			fileContent = fileContent.join(EOLEOL)
 		}
 		fs.writeFileSync(output, fileContent, charset)
 		log('Done!')
@@ -531,7 +538,7 @@ fs.exists(buildFileName, function(exists) {
 				buildJson = JSON.parse(data)
 			} catch(e) {
 				printLine()
-				throw new Error('Illegal json format build file!' + os.EOL + e.toString())
+				throw new Error('Illegal json format build file!' + EOL + e.toString())
 			}
 			start(buildJson)
 		})

@@ -12,6 +12,8 @@ var define, require
 		return
 	}
 	
+	var _PAGE_BASE_URL = location.href.split('/').slice(0, -1).join('/')
+	
 	/**
 	 * utils
 	 */
@@ -586,7 +588,7 @@ var define, require
 				if(url.indexOf('/') === 0) {
 					url = _getOrigin() + _trimTailSlash(url)
 				} else {
-					url = _getOrigin() + _resolvePath(location.path, _trimTailSlash(url))
+					url = _getOrigin() + _resolvePath(location.pathname, _trimTailSlash(url))
 				}
 			} else {
 				url = _trimTailSlash(url)
@@ -1084,9 +1086,8 @@ var define, require
 	require = _makeRequire()
 	
 	require._YOM_ = true
-	
-	require._processDefQueue = _processDefQueue//for modules built with require.js
-	
+	require.PAGE_BASE_URL = _PAGE_BASE_URL
+	require.processDefQueue = _processDefQueue//for modules built with require.js
 	//debug
 	require._debug = {
 		gcfg: _gcfg,
@@ -1113,7 +1114,7 @@ var define, require
 					if(_isUnnormalId(main)) {
 						_gcfg.baseUrl = _getFullBaseUrl(main.split('/').slice(0, -1).join('/'))
 					} else {
-						_gcfg.baseUrl = location.href.split('/').slice(0, -1).join('/')
+						_gcfg.baseUrl = _PAGE_BASE_URL
 					}
 				}
 				require([main], function(main) {
@@ -1125,7 +1126,7 @@ var define, require
 			}
 		}
 		if(!_gcfg.baseUrl) {
-			_gcfg.baseUrl = location.href.split('/').slice(0, -1).join('/')
+			_gcfg.baseUrl = _PAGE_BASE_URL
 		}
 	})()
 })(this)
