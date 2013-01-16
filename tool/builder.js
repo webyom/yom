@@ -89,10 +89,14 @@ function isSrcDir(outputDir) {
 	return true
 }
 
-function getUglified(content, info) {
+function getUglified(content, info, opt) {
+	opt = opt || {}
 	var ast
 	var level = typeof info.uglify != 'undefined' ? info.uglify : globalUglifyLevel
-	var copyright = info.copyright || globalCopyright
+	var copyright = opt.inline ? '' : (info.copyright || globalCopyright)
+	if(!(/\S/).test(content)) {
+		return ''
+	}
 	if(!level) {
 		return copyright + content
 	}
@@ -173,18 +177,29 @@ function getIncProcessed(input, info, opt) {
 		return ''
 	}
 	reverseDepMap[input] = 1
-	tmpl.replace(/<!--\s*base\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, base) {
-		baseUrl = base.replace(/\/+$/, '')
-		baseUrl = baseUrl && ("'" + baseUrl + "'")
-	})
-	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
-		var eol
+	tmpl = tmpl.replace(/(<script\b[^>]*>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
+		var eol, ug
+		startTag = startTag.replace(/\s+data-uglify=(['"])(\d+)\1/, function(full, quote, val) {
+			ug = parseInt(val)
+			return ''
+		})
 		content = content.replace(/^\s+$/, '')
 		eol = content ? EOL : ''
-		if(opt.tmpl) {
+		if(opt.tmpl && ug !== 0) {
+			//beautify micro template inline script
 			content = uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true})
 		}
-		return startTag + eol + getUglified(content, info) + eol + endTag
+		if(isNaN(parseInt(ug))) {
+			ug = info.uglify
+		}
+		if(ug === 0) {
+			eol = ''
+		}
+		return startTag + eol + getUglified(content, {uglify: ug}, {inline: true}) + eol + endTag
+	}).replace(/<!--\s*base\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, base) {
+		baseUrl = base.replace(/\/+$/, '')
+		baseUrl = baseUrl && ("'" + baseUrl + "'")
+		return ''
 	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, file) {
 		var res, extName
 		file = path.join(inputDir, file)
