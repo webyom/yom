@@ -171,13 +171,16 @@ function getIncProcessed(input, info, opt) {
 	var tmpl = opt.tmpl || fs.readFileSync(input, charset)
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	var reverseDepMap = utils.cloneObject(opt.reverseDepMap) || {}
-	var baseUrl
+	var baseUrl, ugl
 	if(reverseDepMap[input]) {
 		log('Warn: "' + input + '" have circular reference!')
 		return ''
 	}
 	reverseDepMap[input] = 1
-	tmpl = tmpl.replace(/(<script\b[^>]*>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
+	tmpl = tmpl.replace(/<!--\s*uglify\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, ug) {
+		ugl = parseInt(ug)
+		return ''
+	}).replace(/(<script\b[^>]*>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
 		var eol, ug
 		startTag = startTag.replace(/\s+data-uglify=(['"])(\d+)\1/, function(full, quote, val) {
 			ug = parseInt(val)
@@ -190,7 +193,7 @@ function getIncProcessed(input, info, opt) {
 			content = uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true})
 		}
 		if(isNaN(parseInt(ug))) {
-			ug = info.uglify
+			ug = isNaN(ugl) ? info.uglify : ugl
 		}
 		if(ug === 0) {
 			eol = ''
@@ -202,6 +205,7 @@ function getIncProcessed(input, info, opt) {
 		return ''
 	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, file) {
 		var res, extName
+		var ug = isNaN(ugl) ? info.uglify : ugl
 		file = path.join(inputDir, file)
 		extName = path.extname(file)
 		if((/\.inc\.html?$/).test(file)) {
@@ -211,7 +215,7 @@ function getIncProcessed(input, info, opt) {
 			if(extName == '.js') {
 				res = [
 					'<script type="text/javascript">',
-					getUglified(res, info),
+					getUglified(res, {uglify: ug}, {inline: true}),
 					'</script>'
 				].join(EOL)
 			} else if(extName == '.css') {
@@ -225,6 +229,7 @@ function getIncProcessed(input, info, opt) {
 		return res
 	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, id) {
 		var file = path.join(inputDir, id)
+		var ug = isNaN(ugl) ? info.uglify : ugl
 		id = id.replace(/\.js$/, '')
 		id = path.join(path.relative(outputDir, inputDir), id)
 		return [
@@ -232,7 +237,7 @@ function getIncProcessed(input, info, opt) {
 			getUglified([
 				getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}),
 				'require.processDefQueue(\'\', ' + (baseUrl || 'require.PAGE_BASE_URL') + ')'
-			].join(EOL), info),
+			].join(EOL), {uglify: ug}, {inline: true}),
 			'</script>'
 		].join(EOL)
 	})
