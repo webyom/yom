@@ -177,8 +177,15 @@ function getIncProcessed(input, info, opt) {
 		return ''
 	}
 	reverseDepMap[input] = 1
-	tmpl = tmpl.replace(/<!--\s*uglify\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, ug) {
-		ugl = parseInt(ug)
+	tmpl = tmpl.replace(/<!--\s*cssmin\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, val) {
+		if(val == 'false' || val == '0') {
+			compressCss = false
+		} else {
+			compressCss = true
+		}
+		return ''
+	}).replace(/<!--\s*uglify\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, val) {
+		ugl = parseInt(val)
 		return ''
 	}).replace(/(<script\b[^>]*>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
 		var eol, ug
