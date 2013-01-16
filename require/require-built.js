@@ -520,7 +520,7 @@ var define, require
 	function _extendConfig(props, config, ext) {
 		if(!config) {
 			return ext
-		} else if(!ext || config == ext) {
+		} else if(!ext || config == ext || (props.length === 1 && props[0] == 'baseUrl' && config.baseUrl == ext.baseUrl)) {
 			return config
 		}
 		ext.baseUrl = _getFullBaseUrl(ext.baseUrl)
@@ -1087,7 +1087,12 @@ var define, require
 	
 	require._YOM_ = true
 	require.PAGE_BASE_URL = _PAGE_BASE_URL
-	require.processDefQueue = _processDefQueue//for modules built with require.js
+	//for modules built with require.js or html builtin
+	require.processDefQueue = _processDefQueue
+	//for modules built with require.js or html builtin
+	require.getBaseUrlConfig = function(baseUrl) {
+		return _extendConfig(['baseUrl'], _gcfg, {baseUrl: baseUrl || _PAGE_BASE_URL})
+	}
 	//debug
 	require._debug = {
 		gcfg: _gcfg,

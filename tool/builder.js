@@ -243,7 +243,7 @@ function getIncProcessed(input, info, opt) {
 			'<script type="text/javascript">',
 			getUglified([
 				getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}),
-				'require.processDefQueue(\'\', ' + (baseUrl || 'require.PAGE_BASE_URL') + ')'
+				'require.processDefQueue(\'\', ' + (baseUrl || 'require.PAGE_BASE_URL') + ', require.getBaseUrlConfig(' + (baseUrl || 'require.PAGE_BASE_URL') + '))'
 			].join(EOL), {uglify: ug}, {inline: true}),
 			'</script>'
 		].join(EOL)
