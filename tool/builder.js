@@ -248,7 +248,7 @@ function getIncProcessed(input, info, opt) {
 			'</script>'
 		].join(EOL)
 	})
-	return tmpl
+	return tmpl.replace(/\r\n/g, '\n')
 }
 
 function compileTmpl(input, type, info, opt) {
