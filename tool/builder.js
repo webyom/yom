@@ -187,25 +187,6 @@ function getIncProcessed(input, info, opt) {
 	}).replace(/<!--\s*uglify\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, val) {
 		ugl = parseInt(val)
 		return ''
-	}).replace(/(<script\b[^>]*>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
-		var eol, ug
-		startTag = startTag.replace(/\s+data-uglify=(['"])(\d+)\1/, function(full, quote, val) {
-			ug = parseInt(val)
-			return ''
-		})
-		content = content.replace(/^\s+$/, '')
-		eol = content ? EOL : ''
-		if(opt.tmpl && ug !== 0) {
-			//beautify micro template inline script
-			content = uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true})
-		}
-		if(isNaN(parseInt(ug))) {
-			ug = isNaN(ugl) ? info.uglify : ugl
-		}
-		if(ug === 0) {
-			eol = ''
-		}
-		return startTag + eol + getUglified(content, {uglify: ug}, {inline: true}) + eol + endTag
 	}).replace(/<!--\s*base\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, base) {
 		baseUrl = base.replace(/\/+$/, '')
 		baseUrl = baseUrl && ("'" + baseUrl + "'")
@@ -247,6 +228,25 @@ function getIncProcessed(input, info, opt) {
 			].join(EOL), {uglify: ug}, {inline: true}),
 			'</script>'
 		].join(EOL)
+	}).replace(/(<script\b[^>]*>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
+		var eol, ug
+		startTag = startTag.replace(/\s+data-uglify=(['"])(\d+)\1/, function(full, quote, val) {
+			ug = parseInt(val)
+			return ''
+		})
+		content = content.replace(/^\s+$/, '')
+		eol = content ? EOL : ''
+		if(opt.tmpl && ug !== 0) {
+			//beautify micro template inline script
+			content = uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true})
+		}
+		if(isNaN(parseInt(ug))) {
+			ug = isNaN(ugl) ? info.uglify : ugl
+		}
+		if(ug === 0) {
+			eol = ''
+		}
+		return startTag + eol + getUglified(content, {uglify: ug}, {inline: true}) + eol + endTag
 	})
 	return tmpl.replace(/\r\n/g, '\n')
 }
