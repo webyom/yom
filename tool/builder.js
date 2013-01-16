@@ -45,7 +45,7 @@ var globalExclude = {}
 var globalCopyright = ''
 
 function exit(code) {
-	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(EOL), charset)
+	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
 	process.exit(code)
 }
 
@@ -116,11 +116,11 @@ function getDeps(def, relative, exclude) {
 	var depArr = removeComments(def).match(/\bdefine\s*\([^\[\{]*(\[[^\[\]]*\])/m)
 	depArr = depArr && depArr[1]
 	exclude = exclude || {}
-	relative && depArr && depArr.replace(new RegExp('(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1', 'mg'), function(m, quote, dep) {
+	relative && depArr && depArr.replace(new RegExp('(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1', 'mg'), function(full, quote, dep) {
 		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
-	removeComments(def).replace(new RegExp('\\brequire\\s*\\(\\s*(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1\\s*\\)', 'mg'), function(m, quote, dep) {//extract dependencies
+	removeComments(def).replace(new RegExp('\\brequire\\s*\\(\\s*(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1\\s*\\)', 'mg'), function(full, quote, dep) {//extract dependencies
 		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
@@ -154,7 +154,7 @@ function traversalGetRelativeDeps(inputDir, def, exclude, processed, curDir) {
 }
 
 function getTmplObjName(str) {
-	var tmplObjName = (str + '').replace(/(?:[-_\.]+|(?:\.*\/)+)(\w)([^-_\.\/]*)/g, function($1, $2, $3) {return $2.toUpperCase() + $3})
+	var tmplObjName = (str + '').replace(/(?:[-_\.]+|(?:\.*\/)+)(\w)([^-_\.\/]*)/g, function($0, $1, $2) {return $1.toUpperCase() + $2})
 	tmplObjName = tmplObjName.charAt(0).toLowerCase() + tmplObjName.slice(1)
 	return tmplObjName
 }
@@ -167,11 +167,16 @@ function getIncProcessed(input, info, opt) {
 	var tmpl = opt.tmpl || fs.readFileSync(input, charset)
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	var reverseDepMap = utils.cloneObject(opt.reverseDepMap) || {}
+	var baseUrl
 	if(reverseDepMap[input]) {
 		log('Warn: "' + input + '" have circular reference!')
 		return ''
 	}
 	reverseDepMap[input] = 1
+	tmpl.replace(/<!--\s*base\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, base) {
+		baseUrl = base.replace(/\/+$/, '')
+		baseUrl = baseUrl && ("'" + baseUrl + "'")
+	})
 	tmpl = tmpl.replace(/(<script\b(?:[^>]*)>)([^\f]*?)(<\/script>)/mg, function(full, startTag, content, endTag) {
 		var eol
 		content = content.replace(/^\s+$/, '')
@@ -180,7 +185,7 @@ function getIncProcessed(input, info, opt) {
 			content = uglify.uglify.gen_code(uglify.parser.parse(content), {beautify: true})
 		}
 		return startTag + eol + getUglified(content, info) + eol + endTag
-	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1\s*-->/mg, function(inc, quote, file) {
+	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, file) {
 		var res, extName
 		file = path.join(inputDir, file)
 		extName = path.extname(file)
@@ -203,7 +208,7 @@ function getIncProcessed(input, info, opt) {
 			}
 		}
 		return res
-	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1\s*-->/mg, function(inc, quote, id) {
+	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, id) {
 		var file = path.join(inputDir, id)
 		id = id.replace(/\.js$/, '')
 		id = path.join(path.relative(outputDir, inputDir), id)
@@ -211,7 +216,7 @@ function getIncProcessed(input, info, opt) {
 			'<script type="text/javascript">',
 			getUglified([
 				getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}),
-				'require.processDefQueue(\'\', require.PAGE_BASE_URL)'
+				'require.processDefQueue(\'\', ' + (baseUrl || 'require.PAGE_BASE_URL') + ')'
 			].join(EOL), info),
 			'</script>'
 		].join(EOL)
@@ -288,7 +293,7 @@ function fixDefineParams(def, depId, baseId) {
 		].join(EOL)
 	}
 	bodyDeps = getDeps(def)
-	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(m, d, quote, id, deps) {
+	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(full, d, quote, id, deps) {
 		if(bodyDeps.length) {
 			bodyDeps = "'" + bodyDeps.join("', '") + "'"
 			if(deps) {

@@ -128,11 +128,11 @@ var define, require
 		NO_DEFINE: 4
 	}
 	
-	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
+	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
 		charset: 'utf-8',
 		baseUrl: '',
 		source: {},
-		path: {},//match by id removed prefix
+		paths: {},//match by id removed prefix
 		shim: {},//match by id removed prefix
 		urlArgs: {//match by id removed prefix
 			'*': ''//for all
@@ -485,7 +485,7 @@ var define, require
 		return m && m[1] || ''
 	}
 	
-	function _normalizeId(id, base, pathMap) {
+	function _normalizeId(id, base, paths) {
 		var nrmId, a, b, maped
 		if(!id) {
 			return id
@@ -502,11 +502,11 @@ var define, require
 		} else {
 			nrmId = id
 		}
-		if(pathMap) {
+		if(paths) {
 			a = nrmId.split('/')
 			b = []
 			while(a.length) {
-				maped = pathMap[a.join('/')]
+				maped = paths[a.join('/')]
 				if(maped) {
 					b.unshift(_trimTailSlash(maped))
 					return b.join('/')
@@ -528,7 +528,7 @@ var define, require
 			config = {
 				charset: 'utf-8',
 				source: {},
-				path: {},//match by id removed prefix
+				paths: {},//match by id removed prefix
 				shim: {},//match by id removed prefix
 				urlArgs: {//match by id removed prefix
 					'*': ''//for all
@@ -800,9 +800,9 @@ var define, require
 		var nrmId, conf, loadHold, hold, depMap
 		var baseUrl = loadInfo.baseUrl
 		var baseConfig = loadInfo.config || config
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], baseConfig, config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], baseConfig, config)
 		loadHold = _getHold(loadInfo.nrmId, baseUrl)
-		nrmId = _normalizeId(id, loadInfo, config.path)
+		nrmId = _normalizeId(id, loadInfo, config.paths)
 		if((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
 			nrmId = loadInfo.nrmId
 			hold = loadHold
@@ -856,7 +856,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], context.parentConfig, context.config)
 		function def(id, deps, factory) {
 			var script, factoryStr, reqFnName, defQueue
 			if(typeof id != 'string') {
@@ -909,7 +909,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'path', 'shim', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], context.parentConfig, context.config)
 		function _getDef(id) {
 			var base, conf, nrmId, def, pluginName, sourceConf, fullUrl, baseFullUrl, loader
 			if(!id) {
@@ -929,9 +929,9 @@ var define, require
 				}
 			}
 			sourceConf = config.source[_getSourceName(id)]
-			conf = _extendConfig(['charset', 'baseUrl', 'path', 'shim', 'urlArgs'], config, sourceConf)
+			conf = _extendConfig(['charset', 'baseUrl', 'paths', 'shim', 'urlArgs'], config, sourceConf)
 			base = context.base
-			nrmId = _normalizeId(id, base, conf.path)
+			nrmId = _normalizeId(id, base, conf.paths)
 			if(_isRelativePath(id)) {
 				conf = base && base.config || conf
 			}
