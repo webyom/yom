@@ -216,7 +216,7 @@ function getIncProcessed(input, info, opt) {
 		}
 		return res
 	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, id) {
-		var file = path.join(inputDir, id)
+		var file = path.join(inputDir, id).replace(/\.js$/, '') + '.js'
 		var ug = isNaN(ugl) ? info.uglify : ugl
 		id = id.replace(/\.js$/, '')
 		id = path.join(path.relative(outputDir, inputDir), id)
@@ -224,7 +224,7 @@ function getIncProcessed(input, info, opt) {
 			'<script type="text/javascript">',
 			getUglified([
 				getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}),
-				'require.processDefQueue(\'\', ' + (baseUrl || 'require.PAGE_BASE_URL') + ', require.getBaseUrlConfig(' + (baseUrl || 'require.PAGE_BASE_URL') + '))'
+				(/\brequire-plugin\b/).test(id) ? 'require.processDefQueue()' : 'require.processDefQueue(\'\', ' + (baseUrl || 'require.PAGE_BASE_URL') + ', require.getBaseUrlConfig(' + (baseUrl || 'require.PAGE_BASE_URL') + '))'
 			].join(EOL), {uglify: ug}, {inline: true}),
 			'</script>'
 		].join(EOL)

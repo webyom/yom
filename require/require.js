@@ -12,8 +12,6 @@ var define, require
 		return
 	}
 	
-	var _PAGE_BASE_URL = location.href.split('/').slice(0, -1).join('/')
-	
 	/**
 	 * utils
 	 */
@@ -114,6 +112,7 @@ var define, require
 	/**
 	 * config
 	 */
+	var _PAGE_BASE_URL = location.href.split('/').slice(0, -1).join('/')
 	var _RESERVED_NRM_ID = {
 		require: 1,
 		exports: 1,
@@ -502,6 +501,9 @@ var define, require
 		} else {
 			nrmId = id
 		}
+		if(_isRelativePath(nrmId)) {
+			return nrmId
+		}
 		if(paths) {
 			a = nrmId.split('/')
 			b = []
@@ -826,7 +828,12 @@ var define, require
 	
 	function _postDefineCall(base, deps, factory, hold, config) {
 		_makeRequire({config: config, base: base})(deps, function() {
-			var nrmId = base.nrmId
+			var nrmId 
+			if(!base.baseUrl) {
+				nrmId = _normalizeId(base.nrmId, base, config.paths)
+			} else {
+				nrmId = base.nrmId
+			}
 			var baseUrl = base.baseUrl || config.baseUrl
 			var exports, module
 			var args = _getArray(arguments)
