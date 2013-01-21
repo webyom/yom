@@ -1143,7 +1143,7 @@ var define, require
 					}
 				})
 			} else {
-				callback.apply(null, callArgs)
+				callback && callback.apply(null, callArgs)
 			}
 			function onRequire(errCode, opt) {
 				if(over) {
