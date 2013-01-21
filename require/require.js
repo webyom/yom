@@ -686,10 +686,16 @@ var define, require
 		})
 	}
 	
-	function _doLoad(id, nrmId, config, onRequire, hold) {
-		var baseUrl = config.baseUrl
-		var charset = _getCharset(id, config.charset)
-		var jsNode, urlArg
+	function _doLoad(id, nrmId, config, hold) {
+		var combo, comboUrl, baseUrl, charset, jsNode, urlArg
+		combo = typeof id == 'object' && id && id.combo && id
+		if(combo) {
+			comboUrl = nrmId
+			id = combo.id
+			nrmId = combo.nrmId
+		}
+		baseUrl = config.baseUrl
+		charset = _getCharset(id, config.charset)
 		jsNode = document.createElement('script')
 		if(jsNode.attachEvent && !_isOpera) {
 			_interactiveMode = true
@@ -704,7 +710,7 @@ var define, require
 		jsNode.type = 'text/javascript'
 		jsNode.async = 'async'
 		urlArg = _getUrlArg(id, config.urlArgs)
-		jsNode.src = _getFullUrl(nrmId, baseUrl) + (urlArg ? '?' + urlArg : '')
+		jsNode.src = (comboUrl || _getFullUrl(nrmId, baseUrl)) + (urlArg ? '?' + urlArg : '')
 		jsNode.setAttribute('data-nrm-id', nrmId)
 		jsNode.setAttribute('data-base-url', baseUrl)
 		_scriptBeingInserted = jsNode
@@ -724,14 +730,14 @@ var define, require
 			if(jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
 				_endLoad(jsNode, _ieOnload)
 				jsNode = null
-				_processDefQueue(nrmId, baseUrl, config)
+				_processDefQueue(nrmId, baseUrl, config, combo)
 				_checkHoldDefine(hold)
 			}
 		}
 		function _onload() {
 			var def
 			_endLoad(jsNode, _onload, _onerror)
-			_processDefQueue(nrmId, baseUrl, config)
+			_processDefQueue(nrmId, baseUrl, config, combo)
 			_checkHoldDefine(hold)
 		}
 		function _onerror() {
@@ -742,10 +748,20 @@ var define, require
 	}
 	
 	function _load(id, nrmId, config, onRequire) {
-		var baseUrl = config.baseUrl,
-			def = _getDefined(id, nrmId, config),
-			hold = _getHold(nrmId, baseUrl),
+		var combo = typeof id == 'object' && id && id.combo && id,
+			baseUrl = config.baseUrl,
 			jsNode, urlArg
+		var def, hold, comboUrl, comboHold
+		var comboNeedLoad = false
+		if(combo) {
+			comboUrl = nrmId
+			id = combo.id
+			nrmId = combo.nrmId
+			hold = _getHold(combo.nrmId, baseUrl)
+		} else {
+			def = _getDefined(id, nrmId, config)
+			hold = _getHold(nrmId, baseUrl)
+		}
 		if(def) {
 			onRequire(0)
 			return
@@ -755,21 +771,44 @@ var define, require
 		}
 		hold = new Hold(id, nrmId, config)
 		hold.push(onRequire)
-		if(hold.getShim()) {
-			hold.loadShimDeps(function(errCode) {
-				if(errCode) {
-					hold.dispatch(errCode)
-					hold.remove()
-				} else {
-					_doLoad(id, nrmId, config, onRequire, hold)
+		if(combo) {
+			comboHold = hold
+			_each(combo.load, function(item, i) {
+				var hold = _getHold(item.nrmId, baseUrl)
+				if(!hold) {
+					hold = new Hold(item.id, item.nrmId, config)
+					comboNeedLoad = true
 				}
+				hold.push(function (err, opt) {
+					if(err) {
+						comboHold.dispatch(err)
+					} else {
+						combo.loadCount++
+						if(combo.loadCount === combo.postLoadList.length) {
+							comboHold.defineCall()
+							comboHold.dispatch(0)
+						}
+					}
+				})
 			})
+			comboNeedLoad && _doLoad(combo, comboUrl, config, hold)
 		} else {
-			_doLoad(id, nrmId, config, onRequire, hold)
+			if(hold.getShim()) {
+				hold.loadShimDeps(function(errCode) {
+					if(errCode) {
+						hold.dispatch(errCode)
+						hold.remove()
+					} else {
+						_doLoad(id, nrmId, config, hold)
+					}
+				})
+			} else {
+				_doLoad(id, nrmId, config, hold)
+			}
 		}
 	}
 	
-	function _processDefQueue(nrmId, baseUrl, config) {
+	function _processDefQueue(nrmId, baseUrl, config, combo) {
 		var def, queue, defQueue, postDefQueue
 		if(_interactiveMode) {
 			queue = _getInteractiveDefQueue(nrmId, baseUrl)
@@ -785,7 +824,7 @@ var define, require
 				nrmId: nrmId || '',
 				baseUrl: baseUrl || '',
 				config: config
-			}, def.config, postDefQueue)
+			}, def.config, postDefQueue, combo)
 			def = defQueue.shift()
 		}
 		def = postDefQueue.shift()
@@ -798,20 +837,38 @@ var define, require
 	/**
 	 * define
 	 */
-	function _defineCall(id, deps, factory, loadInfo, config, postDefQueue) {
+	function _defineCall(id, deps, factory, loadInfo, config, postDefQueue, combo) {
 		var nrmId, conf, loadHold, hold, depMap
 		var baseUrl = loadInfo.baseUrl
 		var baseConfig = loadInfo.config || config
 		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], baseConfig, config)
 		loadHold = _getHold(loadInfo.nrmId, baseUrl)
-		nrmId = _normalizeId(id, loadInfo, config.paths)
-		if((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
-			nrmId = loadInfo.nrmId
-			hold = loadHold
-			hold.defineCall()
-		} else {//multiple define in a file
-			hold = new Hold(id, nrmId, baseConfig)
-			hold.defineCall()
+		if(combo) {
+			loadInfo.nrmId = combo.load[0].nrmId
+			nrmId = _normalizeId(id, loadInfo, config.paths)
+			if(!nrmId || nrmId == loadInfo.nrmId) {
+				nrmId = combo.load.shift()//process the first load item
+				combo.postLoadList.push(nrmId)//then push is to the processed list
+				nrmId = nrmId.nrmId
+				hold = _getHold(nrmId, baseUrl)
+				hold.defineCall()
+				if(!combo.load.length) {//all the load items have been loaded
+					loadHold.defineCall()
+				}
+			} else {//multiple define in a file
+				hold = new Hold(id, nrmId, baseConfig)
+				hold.defineCall()
+			}
+		} else {
+			nrmId = _normalizeId(id, loadInfo, config.paths)
+			if((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
+				nrmId = loadInfo.nrmId
+				hold = loadHold
+				hold.defineCall()
+			} else {//multiple define in a file
+				hold = new Hold(id, nrmId, baseConfig)
+				hold.defineCall()
+			}
 		}
 		postDefQueue.push({
 			base: {
@@ -829,7 +886,7 @@ var define, require
 	function _postDefineCall(base, deps, factory, hold, config) {
 		_makeRequire({config: config, base: base})(deps, function() {
 			var nrmId 
-			if(!base.baseUrl) {
+			if(!base.baseUrl && (/^require-plugin\//).test(base.nrmId)) {//require-plugin builtin with html
 				nrmId = _normalizeId(base.nrmId, base, config.paths)
 			} else {
 				nrmId = base.nrmId
@@ -912,58 +969,102 @@ var define, require
 	/**
 	 * require
 	 */
+	function _getComboUrl(loadList, baseUrl) {
+		var combo = []
+		var comboUrl
+		var hostName = baseUrl.split('/').slice(0, 3).join('/')
+		_each(loadList, function(item, i) {
+			baseUrl = item.config.baseUrl
+			var hostName = baseUrl.split('/').slice(0, 3).join('/')
+			var base = baseUrl.slice(hostName.length)
+			if(_isUnnormalId(item.nrmId)) {
+				combo.push(base + item.nrmId)
+			} else {
+				combo.push(base + '/' + item.nrmId + '.js')
+			}
+		})
+		comboUrl = hostName + '/c/=' + combo.join(',')
+		return comboUrl
+	}
+	
+	function _loadCombo(combo, config, context, callback) {
+		var callArgs = combo.combo
+		var baseUrl = config.baseUrl
+		var hold, comboUrl
+		hold = _getHold(combo.nrmId, baseUrl)
+		if(hold) {
+			hold.push(onRequire)
+		} else {
+			_load(combo, _getComboUrl(combo.load, baseUrl), config, onRequire)
+		}
+		function onRequire(errCode, opt) {
+			if(!errCode) {
+				_each(callArgs, function(arg, i) {
+					var def, plugin
+					if(typeof arg == 'undefined') {
+						arg = combo.postLoadList.shift()
+						def = _getDefined(arg.id, arg.nrmId, arg.config)
+						callArgs[i] = def.getDef(context)
+					}
+				})
+			}
+			callback(errCode, opt)
+		}
+	}
+	
+	function _getDep(id, config, context) {
+		var base, conf, nrmId, def, pluginName, sourceConf, fullUrl, baseFullUrl, loader
+		if(!id) {
+			return {}
+		}
+		pluginName = _getPluginName(id)
+		if(pluginName) {
+			return {plugin: _getPlugin(pluginName), load: {pluginName: pluginName, id: id, nrmId: id, config: config}}
+		}
+		def = _defined[id]
+		if(def) {//reserved
+			loader = def.getLoader()
+			if(loader) {
+				return {inst: def, load: {loader: loader, id: id, nrmId: id, config: config}}
+			} else {
+				return {inst: def}
+			}
+		}
+		sourceConf = config.source[_getSourceName(id)]
+		conf = _extendConfig(['charset', 'baseUrl', 'paths', 'shim', 'urlArgs'], config, sourceConf)
+		base = context.base
+		nrmId = _normalizeId(id, base, conf.paths)
+		if(_isRelativePath(id)) {
+			conf = base && base.config || conf
+		}
+		def = _getDefined(id, nrmId, conf)
+		fullUrl = _getFullUrl(nrmId, conf.baseUrl)
+		if(base) {
+			baseFullUrl = _getFullUrl(base.nrmId, base.baseUrl)
+			_setDepReverseMap(fullUrl, baseFullUrl)
+			if(!def && _hasCircularDep(baseFullUrl, fullUrl)) {//cirular dependency
+				return {}
+			}
+		}
+		if(def) {
+			return {inst: def}
+		} else {
+			return {load: {id: id, nrmId: nrmId, config: conf}}
+		}
+	}
+	
 	function _makeRequire(context) {
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
 		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], context.parentConfig, context.config)
-		function _getDef(id) {
-			var base, conf, nrmId, def, pluginName, sourceConf, fullUrl, baseFullUrl, loader
-			if(!id) {
-				return {}
-			}
-			pluginName = _getPluginName(id)
-			if(pluginName) {
-				return {plugin: _getPlugin(pluginName), load: {pluginName: pluginName, id: id, nrmId: id, config: config}}
-			}
-			def = _defined[id]
-			if(def) {//reserved
-				loader = def.getLoader()
-				if(loader) {
-					return {inst: def, load: {loader: loader, id: id, nrmId: id, config: config}}
-				} else {
-					return {inst: def}
-				}
-			}
-			sourceConf = config.source[_getSourceName(id)]
-			conf = _extendConfig(['charset', 'baseUrl', 'paths', 'shim', 'urlArgs'], config, sourceConf)
-			base = context.base
-			nrmId = _normalizeId(id, base, conf.paths)
-			if(_isRelativePath(id)) {
-				conf = base && base.config || conf
-			}
-			def = _getDefined(id, nrmId, conf)
-			fullUrl = _getFullUrl(nrmId, conf.baseUrl)
-			if(base) {
-				baseFullUrl = _getFullUrl(base.nrmId, base.baseUrl)
-				_setDepReverseMap(fullUrl, baseFullUrl)
-				if(!def && _hasCircularDep(baseFullUrl, fullUrl)) {//cirular dependency
-					return {}
-				}
-			}
-			if(def) {
-				return {inst: def}
-			} else {
-				return {load: {id: id, nrmId: nrmId, config: conf}}
-			}
-		}
 		function req(deps, callback, errCallback) {
 			var over = false
 			var loadList = []
 			var def, count, callArgs, toRef
 			if(typeof deps == 'string') {
 				if(arguments.length === 1) {
-					def = _getDef(deps)
+					def = _getDep(deps, config, context)
 					if(def.plugin) {
 						return def.plugin.require(deps, config)
 					} else {
@@ -975,13 +1076,42 @@ var define, require
 			}
 			callArgs = new Array(deps.length)
 			_each(deps, function(id, i) {
-				var def = _getDef(id)
-				if(def.load) {
-					loadList.push(def.load)
-				} else if(def.inst) {
-					callArgs[i] = def.inst.getDef(context)
+				var def, combo, comboIds
+				if(id.indexOf('combine:') === 0) {
+					id = id.replace(/\s+/g, '')
+					comboIds = id.replace(/^combine:/, '').split(',')
+					combo = {
+						id: id,
+						nrmId: id,
+						combo: new Array(comboIds.length),//combo module definitions
+						load: [],//need to be loaded
+						loadCount: 0,//loaded count
+						postLoadList: []//loaded items
+					}
+					_each(comboIds, function(id, i) {
+						def = _getDep(id, config, context)
+						if(def.load) {
+							combo.load.push(def.load)
+						} else if(def.inst) {
+							combo.combo[i] = def.inst.getDef(context)
+						} else {
+							combo.combo[i] = null
+						}
+					})
+					if(combo.load.length) {
+						loadList.push(combo)
+					} else {
+						callArgs[i] = combo.combo
+					}
 				} else {
-					callArgs[i] = null
+					def = _getDep(id, config, context)
+					if(def.load) {
+						loadList.push(def.load)
+					} else if(def.inst) {
+						callArgs[i] = def.inst.getDef(context)
+					} else {
+						callArgs[i] = null
+					}
 				}
 			})
 			count = loadList.length
@@ -997,19 +1127,19 @@ var define, require
 				}
 				_each(loadList, function(item, i) {
 					var hold
-					if(item.loader) {//reserved module loader
+					if(item.combo) {//combine
+						_loadCombo(item, config, context, onRequire)
+					} else if(item.loader) {//reserved module loader
 						item.loader(context, onRequire)
-						return
-					}
-					if(item.pluginName) {//plugin
+					} else if(item.pluginName) {//plugin
 						_loadPlugin(item.pluginName, item.id, item.config, onRequire)
-						return
-					}
-					hold = _getHold(item.nrmId, item.config.baseUrl)
-					if(hold) {
-						hold.push(onRequire)
 					} else {
-						_load(item.id, item.nrmId, item.config, onRequire)
+						hold = _getHold(item.nrmId, item.config.baseUrl)
+						if(hold) {
+							hold.push(onRequire)
+						} else {
+							_load(item.id, item.nrmId, item.config, onRequire)
+						}
 					}
 				})
 			} else {
@@ -1043,7 +1173,9 @@ var define, require
 								var def, plugin
 								if(typeof arg == 'undefined') {
 									arg = loadList.shift()
-									if(arg.pluginName) {//plugin
+									if(arg.combo) {//combine
+										callArgs[i] = arg.combo
+									} else if(arg.pluginName) {//plugin
 										plugin = _getPlugin(arg.pluginName)
 										callArgs[i] = plugin.require(arg.id, config)
 									} else {

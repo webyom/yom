@@ -191,7 +191,7 @@ function getIncProcessed(input, info, opt) {
 		baseUrl = base.replace(/\/+$/, '')
 		baseUrl = baseUrl && ("'" + baseUrl + "'")
 		return ''
-	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, file) {
+	}).replace(/<!--\s*include\s+(['"])([^'"]+)\1(?:\s+plain-id:([\w-]+))?\s*-->/mg, function(full, quote, file, plainId) {
 		var res, extName
 		var ug = isNaN(ugl) ? info.uglify : ugl
 		file = path.join(inputDir, file)
@@ -202,7 +202,7 @@ function getIncProcessed(input, info, opt) {
 			res = fs.readFileSync(file, charset)
 			if(extName == '.js') {
 				res = [
-					'<script type="text/javascript">',
+					plainId ? '<script type="text/plain" id="' + plainId + '">' : '<script type="text/javascript">',
 					getUglified(res, {uglify: ug}, {inline: true}),
 					'</script>'
 				].join(EOL)
@@ -215,13 +215,13 @@ function getIncProcessed(input, info, opt) {
 			}
 		}
 		return res
-	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1\s*-->/mg, function(full, quote, id) {
+	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1(?:\s+plain-id:([\w-]+))?\s*-->/mg, function(full, quote, id, plainId) {
 		var file = path.join(inputDir, id).replace(/\.js$/, '') + '.js'
 		var ug = isNaN(ugl) ? info.uglify : ugl
 		id = id.replace(/\.js$/, '')
 		id = path.join(path.relative(outputDir, inputDir), id)
 		return [
-			'<script type="text/javascript">',
+			plainId ? '<script type="text/plain" id="' + plainId + '">' : '<script type="text/javascript">',
 			getUglified([
 				getBuiltAmdModContent(file, info, {id: id, reverseDepMap: reverseDepMap}),
 				(/\brequire-plugin\b/).test(id) ? 'require.processDefQueue()' : 'require.processDefQueue(\'\', ' + (baseUrl || 'require.PAGE_BASE_URL') + ', require.getBaseUrlConfig(' + (baseUrl || 'require.PAGE_BASE_URL') + '))'
