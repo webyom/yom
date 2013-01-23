@@ -12,6 +12,7 @@ var utils = require('./utils')
 var uglify = require('./uglify-js')
 var cssmin = require('./cssmin').cssmin
 var argsGetter = require('./args').get
+var replaceProperties = require('./properties').replaceProperties
 
 process.on('uncaughtException', function(err) {
 	try {
@@ -43,6 +44,7 @@ var globalBuildNodeTpl = false
 var globalCssmin = false
 var globalExclude = {}
 var globalCopyright = ''
+var properties
 
 function exit(code) {
 	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
@@ -80,6 +82,13 @@ function mkdirs(dirpath, mode, callback) {
 			})
 		}
 	})
+}
+
+function writeFileSync(path, content, charset) {
+	if(properties) {
+		content = replaceProperties(content, properties)
+	}
+	fs.writeFileSync(path, content, charset)
 }
 
 function isSrcDir(outputDir) {
@@ -393,7 +402,7 @@ function buildOneDir(info, callback, baseName) {
 				tmp = cssmin(tmp)
 				log('Writing: ' + outputFile)
 				mkdirs(outputDir, 0777, function() {
-					fs.writeFileSync(outputFile, tmp, charset)
+					writeFileSync(outputFile, tmp, charset)
 					log('Done!')
 					build()
 				})
@@ -488,12 +497,12 @@ function buildOne(info, callback, ignoreSrc) {
 		fileContent = getUglified(compileTmpl(input, 'AMD', info), info)
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, fileContent, charset)
+			writeFileSync(output, fileContent, charset)
 			if(buildNodeTpl) {
 				log('Merging: ' + nodeTplOutput)
 				fileContent = getUglified(compileTmpl(input, 'NODE', info), info)
 				log('Writing: ' + nodeTplOutput)
-				fs.writeFileSync(nodeTplOutput, fileContent, charset)
+				writeFileSync(nodeTplOutput, fileContent, charset)
 			}
 			log('Done!')
 			callback()
@@ -503,7 +512,7 @@ function buildOne(info, callback, ignoreSrc) {
 		fileContent = getIncProcessed(input, info, {outputDir: outputDir})
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, fileContent, charset)
+			writeFileSync(output, fileContent, charset)
 			log('Done!')
 			callback()
 		})
@@ -512,7 +521,7 @@ function buildOne(info, callback, ignoreSrc) {
 		fileContent = getUglified(getBuiltAmdModContent(input, info), info)
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
-			fs.writeFileSync(output, fileContent, charset)
+			writeFileSync(output, fileContent, charset)
 			log('Done!')
 			callback()
 		})
@@ -551,7 +560,7 @@ function combineOne(info, callback) {
 		} else {
 			fileContent = fileContent.join(EOLEOL)
 		}
-		fs.writeFileSync(output, fileContent, charset)
+		writeFileSync(output, fileContent, charset)
 		log('Done!')
 		callback()
 	})
@@ -568,6 +577,8 @@ fs.exists(buildFileName, function(exists) {
 			}
 			try {
 				buildJson = JSON.parse(data)
+				buildJson.builds = buildJson.builds || DEFAULT_BUILD_JSON.builds
+				properties = buildJson.properties
 			} catch(e) {
 				printLine()
 				throw new Error('Illegal json format build file!' + EOL + e.toString())
