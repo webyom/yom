@@ -18,7 +18,7 @@ define(['../core/core-built'], function(YOM) {
 	var _listenerBind = null
 	var _isSupportHistoryState = !!history.pushState
 	var _isFrameNeeded = YOM.browser.ie && (!document.documentMode || document.documentMode < 8)
-	var _isSupportHashChange = !_isFrameNeeded && typeof window.onhashchange != 'undefined'
+	var _isSupportHashChange = !_isFrameNeeded && ('onhashchange' in window)
 	
 	function _updateCurrentMark(mark) {
 		if(mark == _currentMark) {
