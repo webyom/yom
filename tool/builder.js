@@ -205,6 +205,7 @@ function getIncProcessed(input, info, opt) {
 		var ug = isNaN(ugl) ? info.uglify : ugl
 		file = path.join(inputDir, file)
 		extName = path.extname(file)
+		log('Merging: ' + file)
 		if((/\.inc\.html?$/).test(file)) {
 			res = getIncProcessed(file, info, {reverseDepMap: reverseDepMap, outputDir: outputDir})
 		} else {
@@ -229,6 +230,7 @@ function getIncProcessed(input, info, opt) {
 		var ug = isNaN(ugl) ? info.uglify : ugl
 		id = id.replace(/\.js$/, '')
 		id = path.join(path.relative(outputDir, inputDir), id)
+		log('Merging: ' + file)
 		return [
 			plainId ? '<script type="text/plain" id="' + plainId + '">' : '<script type="text/javascript">',
 			getUglified([
