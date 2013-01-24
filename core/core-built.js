@@ -3368,6 +3368,21 @@ define('./util', ['./object'], function(object) {
 				}
 			}
 			return url
+		},
+		
+		globalEval: function(content) {
+			var head = document.head || document.getElementsByTagName('head')[0] || document.documentElement
+			var script = document.createElement('script')
+			script.type = 'text/javascript'
+			if('text' in script) {
+				script.text = content
+			} else {
+				script.innerHTML = content
+			}
+			script = head.insertBefore(script, head.firstChild)
+			setTimeout(function(){
+				head.removeChild(script)
+			}, 50)
 		}
 	}
 })
