@@ -55,3 +55,10 @@ Defined values can be used as `%{{a.b.c}}%`
     eg. `{"input": ["mod1.js", "mod2.js"], "output": "mod3.js"}`
 
 ## Optimize Html File
+YOM builder can build external JS and CSS file into Html file, in order to enhance the page performance by reducing http request amount. Html file of which name is end with ".inc" is considerred the source file to be optimized, and the optimized result file will be output to the same folder with the name without ".inc". Micro template file can also be optimized in this way. Below are instructions of optimization.
+- `include` : Include an external file into the Html source file, the included file can also be Html source file, and the optimization is done recursively.  
+eg. `<!-- include "./mod1.js" -->`  
+You can even specify a plain-id to the instruction, in order to make the JS code not execuded immediately, and execude it on demand.  
+eg. `<!-- include "./mod1.js" plain-id:mod1-script -->`  
+The output will be `<script type="text/plain" id="mod1-script">...`
+
