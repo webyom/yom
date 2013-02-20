@@ -38,9 +38,15 @@ eg. `{"uglify": -1}`
 eg. `{"cssmin": true}`
 - `buildNodeTpl` : Same as build-node-tpl option in command line.  
 eg. `{"buildNodeTpl": true}`
-- `exclude` : Same as exclude option in command line, but is a hash object.  
+- `exclude` : Same as exclude option in command line, and has higher priority, but is a hash object.  
 eg. `{"exclude" : {"./mod1": 1, "../mod2": 1}}`
 - `copyright` : JS copyright text.  
 eg. `{"copyright": "/* All rights reserved */"}`
 - `builds` : Building target list. Each item in the list has below options.
-    - a
+    - `input` : Target building file or folder path.
+    - `output` : If input is a file this is the built file output path.
+    - `exclude` : Same as top level exclude option in the config json, and has higher priority.
+- `combines` : Combine some files into one file.
+    - `output`: Combined file path.
+    - `input` : To be combined file list.  
+    eg. `{"input": ["mod1.js", "mod2.js"], "output": "mod3.js"}`
