@@ -36,3 +36,6 @@ Config file is a json file. It has below options.
 - cssmin : Same as cssmin option in command line. eg. {"cssmin": true}
 - buildNodeTpl : Same as build-node-tpl option in command line. eg. {"buildNodeTpl": true}
 - exclude : Same as exclude option in command line, but is a hash object. eg. {"exclude" : {"./mod1": 1, "../mod2": 1}}
+- copyright : JS copyright text. eg. {"copyright": "/* All rights reserved */"}
+- builds : Building target list. Each item in the list has below options.
+    - a
