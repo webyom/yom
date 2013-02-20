@@ -61,4 +61,9 @@ eg. `<!-- include "./mod1.js" -->`
 You can even specify a plain-id to the instruction, in order to make the JS code not execuded immediately, and execude it on demand.  
 eg. `<!-- include "./mod1.js" plain-id:mod1-script -->`  
 The output will be `<script type="text/plain" id="mod1-script">...`
-
+- `require` : Require is an instruction for building AMD module into Html source file. It also supports plain-id.  
+eg. `<!-- require "./mod1" -->`
+- `uglify` : Uglify JS code built into Html source file.  
+eg. `<!-- uglify -1 -->`
+- `cssmin` : Compress CSS code built into Html source file.  
+eg. `<!-- cssmin true -->`
