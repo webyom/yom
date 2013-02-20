@@ -42,6 +42,9 @@ eg. `{"buildNodeTpl": true}`
 eg. `{"exclude" : {"./mod1": 1, "../mod2": 1}}`
 - `copyright` : JS copyright text.  
 eg. `{"copyright": "/* All rights reserved */"}`
+- `properties` : This option defines reusable values.  
+eg. `{"properties": {"a": {"b": {"c": 1}}}}`  
+Defined values can be used as `%{{a.b.c}}%`
 - `builds` : Building target list. Each item in the list has below options.
     - `input` : Target building file or folder path.
     - `output` : If input is a file this is the built file output path.
@@ -50,3 +53,5 @@ eg. `{"copyright": "/* All rights reserved */"}`
     - `output`: Combined file path.
     - `input` : To be combined file list.  
     eg. `{"input": ["mod1.js", "mod2.js"], "output": "mod3.js"}`
+
+## Optimize Html File
