@@ -9,6 +9,7 @@ var os = require('os')
 var fs = require('fs')
 var path = require('path')
 var utils = require('./utils')
+var lang = require('./lang')
 var uglify = require('./uglify-js')
 var cssmin = require('./cssmin').cssmin
 var argsGetter = require('./args').get
@@ -45,6 +46,7 @@ var globalCssmin = false
 var globalExclude = {}
 var globalCopyright = ''
 var properties
+var langResource
 
 function exit(code) {
 	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
@@ -84,8 +86,9 @@ function mkdirs(dirpath, mode, callback) {
 	})
 }
 
-function writeFileSync(path, content, charset) {
-	if(properties) {
+function writeFileSync(path, content, charset, lang) {
+	if(properties && charset) {
+		properties._lang_ = lang || undefined;
 		content = replaceProperties(content, properties)
 	}
 	fs.writeFileSync(path, content, charset)
@@ -186,6 +189,10 @@ function getIncProcessed(input, info, opt) {
 		return ''
 	}
 	reverseDepMap[input] = 1
+	if(info.lang) {
+		tmpl = replaceProperties(tmpl, {_lang_: info.lang})
+	}
+	tmpl = replaceProperties(tmpl, properties)
 	tmpl = tmpl.replace(/<!--\s*cssmin\s+(['"])([^'"]+)\1\s*-->/m, function(full, quote, val) {
 		if(val == 'false' || val == '0') {
 			compressCss = false
@@ -206,7 +213,7 @@ function getIncProcessed(input, info, opt) {
 		file = path.join(inputDir, file)
 		extName = path.extname(file)
 		log('Merging: ' + file)
-		if((/\.inc\.html?$/).test(file)) {
+		if((/\.src\.html?$/).test(file)) {
 			res = getIncProcessed(file, info, {reverseDepMap: reverseDepMap, outputDir: outputDir})
 		} else {
 			res = fs.readFileSync(file, charset)
@@ -228,8 +235,7 @@ function getIncProcessed(input, info, opt) {
 	}).replace(/<!--\s*require\s+(['"])([^'"]+)\1(?:\s+plain-id:([\w-]+))?\s*-->/mg, function(full, quote, id, plainId) {
 		var file = path.join(inputDir, id).replace(/\.js$/, '') + '.js'
 		var ug = isNaN(ugl) ? info.uglify : ugl
-		id = id.replace(/\.js$/, '')
-		id = path.join(path.relative(outputDir, inputDir), id)
+		id = id.replace(/\.js$/, '').replace(/\\/g, '/')
 		log('Merging: ' + file)
 		return [
 			plainId ? '<script type="text/plain" id="' + plainId + '">' : '<script type="text/javascript">',
@@ -259,6 +265,9 @@ function getIncProcessed(input, info, opt) {
 		}
 		return startTag + eol + getUglified(content, {uglify: ug}, {inline: true}) + eol + endTag
 	})
+	if(info.lang) {
+		tmpl = lang.replaceProperties(tmpl, langResource[info.lang])
+	}
 	return tmpl.replace(/\r\n/g, '\n')
 }
 
@@ -295,7 +304,12 @@ function compileTmpl(input, type, info, opt) {
 		"		_$out_.push('" + tmpl
 				.replace(/\r\n|\n|\r/g, "\v")
 				.replace(/(?:^|%>).*?(?:<%|$)/g, function($0) {
-					return $0.replace(/('|\\)/g, "\\$1").replace(/[\v\t]/g, "").replace(/\s+/g, " ")
+					var uglifyLevel = typeof info.uglify != 'undefined' ? info.uglify : globalUglifyLevel
+					if(type == 'NODE' && uglifyLevel <= 0) {
+						return $0.replace(/('|\\)/g, "\\$1").replace(/[\v]/g, '\\n')
+					} else {
+						return $0.replace(/('|\\)/g, "\\$1").replace(/[\v\t]/g, "").replace(/\s+/g, " ")
+					}
 				})
 				.replace(/[\v]/g, EOL)
 				.replace(/<%==(.*?)%>/g, "', $encodeHtml($1), '")
@@ -345,7 +359,7 @@ function fixDefineParams(def, depId, baseId) {
 		if(id && !(/^\./).test(id)) {
 			id = './' + id
 		}
-		return [d, id && ("'" + id + "', "), deps || "['require', 'exports', 'module'], "].join('')
+		return [d, id && ("'" + id.replace(/\\/g, '/') + "', "), deps || "['require', 'exports', 'module'], "].join('')
 	})
 	return def
 }
@@ -369,9 +383,9 @@ function buildOneDir(info, callback, baseName) {
 	}
 	build()
 	function build() {
-		var inputFile, outputFile, nodeTplOutputFile, fileName, tmp
+		var inputFile, outputFile, nodeTplOutputFile, fileName, langList, tmp
 		if(buildList.length) {
-			inputFile = path.join(inputDir, buildList.shift())
+			inputFile = path.resolve(inputDir, buildList.shift())
 			if(ignore[inputFile] || (/^\.|~$/).test(path.basename(inputFile))) {
 				build()
 			} else if(path.basename(inputFile) == 'main.js' || (/-main.js$/).test(inputFile) ||  path.basename(inputFile) == path.basename(inputDir) + '.js') {
@@ -386,12 +400,28 @@ function buildOneDir(info, callback, baseName) {
 				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
 					build()
 				}, true)
-			} else if((/\.inc\.html?$/).test(inputFile)) {
-				fileName = path.basename(inputFile).replace('.inc.htm', '.htm')
-				outputFile = path.join(outputDir, fileName)
-				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
-					build()
-				}, true)
+			} else if((/\.src\.html?$/).test(inputFile)) {
+				fileName = path.basename(inputFile).replace(/\.src(\.html?)$/, '$1')
+				if(langResource) {
+					langList = langResource.LANG_LIST.concat()
+					;(function() {
+						var buildLang = arguments.callee
+						var langCode = langList.shift()
+						if(langCode) {
+							outputFile = path.join(outputDir, fileName.replace(/(\.html?)$/, '-' + langCode + '$1'))
+							buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile, lang: langCode}), function() {
+								buildLang()
+							}, true)
+						} else {
+							build()
+						}
+					})()
+				} else {
+					outputFile = path.join(outputDir, fileName)
+					buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
+						build()
+					}, true)
+				}
 			} else if(compressCss && path.extname(inputFile) == '.css' && !(/-min.css$/).test(inputFile)) {
 				fileName = path.basename(inputFile).replace(/.css$/, '-min.css')
 				outputFile = path.join(outputDir, fileName)
@@ -408,7 +438,7 @@ function buildOneDir(info, callback, baseName) {
 					log('Done!')
 					build()
 				})
-			} else if(fs.statSync(inputFile).isDirectory()) {
+			} else if(fs.statSync(inputFile).isDirectory() && !(inputFile == outputDir || path.relative(inputFile, outputDir).indexOf('..') != 0)) {
 				buildOneDir({input: inputFile, output: info.output, exclude: info.exclude, ignore: ignore, buildNodeTpl: buildNodeTpl, cssmin: compressCss}, function() {
 					build()
 				}, baseName ? baseName + '/' + path.basename(inputFile) : path.basename(inputFile))
@@ -435,11 +465,7 @@ function getBuiltAmdModContent(input, info, opt) {
 	reverseDepMap[input] = 1
 	content = fs.readFileSync(input, charset)
 	if(!(/\bdefine\b/m).test(removeComments(content))) {
-		content = [
-			'define(function(require, exports, module)) {',
-				content,
-			'})'
-		].join(EOL)
+		return content
 	}
 	deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
 	while(deps.length) {
@@ -451,7 +477,7 @@ function getBuiltAmdModContent(input, info, opt) {
 				continue
 			}
 			log('Merging: ' + fileName)
-			fileContent.push(compileTmpl(fileName, 'AMD', info, {id: depId, reverseDepMap: reverseDepMap}))
+			fileContent.push(fixDefineParams(compileTmpl(fileName, 'AMD', info, {id: depId, reverseDepMap: reverseDepMap}), depId, opt.id))
 		} else {
 			fileName = path.resolve(inputDir, depId + '.js')
 			if(reverseDepMap[fileName]) {
@@ -509,12 +535,12 @@ function buildOne(info, callback, ignoreSrc) {
 			log('Done!')
 			callback()
 		})
-	} else if((/\.inc\.html?$/).test(input)) {
+	} else if((/\.src\.html?$/).test(input)) {
 		log('Merging: ' + input)
 		fileContent = getIncProcessed(input, info, {outputDir: outputDir})
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
-			writeFileSync(output, fileContent, charset)
+			writeFileSync(output, fileContent, charset, info.lang)
 			log('Done!')
 			callback()
 		})
@@ -538,6 +564,7 @@ function combineOne(info, callback) {
 	}
 	var output = path.resolve(buildDir, info.output)
 	var outputDir = path.dirname(output)
+	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	var depId, fileName, fileContent = []
 	log('Output: ' + output)
 	if(!isSrcDir(outputDir)) {
@@ -557,7 +584,7 @@ function combineOne(info, callback) {
 	mkdirs(outputDir, 0777, function() {
 		if(path.extname(output) == '.js') {
 			fileContent = getUglified(fileContent.join(EOLEOL), info)
-		} else if(path.extname(output) == '.css' && (globalCssmin || (/-min.css$/).test(output))) {
+		} else if(path.extname(output) == '.css' && compressCss) {
 			fileContent = cssmin(fileContent.join(EOLEOL))
 		} else {
 			fileContent = fileContent.join(EOLEOL)
@@ -566,6 +593,65 @@ function combineOne(info, callback) {
 		log('Done!')
 		callback()
 	})
+}
+
+function copyOne(info, callback) {
+	if(!info.input) {
+		printLine()
+		log('Copy')
+		throw new Error('Input not defined!')
+	}
+	if(!info.output) {
+		printLine()
+		log('Copy')
+		throw new Error('Output not defined!')
+	}
+	var filterRegexp = info.regexp
+	var input = path.resolve(buildDir, info.input)
+	var output = path.resolve(buildDir, info.output)
+	var outputDir = path.dirname(output)
+	var copyList, content
+	if(fs.statSync(input).isDirectory()) {
+		copyList = fs.readdirSync(input)
+		copy()
+	} else {
+		printLine()
+		log('Copy')
+		log('Input: ' + input)
+		log('Output: ' + output)
+		if(!isSrcDir(outputDir)) {
+			throw new Error('Output to src dir denied!')
+		}
+		mkdirs(outputDir, 0777, function() {
+			if((/\.(js|css|html|htm)$/).test(input)) {
+				content = replaceProperties(fs.readFileSync(input, charset), properties)
+				if(path.extname(input) == '.css' && info.cssmin) {
+					content = cssmin(content)
+				}
+				writeFileSync(output, content, charset)
+			} else {
+				writeFileSync(output, fs.readFileSync(input))
+			}
+			log('Done!')
+			callback()
+		})
+	}
+	function copy() {
+		var inputFile, outputFile
+		if(copyList.length) {
+			inputFile = path.resolve(input, copyList.shift())
+			outputFile = path.resolve(output, path.basename(inputFile))
+			if(filterRegexp && !new RegExp(filterRegexp).test(inputFile) && !fs.statSync(inputFile).isDirectory() || inputFile == output || path.relative(output, inputFile).indexOf('..') != 0 || path.relative(inputFile, output).indexOf('..') != 0) {
+				copy()
+			} else {
+				copyOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
+					copy()
+				})
+			}
+		} else {
+			callback()
+		}
+	}
 }
 
 printLine('+')
@@ -591,29 +677,45 @@ fs.exists(buildFileName, function(exists) {
 		start(DEFAULT_BUILD_JSON)
 	}
 	function start(buildJson) {
-		var buildList, combineList, combineTotal
+		var combineList, buildList, copyList
 		globalUglifyLevel = buildJson.uglify || parseInt(args['uglify']) || 0
 		globalBuildNodeTpl = buildJson.buildNodeTpl || args['build-node-tpl']
 		globalCssmin = buildJson.cssmin || args['cssmin']
 		globalExclude = buildJson.exclude || utils.getHashFromString(args['exclude']) || {}
 		globalCopyright = buildJson.copyright || ''
-		buildList = buildJson.builds || []
 		combineList = buildJson.combines || []
-		combineTotal = combineList.length
-		build()
+		buildList = buildJson.builds || []
+		copyList = buildJson.copies || []
+		if(buildJson.lang) {
+			lang.getLangResource(path.resolve(buildDir, buildJson.lang.base), function(res) {
+				langResource = res
+				combine()
+			})
+		} else {
+			combine()
+		}
+		function combine() {
+			if(combineList.length) {
+				combineOne(combineList.shift(), function() {
+					combine()
+				})
+			} else {
+				build()
+			}
+		}
 		function build() {
 			if(buildList.length) {
 				buildOne(buildList.shift(), function() {
 					build()
 				})
 			} else {
-				combine()
+				copy()
 			}
 		}
-		function combine() {
-			if(combineList.length) {
-				combineOne(combineList.shift(), function() {
-					combine()
+		function copy() {
+			if(copyList.length) {
+				copyOne(copyList.shift(), function() {
+					copy()
 				})
 			} else {
 				printLine()

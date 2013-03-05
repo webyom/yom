@@ -1,4 +1,4 @@
-define("./tooltip.tpl.html", [ "require", "exports", "module" ], function(require, exports, module) {
+define('./tooltip.tpl.html', [ "require", "exports", "module" ], function(require, exports, module) {
     function $encodeHtml(str) {
         return (str + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/`/g, "&#96;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
     }

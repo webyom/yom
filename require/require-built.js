@@ -349,7 +349,7 @@ var define, require
 		
 		_getResource: function(id) {
 			var res = _removePluginPrefix(id).split(this._paramsToken)
-			return res.slice(0, res.length - 1).join(this._paramsToken)
+			return res.slice(0, res.length - 1 || 1).join(this._paramsToken)
 		},
 		
 		_getParams: function(id) {

@@ -9,11 +9,11 @@ exports.render = function($data, $opt) {
         _$out_.push(str);
     };
     with ($data) {
-        _$out_.push('<div data-type="yom-tooltip-inner" class="yom-tooltip-inner"><div data-type="yom-tooltip-content" class="yom-tooltip-content">', content, '</div><div data-type="yom-tooltip-arrow-outer" class="yom-tooltip-arrow-outer"></div><div data-type="yom-tooltip-arrow-inner" class="yom-tooltip-arrow-inner"></div>');
+        _$out_.push('<div data-type="yom-tooltip-inner" class="yom-tooltip-inner">\n	<div data-type="yom-tooltip-content" class="yom-tooltip-content">', content, '</div>\n	<div data-type="yom-tooltip-arrow-outer" class="yom-tooltip-arrow-outer"></div>\n	<div data-type="yom-tooltip-arrow-inner" class="yom-tooltip-arrow-inner"></div>\n	');
         if (!noCloseBtn) {
-            _$out_.push('<span data-type="yom-tooltip-close-btn" class="yom-tooltip-close-btn">\\u00d7</span>');
+            _$out_.push('\n		<span data-type="yom-tooltip-close-btn" class="yom-tooltip-close-btn">\\u00d7</span>\n	');
         }
-        _$out_.push("</div>");
+        _$out_.push("\n</div>");
     }
     return _$out_.join("");
 };

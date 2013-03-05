@@ -29,6 +29,7 @@ exports.replaceProperties = function(content, properties) {
 		return content
 	}
 	return content.replace(/%{{([\w-\.]+)}}%/g, function(full, propName) {
-		return getProperty(propName, properties) || full
+		var res = getProperty(propName, properties)
+		return typeof res == 'string' ? res : full
 	})
 }
