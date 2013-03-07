@@ -90,6 +90,7 @@ function writeFileSync(path, content, charset, lang) {
 	if(properties && charset) {
 		properties._lang_ = lang || undefined;
 		content = replaceProperties(content, properties)
+		properties._lang_ = undefined;
 	}
 	fs.writeFileSync(path, content, charset)
 }
@@ -105,12 +106,14 @@ function getUglified(content, info, opt) {
 	opt = opt || {}
 	var ast
 	var level = typeof info.uglify != 'undefined' ? info.uglify : globalUglifyLevel
-	var copyright = opt.inline ? '' : (info.copyright || globalCopyright)
+	var copyright = info.copyright || (opt.inline ? '' : globalCopyright)
 	if(!(/\S/).test(content)) {
 		return ''
 	}
 	if(!level) {
 		return copyright + content
+	} else {
+		content = replaceProperties(content, properties)
 	}
 	ast = uglify.parser.parse(content)
 	if(level > 1) {
@@ -345,7 +348,8 @@ function fixDefineParams(def, depId, baseId) {
 		].join(EOL)
 	}
 	bodyDeps = getDeps(def)
-	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(full, d, quote, id, deps) {
+	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(full, d, quote, definedId, deps) {
+		var id
 		if(bodyDeps.length) {
 			bodyDeps = "'" + bodyDeps.join("', '") + "'"
 			if(deps) {
@@ -354,10 +358,14 @@ function fixDefineParams(def, depId, baseId) {
 				deps = "['require', 'exports', 'module', " + bodyDeps + "], "
 			}
 		}
-		id = id || depId || ''
-		id = id && baseId ? path.join(path.dirname(baseId), id) : id
-		if(id && !(/^\./).test(id)) {
-			id = './' + id
+		if(definedId && !(/^\./).test(definedId)) {
+			id = definedId
+		} else {
+			id = depId || ''
+			id = id && baseId ? path.join(path.dirname(baseId), id) : id
+			if(id && !(/^\./).test(id)) {
+				id = './' + id
+			}
 		}
 		return [d, id && ("'" + id.replace(/\\/g, '/') + "', "), deps || "['require', 'exports', 'module'], "].join('')
 	})
