@@ -11,6 +11,7 @@ var path = require('path')
 var utils = require('./utils')
 var lang = require('./lang')
 var uglify = require('./uglify-js')
+var less = require('./less')
 var cssmin = require('./cssmin').cssmin
 var argsGetter = require('./args').get
 var replaceProperties = require('./properties').replaceProperties
@@ -216,7 +217,7 @@ function getIncProcessed(input, info, opt) {
 		file = path.join(inputDir, file)
 		extName = path.extname(file)
 		log('Merging: ' + file)
-		if((/\.src\.html?$/).test(file)) {
+		if((/\.(src|inc)\.html?$/).test(file)) {
 			res = getIncProcessed(file, info, {reverseDepMap: reverseDepMap, outputDir: outputDir})
 		} else {
 			res = fs.readFileSync(file, charset)
@@ -573,34 +574,54 @@ function combineOne(info, callback) {
 	var output = path.resolve(buildDir, info.output)
 	var outputDir = path.dirname(output)
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
-	var depId, fileName, fileContent = []
+	var fileContent = []
 	log('Output: ' + output)
 	if(!isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!')
 	}
-	while(info.inputs.length) {
-		depId = info.inputs.shift()
-		fileName = path.resolve(buildDir, depId)
-		log('Merging: ' + fileName)
-		if((/\.tpl\.html?$/).test(depId)) {
-			fileContent.push(compileTmpl(fileName, 'NONE_AMD', info, {id: depId}))
+	;(function() {
+		var combineNext = arguments.callee
+		var depId, fileName
+		if(info.inputs.length) {
+			depId = info.inputs.shift()
+			fileName = path.resolve(buildDir, depId)
+			log('Merging: ' + fileName)
+			if((/\.tpl\.html?$/).test(depId)) {
+				fileContent.push(compileTmpl(fileName, 'NONE_AMD', info, {id: depId}))
+				combineNext()
+			} else if(path.extname(fileName) == '.less' && info.compileLess) {
+				less.render(fs.readFileSync(fileName, charset), {
+					paths: [path.dirname(fileName)], // Specify search paths for @import directives
+					strictMaths: false,
+					strictUnits: false,
+					filename: fileName // Specify a filename, for better error messages
+				}, function(err, css) {
+					if(err) {
+						dealErr(JSON.stringify(err))
+					}
+					fileContent.push(css)
+					combineNext()
+				})
+			} else {
+				fileContent.push(fs.readFileSync(fileName, charset))
+				combineNext()
+			}
 		} else {
-			fileContent.push(fs.readFileSync(fileName, charset))
+			log('Writing: ' + output)
+			mkdirs(outputDir, 0777, function() {
+				if(path.extname(output) == '.js') {
+					fileContent = getUglified(fileContent.join(EOLEOL), info)
+				} else if(path.extname(output) == '.css' && compressCss) {
+					fileContent = cssmin(fileContent.join(EOLEOL))
+				} else {
+					fileContent = fileContent.join(EOLEOL)
+				}
+				writeFileSync(output, fileContent, charset)
+				log('Done!')
+				callback()
+			})
 		}
-	}
-	log('Writing: ' + output)
-	mkdirs(outputDir, 0777, function() {
-		if(path.extname(output) == '.js') {
-			fileContent = getUglified(fileContent.join(EOLEOL), info)
-		} else if(path.extname(output) == '.css' && compressCss) {
-			fileContent = cssmin(fileContent.join(EOLEOL))
-		} else {
-			fileContent = fileContent.join(EOLEOL)
-		}
-		writeFileSync(output, fileContent, charset)
-		log('Done!')
-		callback()
-	})
+	})()
 }
 
 function copyOne(info, callback) {
