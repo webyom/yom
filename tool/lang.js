@@ -30,7 +30,7 @@ exports.replaceProperties = function(content, properties) {
 
 exports.getLangResource = (function() {
 	var _LANG_CODE = {
-		en: 1, cn: 1
+		'en': 1, 'zh-cn': 1, 'zh-hk': 1
 	}
 	
 	var charset = 'utf-8'

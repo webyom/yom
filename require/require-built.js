@@ -1233,6 +1233,7 @@ var define, require
 		return _extendConfig(['baseUrl'], _gcfg, {baseUrl: baseUrl || _PAGE_BASE_URL})
 	}
 	//debug
+	require.debug = _gcfg.debug
 	require._debug = {
 		gcfg: _gcfg,
 		interactiveDefQueue: _interactiveDefQueue,

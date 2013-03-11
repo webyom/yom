@@ -22,11 +22,21 @@ define('require-plugin/ajax', ['global'], function(global) {
 			this._xhr.withCredentials = true
 		}
 		xhr.onreadystatechange = function() {
+			var res
 			if(xhr.readyState !== 4) {
 				return
 			}
 			if(xhr.status >= 200 && xhr.status < 300) {
-				callback(eval('(' + xhr.responseText + ')'))
+				try {
+					res = eval('(' + xhr.responseText + ')')
+				} catch(e) {
+					if(require.debug) {
+						throw e;
+					} else {
+						callback(null, _ERROR_OBJ)
+					}
+				}
+				callback(res)
 			} else {
 				callback(null, _ERROR_OBJ)
 			}

@@ -589,7 +589,7 @@ function combineOne(info, callback) {
 			if((/\.tpl\.html?$/).test(depId)) {
 				fileContent.push(compileTmpl(fileName, 'NONE_AMD', info, {id: depId}))
 				combineNext()
-			} else if(path.extname(fileName) == '.less' && info.compileLess) {
+			} else if(path.extname(fileName) == '.less' && path.extname(output) == '.css') {
 				less.render(fs.readFileSync(fileName, charset), {
 					paths: [path.dirname(fileName)], // Specify search paths for @import directives
 					strictMaths: false,
@@ -654,9 +654,6 @@ function copyOne(info, callback) {
 		mkdirs(outputDir, 0777, function() {
 			if((/\.(js|css|html|htm)$/).test(input)) {
 				content = replaceProperties(fs.readFileSync(input, charset), properties)
-				if(path.extname(input) == '.css' && info.cssmin) {
-					content = cssmin(content)
-				}
 				writeFileSync(output, content, charset)
 			} else {
 				writeFileSync(output, fs.readFileSync(input))
