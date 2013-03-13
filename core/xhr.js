@@ -132,6 +132,7 @@ define(['./config', './error', './class', './object', './instance-manager', './o
 			this._xhr = new ActiveXObject('MSXML2.XMLHTTP')
 		}
 		this._xhr.open(this._method, this._url, this._opt.isAsync === false ? false : true)
+		this._xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
 		if(this._method == 'GET') {
 			if(this._opt.noCache) {
 				this._xhr.setRequestHeader('If-Modified-Since', 'Sun, 27 Mar 1983 00:00:00 GMT')

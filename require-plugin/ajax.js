@@ -14,9 +14,10 @@ define('require-plugin/ajax', ['global'], function(global) {
 			xhr = new ActiveXObject('MSXML2.XMLHTTP')
 		}
 		xhr.open('GET', url, true)
+		xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
 		if(opt.noCache) {
-			this._xhr.setRequestHeader('If-Modified-Since', 'Sun, 27 Mar 1983 00:00:00 GMT')
-			this._xhr.setRequestHeader('Cache-Control', 'no-cache')
+			xhr.setRequestHeader('If-Modified-Since', 'Sun, 27 Mar 1983 00:00:00 GMT')
+			xhr.setRequestHeader('Cache-Control', 'no-cache')
 		}
 		if(opt.withCredentials) {
 			this._xhr.withCredentials = true
@@ -31,7 +32,7 @@ define('require-plugin/ajax', ['global'], function(global) {
 					res = eval('(' + xhr.responseText + ')')
 				} catch(e) {
 					if(require.debug) {
-						throw e;
+						throw e
 					} else {
 						callback(null, _ERROR_OBJ)
 					}
