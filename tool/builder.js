@@ -8,6 +8,7 @@
 var os = require('os')
 var fs = require('fs')
 var path = require('path')
+var exec = require('child_process').exec
 var utils = require('./utils')
 var lang = require('./lang')
 var uglify = require('./uglify-js')
@@ -40,10 +41,13 @@ var charset = 'utf-8'
 var args = argsGetter()
 var buildFileName = args['config-file'] || 'build.json'
 var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
+var htmlCompressorPath = path.join(path.dirname(path.resolve(process.cwd(), process.argv[1])), 'html-compressor/html-compressor.jar')
 var logs = []
 var globalUglifyLevel = 0
 var globalBuildNodeTpl = false
 var globalCssmin = false
+var globalCompressHtml = false
+var globalCompressHtmlOptions = ''
 var globalExclude = {}
 var globalCopyright = ''
 var properties
@@ -89,9 +93,9 @@ function mkdirs(dirpath, mode, callback) {
 
 function writeFileSync(path, content, charset, lang) {
 	if(properties && charset) {
-		properties._lang_ = lang || undefined;
+		properties._lang_ = lang || undefined
 		content = replaceProperties(content, properties)
-		properties._lang_ = undefined;
+		properties._lang_ = undefined
 	}
 	fs.writeFileSync(path, content, charset)
 }
@@ -127,7 +131,12 @@ function getUglified(content, info, opt) {
 }
 
 function removeComments(content) {
-	return content.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')
+	return content
+		.replace(/(['"])([\s\S]+?[^\\])\1/g, function(full, quote, m) {
+			return quote + m.replace(/\/\//g, '/\v/').replace(/(^|[^\v])\//g, '$1\v/') + quote;
+		})
+		.replace(/(^|[^\v])(\/\*[\s\S]*?\*\/|\/\/.*)/g, '$1')
+		.replace(/\v/g, '')
 }
 
 function getDeps(def, relative, exclude) {
@@ -506,6 +515,8 @@ function buildOne(info, callback, ignoreSrc) {
 	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
 	var outputDir = path.dirname(output)
 	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : globalBuildNodeTpl
+	var compressHtml = typeof info.compressHtml != 'undefined' ? info.compressHtml : globalCompressHtml
+	var compressHtmlOptions = typeof info.compressHtmlOptions != 'undefined' ? info.compressHtmlOptions : globalCompressHtmlOptions
 	var fileContent, nodeTplOutput
 	if(input == output) {
 		printLine()
@@ -550,8 +561,20 @@ function buildOne(info, callback, ignoreSrc) {
 		log('Writing: ' + output)
 		mkdirs(outputDir, 0777, function() {
 			writeFileSync(output, fileContent, charset, info.lang)
-			log('Done!')
-			callback()
+			if(compressHtml) {
+				exec('java -jar ' + htmlCompressorPath + ' ' + compressHtmlOptions + ' ' + output, function(err, stdout, stderr) {
+					if(err) {
+						throw err
+					} else {
+						writeFileSync(output, stdout, charset)
+						log('Done!')
+						callback()
+					}
+				})
+			} else {
+				log('Done!')
+				callback()
+			}
 		})
 	} else {
 		log('Merging: ' + input)
@@ -690,7 +713,7 @@ fs.exists(buildFileName, function(exists) {
 				throw err
 			}
 			try {
-				buildJson = JSON.parse(data)
+				buildJson = JSON.parse(removeComments(data))
 				buildJson.builds = buildJson.builds || DEFAULT_BUILD_JSON.builds
 				properties = buildJson.properties
 			} catch(e) {
@@ -707,6 +730,8 @@ fs.exists(buildFileName, function(exists) {
 		globalUglifyLevel = buildJson.uglify || parseInt(args['uglify']) || 0
 		globalBuildNodeTpl = buildJson.buildNodeTpl || args['build-node-tpl']
 		globalCssmin = buildJson.cssmin || args['cssmin']
+		globalCompressHtml = buildJson.compressHtml || args['compress-html']
+		globalCompressHtmlOptions = buildJson.compressHtmlOptions || args['compress-html-options'] || ''
 		globalExclude = buildJson.exclude || utils.getHashFromString(args['exclude']) || {}
 		globalCopyright = buildJson.copyright || ''
 		combineList = buildJson.combines || []

@@ -936,7 +936,11 @@ var define, require
 				factoryStr = factory.toString()
 				reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require']
 				reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '')
-				factoryStr.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/mg, '')//remove comments
+				factoryStr.replace(/(['"])([\s\S]+?[^\\])\1/g, function(full, quote, m) {
+						return quote + m.replace(/\/\//g, '/\v/').replace(/(^|[^\v])\//g, '$1\v/') + quote;
+					})
+					.replace(/(^|[^\v])(\/\*[\s\S]*?\*\/|\/\/.*)/g, '$1')//remove comments
+					.replace(/\v/g, '')
 					.replace(new RegExp('\\b' + reqFnName + '\\s*\\(\\s*["\']([^"\'\\s]+)["\']\\s*\\)', 'g'), function(m, dep) {//extract dependencies
 						deps.push(dep)
 					})
