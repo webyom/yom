@@ -226,7 +226,7 @@ function getIncProcessed(input, info, opt) {
 		file = path.join(inputDir, file)
 		extName = path.extname(file)
 		log('Merging: ' + file)
-		if((/\.(src|inc)\.html?$/).test(file)) {
+		if((/\.(src|inc|tpl)\.html?$/).test(file)) {
 			res = getIncProcessed(file, info, {reverseDepMap: reverseDepMap, outputDir: outputDir})
 		} else {
 			res = fs.readFileSync(file, charset)
@@ -412,6 +412,12 @@ function buildOneDir(info, callback, baseName) {
 				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
 					build()
 				}, true)
+			} else if(path.basename(inputFile) == 'main.less' || (/-main.less$/).test(inputFile) ||  path.basename(inputFile) == path.basename(inputDir) + '.less') {
+				fileName = path.basename(inputFile).replace(/\.less$/, '.css')
+				outputFile = path.join(outputDir, fileName)
+				buildOne(utils.extendObject(utils.cloneObject(info), {input: inputFile, output: outputFile}), function() {
+					build()
+				}, true)
 			} else if((/\.tpl\.html?$/).test(inputFile)) {
 				fileName = path.basename(inputFile) + '.js'
 				outputFile = path.join(outputDir, fileName)
@@ -510,6 +516,20 @@ function getBuiltAmdModContent(input, info, opt) {
 	return fileContent.join(EOLEOL)
 }
 
+function compileLess(input, callback) {
+	less.render(fs.readFileSync(input, charset), {
+		paths: [path.dirname(input)], // Specify search paths for @import directives
+		strictMaths: false,
+		strictUnits: false,
+		filename: input // Specify a filename, for better error messages
+	}, function(err, css) {
+		if(err) {
+			dealErr(JSON.stringify(err))
+		}
+		callback(css)
+	})
+}
+
 function buildOne(info, callback, ignoreSrc) {
 	var input = path.resolve(buildDir, info.input)
 	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
@@ -576,6 +596,16 @@ function buildOne(info, callback, ignoreSrc) {
 				callback()
 			}
 		})
+	} else if(path.extname(input) == '.less') {
+		log('Merging: ' + input)
+		compileLess(input, function(css) {
+			log('Writing: ' + output)
+			mkdirs(outputDir, 0777, function() {
+				writeFileSync(output, css, charset)
+				log('Done!')
+				callback()
+			})
+		})
 	} else {
 		log('Merging: ' + input)
 		fileContent = getUglified(getBuiltAmdModContent(input, info), info)
@@ -613,15 +643,7 @@ function combineOne(info, callback) {
 				fileContent.push(compileTmpl(fileName, 'NONE_AMD', info, {id: depId}))
 				combineNext()
 			} else if(path.extname(fileName) == '.less' && path.extname(output) == '.css') {
-				less.render(fs.readFileSync(fileName, charset), {
-					paths: [path.dirname(fileName)], // Specify search paths for @import directives
-					strictMaths: false,
-					strictUnits: false,
-					filename: fileName // Specify a filename, for better error messages
-				}, function(err, css) {
-					if(err) {
-						dealErr(JSON.stringify(err))
-					}
+				compileLess(fileName, function(css) {
 					fileContent.push(css)
 					combineNext()
 				})
@@ -740,10 +762,23 @@ fs.exists(buildFileName, function(exists) {
 		if(buildJson.lang) {
 			lang.getLangResource(path.resolve(buildDir, buildJson.lang.base), function(res) {
 				langResource = res
-				combine()
+				doStart()
 			})
 		} else {
-			combine()
+			doStart()
+		}
+		function doStart() {
+			if(buildJson.beginHook) {
+				require(path.join(buildDir, buildJson.beginHook)).init(buildDir, function(err) {
+					if(err) {
+						throw err
+					} else {
+						combine()
+					}
+				})
+			} else {
+				combine()
+			}
 		}
 		function combine() {
 			if(combineList.length) {
@@ -769,6 +804,22 @@ fs.exists(buildFileName, function(exists) {
 					copy()
 				})
 			} else {
+				end()
+			}
+		}
+		function end() {
+			if(buildJson.endHook) {
+				require(path.join(buildDir, buildJson.endHook)).init(buildDir, function(err) {
+					if(err) {
+						throw err
+					} else {
+						doEnd()
+					}
+				})
+			} else {
+				doEnd()
+			}
+			function doEnd() {
 				printLine()
 				log('Finished! Spent Time: ' + (new Date() - startTime) + 'ms')
 				printLine('+')
