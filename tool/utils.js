@@ -15,11 +15,16 @@ function arrayEach(arr, callback) {
 	}
 }
 
-function extendObject(origin, extend, check) {
+function extendObject(origin, extend, check, deepLevel) {
 	origin = origin || {}
+	deepLevel = deepLevel || 3
 	for(var p in extend) {
 		if(Object.prototype.hasOwnProperty.call(extend, p) && (!check || typeof origin[p] == 'undefined')) {
-			origin[p] = extend[p]
+			if(origin[p] && typeof origin[p] == 'object' && typeof extend[p] == 'object' && deepLevel > 0) {
+				origin[p] = extendObject(origin[p], extend[p], check, deepLevel - 1)
+			} else {
+				origin[p] = extend[p]
+			}
 		}
 	}
 	return origin

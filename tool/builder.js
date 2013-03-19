@@ -54,14 +54,17 @@ var properties
 var langResource
 
 function exit(code) {
+	printLine()
+	log((code ? 'Terminated' : 'Finished') + '! Spent Time: ' + (new Date() - startTime) + 'ms', 0, true)
+	printLine('+')
 	fs.writeFileSync(path.resolve(buildDir, 'build.log'), logs.join(os.EOL), charset)
 	process.exit(code)
 }
 
-function log(content, err) {
+function log(content, err, verbose) {
 	if(err) {
 		console.error(content)
-	} else {
+	} else if(verbose || args.verbose) {
 		console.log(content)
 	}
 	logs.push(content)
@@ -69,9 +72,6 @@ function log(content, err) {
 
 function dealErr(err) {
 	log(err.toString(), 1)
-	printLine()
-	log('Terminated! Spent Time: ' + (new Date() - startTime) + 'ms')
-	printLine('+')
 	exit(1)
 }
 
@@ -530,11 +530,32 @@ function compileLess(input, callback) {
 	})
 }
 
+function checkCondition(condition) {
+	var type, tmp
+	if(!condition) {
+		return true
+	}
+	tmp = condition.split(/\s*:\s*/)
+	type = tmp[0]
+	condition = tmp[1]
+	if(type == 'property') {
+		with(properties || {}) {
+			return eval(condition)
+		}
+	}
+	return true
+}
+
 function buildOne(info, callback, ignoreSrc) {
+	if(!checkCondition(info.condition)) {
+		callback()
+		return
+	}
 	var input = path.resolve(buildDir, info.input)
 	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
 	var outputDir = path.dirname(output)
 	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : globalBuildNodeTpl
+	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	var compressHtml = typeof info.compressHtml != 'undefined' ? info.compressHtml : globalCompressHtml
 	var compressHtmlOptions = typeof info.compressHtmlOptions != 'undefined' ? info.compressHtmlOptions : globalCompressHtmlOptions
 	var fileContent, nodeTplOutput
@@ -601,6 +622,9 @@ function buildOne(info, callback, ignoreSrc) {
 		compileLess(input, function(css) {
 			log('Writing: ' + output)
 			mkdirs(outputDir, 0777, function() {
+				if(compressCss) {
+					css = cssmin(css)
+				}
 				writeFileSync(output, css, charset)
 				log('Done!')
 				callback()
@@ -619,6 +643,10 @@ function buildOne(info, callback, ignoreSrc) {
 }
 
 function combineOne(info, callback) {
+	if(!checkCondition(info.condition)) {
+		callback()
+		return
+	}
 	printLine()
 	log('Combine')
 	if(!info.output) {
@@ -670,6 +698,10 @@ function combineOne(info, callback) {
 }
 
 function copyOne(info, callback) {
+	if(!checkCondition(info.condition)) {
+		callback()
+		return
+	}
 	if(!info.input) {
 		printLine()
 		log('Copy')
@@ -728,6 +760,10 @@ function copyOne(info, callback) {
 printLine('+')
 log('Start! Time: ' + startTime)
 fs.exists(buildFileName, function(exists) {
+	var argProperties = args.properties
+	if(argProperties) {
+		argProperties = JSON.parse(argProperties)
+	}
 	if(exists) {
 		fs.readFile(buildFileName, charset, function(err, data) {
 			var buildJson
@@ -737,7 +773,7 @@ fs.exists(buildFileName, function(exists) {
 			try {
 				buildJson = JSON.parse(removeComments(data))
 				buildJson.builds = buildJson.builds || DEFAULT_BUILD_JSON.builds
-				properties = buildJson.properties
+				properties = utils.extendObject(buildJson.properties, argProperties)
 			} catch(e) {
 				printLine()
 				throw new Error('Illegal json format build file!' + EOL + e.toString())
@@ -745,6 +781,7 @@ fs.exists(buildFileName, function(exists) {
 			start(buildJson)
 		})
 	} else {
+		properties = argProperties
 		start(DEFAULT_BUILD_JSON)
 	}
 	function start(buildJson) {
@@ -813,16 +850,10 @@ fs.exists(buildFileName, function(exists) {
 					if(err) {
 						throw err
 					} else {
-						doEnd()
+						exit()
 					}
 				})
 			} else {
-				doEnd()
-			}
-			function doEnd() {
-				printLine()
-				log('Finished! Spent Time: ' + (new Date() - startTime) + 'ms')
-				printLine('+')
 				exit()
 			}
 		}
