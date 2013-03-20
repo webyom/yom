@@ -132,6 +132,7 @@ function getUglified(content, info, opt) {
 }
 
 function removeComments(content) {
+	//TODO
 	return content
 		.replace(/(['"])([\s\S]+?[^\\])\1/g, function(full, quote, m) {
 			return quote + m.replace(/\/\//g, '/\v/').replace(/(^|[^\v])\//g, '$1\v/') + quote;
@@ -140,25 +141,35 @@ function removeComments(content) {
 		.replace(/\v/g, '')
 }
 
-function getDeps(def, relative, exclude) {
+function getBodyDeps(def) {
 	var deps = []
 	var got = {}
-	var depArr = removeComments(def).match(/\bdefine\s*\([^\[\{]*(\[[^\[\]]*\])/m)
-	depArr = depArr && depArr[1]
-	exclude = exclude || {}
-	relative && depArr && depArr.replace(new RegExp('(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1', 'mg'), function(full, quote, dep) {
-		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
+	removeComments(def).replace(/(?:^|[^\.\w])require\s*\(\s*(["'])([^"']+?)\1\s*\)/mg, function(full, quote, dep) {
+		got[dep] || deps.push(dep)
 		got[dep] = 1
 	})
-	removeComments(def).replace(new RegExp('\\brequire\\s*\\(\\s*(["\'])(' + (relative ? '\\.' : '') + '[^"\'\\s]+)\\1\\s*\\)', 'mg'), function(full, quote, dep) {//extract dependencies
-		got[dep] || exclude[dep] || globalExclude[dep] || relative && (/(-built|\.js)$/).test(dep) || deps.push(dep)
+	return deps
+}
+
+function getRelativeDeps(def, exclude) {
+	var deps = []
+	var got = {}
+	var depArr = removeComments(def).match(/(?:^|[^\.\w])define\s*\([^\[\{]*(\[[^\[\]]*\])/m)
+	depArr = depArr && depArr[1]
+	exclude = exclude || {}
+	depArr && depArr.replace(/(["'])(\.[^"']+?)\1/mg, function(full, quote, dep) {
+		got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep)
+		got[dep] = 1
+	})
+	removeComments(def).replace(/(?:^|[^\.\w])require\s*\(\s*(["'])(\.[^"']+?)\1\s*\)/mg, function(full, quote, dep) {
+		got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
 	return deps
 }
 
 function traversalGetRelativeDeps(inputDir, def, exclude, processed, curDir) {
-	var deps = getDeps(def, true, exclude)
+	var deps = getRelativeDeps(def, exclude)
 	var res = []
 	var depId, fileName
 	processed = processed || {}
@@ -358,7 +369,7 @@ function fixDefineParams(def, depId, baseId) {
 			'})'
 		].join(EOL)
 	}
-	bodyDeps = getDeps(def)
+	bodyDeps = getBodyDeps(def)
 	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(full, d, quote, definedId, deps) {
 		var id
 		if(bodyDeps.length) {
