@@ -57,7 +57,7 @@ eg. `{"beginHook": "./builder/hooks/begin-hook.js}`
 - `endHook` : A nodejs module file path, which will be executed after the building end.  
 eg. `{"endHook": "./builder/hooks/end-hook.js}`
 - `lang` : Multiple language support.
-    - `base` : The path where language resource files placed.
+    - `base` : The path where language resource files placed.  
     eg. `{"lang": {"base": "./js/lang"}}`
 - `builds` : Building target list. Each item in the list has below options.
     - `input` : Target building file or folder path.
