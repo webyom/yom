@@ -67,6 +67,18 @@ function getHashFromString(str, val) {
 	return res
 }
 
+function getDefinedItem(list) {
+	var i, res
+	for(i = 0; i < list.length; i++) {
+		res = list[i]
+		if(typeof res != 'undefined') {
+			return res
+		}
+	}
+	return res
+}
+
 exports.extendObject = extendObject
 exports.cloneObject = cloneObject
 exports.getHashFromString = getHashFromString
+exports.getDefinedItem = getDefinedItem

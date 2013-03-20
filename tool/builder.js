@@ -41,6 +41,7 @@ var charset = 'utf-8'
 var args = argsGetter()
 var buildFileName = args['config-file'] || 'build.json'
 var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
+var outputBasePath = ''
 var htmlCompressorPath = path.join(path.dirname(path.resolve(process.cwd(), process.argv[1])), 'html-compressor/html-compressor.jar')
 var logs = []
 var globalUglifyLevel = 0
@@ -385,7 +386,7 @@ function fixDefineParams(def, depId, baseId) {
 function buildOneDir(info, callback, baseName) {
 	baseName = baseName || ''
 	var inputDir = path.resolve(buildDir, info.input)
-	var outputDir = typeof info.output == 'undefined' ? inputDir : path.resolve(buildDir, info.output, baseName)
+	var outputDir = typeof info.output == 'undefined' ? inputDir : path.resolve(buildDir, outputBasePath, info.output, baseName)
 	var buildList = fs.readdirSync(inputDir)
 	var buildTotal = buildList.length
 	var ignore = info.ignore || {}
@@ -552,7 +553,7 @@ function buildOne(info, callback, ignoreSrc) {
 		return
 	}
 	var input = path.resolve(buildDir, info.input)
-	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, info.output)
+	var output = typeof info.output == 'undefined' ? '' : path.resolve(buildDir, outputBasePath, info.output)
 	var outputDir = path.dirname(output)
 	var buildNodeTpl = typeof info.buildNodeTpl != 'undefined' ? info.buildNodeTpl : globalBuildNodeTpl
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
@@ -574,6 +575,9 @@ function buildOne(info, callback, ignoreSrc) {
 	log('Build')
 	log('Input: ' + input)
 	log('Output: ' + output)
+	if(!output) {
+		throw new Error('Output not defined!')
+	}
 	if(!ignoreSrc && !isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!')
 	}
@@ -652,7 +656,7 @@ function combineOne(info, callback) {
 	if(!info.output) {
 		throw new Error('Output not defined!')
 	}
-	var output = path.resolve(buildDir, info.output)
+	var output = path.resolve(buildDir, outputBasePath, info.output)
 	var outputDir = path.dirname(output)
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	var fileContent = []
@@ -714,9 +718,12 @@ function copyOne(info, callback) {
 	}
 	var filterRegexp = info.regexp
 	var input = path.resolve(buildDir, info.input)
-	var output = path.resolve(buildDir, info.output)
+	var output = path.resolve(buildDir, outputBasePath, info.output)
 	var outputDir = path.dirname(output)
 	var copyList, content
+	if(input == output) {
+		return
+	}
 	if(fs.statSync(input).isDirectory()) {
 		copyList = fs.readdirSync(input)
 		copy()
@@ -786,13 +793,14 @@ fs.exists(buildFileName, function(exists) {
 	}
 	function start(buildJson) {
 		var combineList, buildList, copyList
-		globalUglifyLevel = buildJson.uglify || parseInt(args['uglify']) || 0
-		globalBuildNodeTpl = buildJson.buildNodeTpl || args['build-node-tpl']
-		globalCssmin = buildJson.cssmin || args['cssmin']
-		globalCompressHtml = buildJson.compressHtml || args['compress-html']
-		globalCompressHtmlOptions = buildJson.compressHtmlOptions || args['compress-html-options'] || ''
-		globalExclude = buildJson.exclude || utils.getHashFromString(args['exclude']) || {}
-		globalCopyright = buildJson.copyright || ''
+		outputBasePath = utils.getDefinedItem([args['output-base-path'], buildJson.outputBasePath, outputBasePath])
+		globalUglifyLevel = utils.getDefinedItem([args['uglify'], buildJson.uglify, globalUglifyLevel])
+		globalBuildNodeTpl = utils.getDefinedItem([args['build-node-tpl'], buildJson.buildNodeTpl, globalBuildNodeTpl])
+		globalCssmin = utils.getDefinedItem([args['cssmin'], buildJson.cssmin], globalCssmin)
+		globalCompressHtml = utils.getDefinedItem([args['compress-html'], buildJson.compressHtml, globalCompressHtml])
+		globalCompressHtmlOptions = utils.getDefinedItem([args['compress-html-options'], buildJson.compressHtmlOptions, globalCompressHtmlOptions])
+		globalExclude = utils.getDefinedItem([utils.getHashFromString(args['exclude']) || undefined, buildJson.exclude, globalExclude])
+		globalCopyright = buildJson.copyright || globalCopyright
 		combineList = buildJson.combines || []
 		buildList = buildJson.builds || []
 		copyList = buildJson.copies || []

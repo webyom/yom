@@ -27,8 +27,11 @@ YOM builder is built on NodeJS. You can run it in command line like this:
 2 : mangle  
 3 : squeeze
 - `--cssmin` : YOM builder use cssmin to compress CSS code. Pass this if you want to compress CSS file.
+- `--compressHtml` : YOM builder use google htmlcompressor to compress HTML code. Pass this if you want to compress HTML file.
+- `--compress-html-options` : Options passed to htmlcompressor.
 - `--build-node-tpl` : Pass this if you want to build micro template file into nodeJS module file.
 - `--exclude filelist` : Relative file path list delimited by comma. Used to exclude files built with target building file.
+- `--output-base-path` : If this was specified, all the output path will be joined with thie base path.
 
 ## Config File
 Config file is a json file. It has below options.
@@ -36,6 +39,10 @@ Config file is a json file. It has below options.
 eg. `{"uglify": -1}`
 - `cssmin` : Same as cssmin option in command line.  
 eg. `{"cssmin": true}`
+- `compressHtml` : Same as compress-html option in command line.  
+eg. `{"compressHtml": true}`
+- `outputBasePath` : Same as output-base-path option in command line.  
+eg. `{"outputBasePath": "../static}`
 - `buildNodeTpl` : Same as build-node-tpl option in command line.  
 eg. `{"buildNodeTpl": true}`
 - `exclude` : Same as exclude option in command line, and has higher priority, but is a hash object.  
@@ -45,19 +52,31 @@ eg. `{"copyright": "/* All rights reserved */"}`
 - `properties` : This option defines reusable values.  
 eg. `{"properties": {"a": {"b": {"c": 1}}}}`  
 Defined values can be used as `%{{a.b.c}}%`
+- `beginHook` : A nodejs module file path, which will be executed before the building start.  
+eg. `{"beginHook": "./builder/hooks/begin-hook.js}`
+- `endHook` : A nodejs module file path, which will be executed after the building end.  
+eg. `{"endHook": "./builder/hooks/end-hook.js}`
+- `lang` : Multiple language support.
+    - `base` : The path where language resource files placed.
+    eg. `{"lang": {"base": "./js/lang"}}`
 - `builds` : Building target list. Each item in the list has below options.
     - `input` : Target building file or folder path.
     - `output` : If input is a file this is the built file output path.
     - `exclude` : Same as top level exclude option in the config json, and has higher priority.
 - `combines` : Combine some files into one file.
-    - `output`: Combined file path.
-    - `input` : To be combined file list.  
+    - `input` : To be combined file list.
+    - `output`: Combined file path.  
+    eg. `{"input": ["mod1.js", "mod2.js"], "output": "mod3.js"}`
+- `copies` : Copy folder/file.
+    - `input`: Source folder/file path.
+    - `output` : To be combined file list.
+    - `regexp` : Regular expression matching the folder/file path to be copied.  
     eg. `{"input": ["mod1.js", "mod2.js"], "output": "mod3.js"}`
 
 ## Optimize Html File
-YOM builder can build external JS and CSS file into Html file, in order to enhance the page performance by reducing http request amount. Html file of which name is end with ".inc" is considerred the source file to be optimized, and the optimized result file will be output to the same folder with the name without ".inc". Micro template file can also be optimized in this way. Below are instructions of optimization.
+YOM builder can build external JS and CSS file into Html file, in order to enhance the page performance by reducing http request amount. Html file of which name is end with ".src" is considerred the source file to be optimized, and the optimized result file will be output to the output folder with the name without ".src". Micro template file can also be optimized in this way. Below are instructions of optimization. Html file of which name is end with ".inc" is reusable html segment file, which can be included in the source file.
 - `include` : Include an external file into the Html source file, the included file can also be Html source file, and the optimization is done recursively.  
-eg. `<!-- include "./mod1.js" -->`  
+eg. `<!-- include "./mod1.js" -->`, `<!-- include "./segment.inc.html" -->`  
 You can even specify a plain-id to the instruction, in order to make the JS code not execuded immediately, and execude it on demand.  
 eg. `<!-- include "./mod1.js" plain-id:mod1-script -->`  
 The output will be `<script type="text/plain" id="mod1-script">...`
