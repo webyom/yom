@@ -131,20 +131,10 @@ function getUglified(content, info, opt) {
 	return copyright + uglify.uglify.gen_code(ast, {beautify: level < 0})
 }
 
-function removeComments(content) {
-	//TODO
-	return content
-		.replace(/(['"])([\s\S]+?[^\\])\1/g, function(full, quote, m) {
-			return quote + m.replace(/\/\//g, '/\v/').replace(/(^|[^\v])\//g, '$1\v/') + quote;
-		})
-		.replace(/(^|[^\v])(\/\*[\s\S]*?\*\/|\/\/.*)/g, '$1')
-		.replace(/\v/g, '')
-}
-
 function getBodyDeps(def) {
 	var deps = []
 	var got = {}
-	removeComments(def).replace(/(?:^|[^\.\w])require\s*\(\s*(["'])([^"']+?)\1\s*\)/mg, function(full, quote, dep) {
+	def.replace(/(?:^|[^\.\/\w])require\s*\(\s*(["'])([^"']+?)\1\s*\)/mg, function(full, quote, dep) {
 		got[dep] || deps.push(dep)
 		got[dep] = 1
 	})
@@ -154,14 +144,14 @@ function getBodyDeps(def) {
 function getRelativeDeps(def, exclude) {
 	var deps = []
 	var got = {}
-	var depArr = removeComments(def).match(/(?:^|[^\.\w])define\s*\([^\[\{]*(\[[^\[\]]*\])/m)
+	var depArr = def.match(/(?:^|[^\.\/\w])define\s*\([^\[\{]*(\[[^\[\]]*\])/m)
 	depArr = depArr && depArr[1]
 	exclude = exclude || {}
 	depArr && depArr.replace(/(["'])(\.[^"']+?)\1/mg, function(full, quote, dep) {
 		got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
-	removeComments(def).replace(/(?:^|[^\.\w])require\s*\(\s*(["'])(\.[^"']+?)\1\s*\)/mg, function(full, quote, dep) {
+	def.replace(/(?:^|[^\.\/\w])require\s*\(\s*(["'])(\.[^"']+?)\1\s*\)/mg, function(full, quote, dep) {
 		got[dep] || exclude[dep] || globalExclude[dep] || (/(-built|\.js)$/).test(dep) || deps.push(dep)
 		got[dep] = 1
 	})
@@ -362,13 +352,6 @@ function compileTmpl(input, type, info, opt) {
 
 function fixDefineParams(def, depId, baseId) {
 	var bodyDeps
-	if(!(/\bdefine\b/m).test(removeComments(def))) {
-		def = [
-			'define(function(require, exports, module)) {',
-				def,
-			'})'
-		].join(EOL)
-	}
 	bodyDeps = getBodyDeps(def)
 	def = def.replace(/\b(define\s*\()\s*(?:(["'])([^"'\s]+)\2\s*,\s*)?\s*(\[[^\[\]]*\])?/m, function(full, d, quote, definedId, deps) {
 		var id
@@ -500,9 +483,6 @@ function getBuiltAmdModContent(input, info, opt) {
 	}
 	reverseDepMap[input] = 1
 	content = fs.readFileSync(input, charset)
-	if(!(/\bdefine\b/m).test(removeComments(content))) {
-		return content
-	}
 	deps = traversalGetRelativeDeps(inputDir, content, info.exclude)
 	while(deps.length) {
 		depId = deps.shift()
@@ -789,7 +769,7 @@ fs.exists(buildFileName, function(exists) {
 				throw err
 			}
 			try {
-				buildJson = JSON.parse(removeComments(data))
+				eval(getUglified('buildJson = ' + data, {uglify: -1, copyright: ' '}))//remove comments in json
 				buildJson.builds = buildJson.builds || DEFAULT_BUILD_JSON.builds
 				properties = utils.extendObject(buildJson.properties, argProperties)
 			} catch(e) {
