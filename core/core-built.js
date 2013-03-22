@@ -3979,6 +3979,7 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 		this._ele = YOM.Element.query(ele)
 		this._delegatedTypes = {}
 		this._handlers = {}
+		this._anonymousHandlers = {}
 		this._eventHook = opt.eventHook
 		this._id = _im.add(this)
 		this._ele.setDatasetVal('yom-delegator-id', this._id)
@@ -4009,6 +4010,7 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 				var listener = YOM.object.bind(this, this._eventListener)
 				this._ele.addEventListener(type, listener)
 				this._handlers[type] = {}
+				this._anonymousHandlers[type] = []
 				this._delegatedTypes[type] = {maxBubble: maxBubble, listener: listener}
 			}
 		},
@@ -4024,8 +4026,11 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 			bubbleTimes = 0
 			while(target && target != this._ele) {
 				$target = new YOM.Element(target)
-				if(target.disabled || $target.getAttr('disabled')) {
+				if(new RegExp('(^|\s+)' + type + '(\s+|$)').test($target.getDatasetVal('yom-cancel-bubble'))) {
 					return
+				}
+				if(target.disabled || $target.getAttr('disabled')) {
+					break
 				}
 				flag = $target.getDatasetVal('yom-' + type)
 				if(flag) {
@@ -4042,6 +4047,9 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 				target = target.parentNode
 				bubbleTimes++
 			}
+			YOM.object.each(this._anonymousHandlers[type], function(handler) {
+				handler.call(YOM.Event.getTarget(evt), evt)
+			})
 		},
 		
 		getId: function() {
