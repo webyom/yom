@@ -4026,7 +4026,7 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 			bubbleTimes = 0
 			while(target && target != this._ele) {
 				$target = new YOM.Element(target)
-				if(new RegExp('(^|\s+)' + type + '(\s+|$)').test($target.getDatasetVal('yom-cancel-bubble'))) {
+				if(new RegExp('(^|\\s+)' + type + '(\\s+|$)').test($target.getDatasetVal('yom-cancel-bubble'))) {
 					return
 				}
 				if(target.disabled || $target.getAttr('disabled')) {
@@ -4047,9 +4047,11 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 				target = target.parentNode
 				bubbleTimes++
 			}
-			YOM.object.each(this._anonymousHandlers[type], function(handler) {
-				handler.call(YOM.Event.getTarget(evt), evt)
-			})
+			if(this._anonymousHandlers[type]) {
+				YOM.object.each(this._anonymousHandlers[type], function(handler) {
+					handler.call(YOM.Event.getTarget(evt), evt)
+				})
+			}
 		},
 		
 		getId: function() {
@@ -4059,14 +4061,30 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 		delegate: function(type, handlerName, handler, opt) {
 			type = type.toLowerCase()
 			opt = opt || {}
-			this._delegateEvent(type, opt.maxBubble >= 0 ? opt.maxBubble : 1983)
+			this._delegateEvent(type, opt.maxBubble >= 0 ? opt.maxBubble : 0)
 			this._handlers[type][handlerName] = handler
+			return this
+		},
+		
+		delegateAnonymous: function(type, handler) {
+			var hasSameAnonymous = false
+			type = type.toLowerCase()
+			opt = opt || {}
+			this._delegateEvent(type, 0)
+			YOM.object.each(this._anonymousHandlers[type], function(h) {
+				if(handler == h) {
+					hasSameAnonymous = true
+				}
+			})
+			if(!hasSameAnonymous) {
+				this._anonymousHandlers[type].push(handler)
+			}
 			return this
 		},
 		
 		remove: function(type, handlerName) {
 			if(!this._delegatedTypes[type]) {
-				return
+				return this
 			}
 			if(handlerName) {
 				delete this._handlers[type][handlerName]
@@ -4075,6 +4093,27 @@ define('./event-delegator', ['./object', './instance-manager', './event', './ele
 				delete this._handlers[type]
 				delete this._delegatedTypes[type]
 			}
+			return this
+		},
+		
+		removeAnonymous: function(type, handler) {
+			var that = this
+			if(!this._delegatedTypes[type]) {
+				return this
+			}
+			if(handler) {
+				if(this._anonymousHandlers[type]) {
+					YOM.object.each(this._anonymousHandlers[type], function(h, i) {
+						if(h == handler) {
+							that._anonymousHandlers[type].splice(i, 1)
+							return false
+						}
+					})
+				}
+			} else {
+				delete this._anonymousHandlers[type]
+			}
+			return this
 		},
 		
 		destroy: function() {
