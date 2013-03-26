@@ -293,6 +293,7 @@ function compileTmpl(input, type, info, opt) {
 	var strict = (/\$data\b/).test(tmpl)
 	var res = []
 	tmpl = getIncProcessed(input, info, utils.extendObject(opt, {tmpl: tmpl}))
+	tmpl = tmpl.replace(/<\/script>/ig, '</s<%=""%>cript>')
 	if(type == 'NODE') {
 		//do nothing
 	} else if(type == 'AMD') {

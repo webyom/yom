@@ -112,7 +112,7 @@ var define, require
 	/**
 	 * config
 	 */
-	var _PAGE_BASE_URL = location.href.split('/').slice(0, -1).join('/')
+	var _PAGE_BASE_URL = location.protocol + '//' + location.host + location.pathname.split('/').slice(0, -1).join('/')
 	var _RESERVED_NRM_ID = {
 		require: 1,
 		exports: 1,
