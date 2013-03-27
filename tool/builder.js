@@ -44,6 +44,7 @@ var buildDir = path.dirname(path.resolve(process.cwd(), buildFileName))
 var outputBasePath = ''
 var htmlCompressorPath = path.join(path.dirname(path.resolve(process.cwd(), process.argv[1])), 'html-compressor/html-compressor.jar')
 var logs = []
+var globalAllowSrcOutput = false
 var globalUglifyLevel = 0
 var globalBuildNodeTpl = false
 var globalCssmin = false
@@ -102,7 +103,7 @@ function writeFileSync(path, content, charset, lang) {
 }
 
 function isSrcDir(outputDir) {
-	if((/\/_?src(\/|$)/).test(outputDir)) {//TODO
+	if((/\/_?src(\/|$)/).test(outputDir.replace(/\\/g, '/'))) {//TODO
 		return false
 	}
 	return true
@@ -539,7 +540,7 @@ function checkCondition(condition) {
 	return true
 }
 
-function buildOne(info, callback, ignoreSrc) {
+function buildOne(info, callback, allowSrcOutput) {
 	if(!checkCondition(info.condition)) {
 		callback()
 		return
@@ -570,7 +571,7 @@ function buildOne(info, callback, ignoreSrc) {
 	if(!output) {
 		throw new Error('Output not defined!')
 	}
-	if(!ignoreSrc && !isSrcDir(outputDir)) {
+	if(!globalAllowSrcOutput && !allowSrcOutput && !isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!')
 	}
 	if((/\.tpl\.html?$/).test(input)) {
@@ -653,7 +654,7 @@ function combineOne(info, callback) {
 	var compressCss = typeof info.cssmin != 'undefined' ? info.cssmin : globalCssmin
 	var fileContent = []
 	log('Output: ' + output)
-	if(!isSrcDir(outputDir)) {
+	if(!globalAllowSrcOutput && !isSrcDir(outputDir)) {
 		throw new Error('Output to src dir denied!')
 	}
 	;(function() {
@@ -724,7 +725,7 @@ function copyOne(info, callback) {
 		log('Copy')
 		log('Input: ' + input)
 		log('Output: ' + output)
-		if(!isSrcDir(outputDir)) {
+		if(!globalAllowSrcOutput && !isSrcDir(outputDir)) {
 			throw new Error('Output to src dir denied!')
 		}
 		mkdirs(outputDir, 0777, function() {
@@ -786,6 +787,7 @@ fs.exists(buildFileName, function(exists) {
 	function start(buildJson) {
 		var combineList, buildList, copyList
 		outputBasePath = utils.getDefinedItem([args['output-base-path'], buildJson.outputBasePath, outputBasePath])
+		globalAllowSrcOutput = utils.getDefinedItem([args['allow-src-output'], buildJson.allowSrcOutput, globalAllowSrcOutput])
 		globalUglifyLevel = utils.getDefinedItem([args['uglify'], buildJson.uglify, globalUglifyLevel])
 		globalBuildNodeTpl = utils.getDefinedItem([args['build-node-tpl'], buildJson.buildNodeTpl, globalBuildNodeTpl])
 		globalCssmin = utils.getDefinedItem([args['cssmin'], buildJson.cssmin], globalCssmin)
