@@ -89,7 +89,7 @@ define(['../core/core-built'], function(YOM) {
 	}
 	
 	function _isValidMark(mark) {
-		return typeof mark == 'string' && !(/^[#!\/]/).test(mark)
+		return typeof mark == 'string' && !(/^[#!]/).test(mark)
 	}
 	
 	//Public
@@ -148,7 +148,7 @@ define(['../core/core-built'], function(YOM) {
 		if(_isSupportHistoryState) {
 			return location.pathname.replace(/^\//, '')
 		} else {
-			return location.hash ? location.hash.replace(/^#!\/?/, '') : ''
+			return location.hash ? location.hash.replace(/^#!?/, '') : ''
 		}
 	}
 	

@@ -964,6 +964,10 @@ var define, require
 	}
 	
 	define = _makeDefine()
+
+	define.amd = {
+		
+	}
 	
 	/**
 	 * require
