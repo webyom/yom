@@ -709,6 +709,10 @@ function copyOne(info, callback) {
 		log('Copy')
 		throw new Error('Output not defined!')
 	}
+	if(path.basename(info.input).indexOf('.') === 0) {//hidden file/folder
+		callback()
+		return
+	}
 	var filterRegexp = info.regexp
 	var input = path.resolve(buildDir, info.input)
 	var output = path.resolve(buildDir, outputBasePath, info.output)
