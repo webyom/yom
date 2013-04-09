@@ -127,15 +127,18 @@ var define, require
 		NO_DEFINE: 4
 	}
 	
-	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
+	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
 		charset: 'utf-8',
 		baseUrl: '',
 		source: {},
 		paths: {},//match by id removed prefix
 		shim: {},//match by id removed prefix
+		enforceDefine: false,
 		urlArgs: {//match by id removed prefix
 			'*': ''//for all
 		},
+		//global
+		debug: false,
 		errCallback: null,
 		onLoadStart: null,
 		onLoadEnd: null,
@@ -312,7 +315,7 @@ var define, require
 			var config = this._config
 			var shim = this._shim
 			var exports
-			if(!shim) {
+			if(config.enforceDefine && !shim) {
 				return false
 			}
 			if(shim.exports) {
@@ -529,16 +532,20 @@ var define, require
 		if(ext.baseUrl && config.baseUrl != ext.baseUrl) {
 			config = {
 				charset: 'utf-8',
+				baseUrl: '',
 				source: {},
 				paths: {},//match by id removed prefix
 				shim: {},//match by id removed prefix
+				enforceDefine: false,
 				urlArgs: {//match by id removed prefix
 					'*': ''//for all
 				},
-				errCallback: null,
-				onLoadStart: null,
-				onLoadEnd: null,
-				waitSeconds: 30
+				//global
+				debug: _gcfg.debug,
+				errCallback: _gcfg.errCallback,
+				onLoadStart: _gcfg.onLoadStart,
+				onLoadEnd: _gcfg.onLoadEnd,
+				waitSeconds: _gcfg.waitSeconds
 			}
 		} else {
 			config = _clone(config, 1)
@@ -841,7 +848,7 @@ var define, require
 		var nrmId, conf, loadHold, hold, depMap
 		var baseUrl = loadInfo.baseUrl
 		var baseConfig = loadInfo.config || config
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], baseConfig, config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], baseConfig, config)
 		loadHold = _getHold(loadInfo.nrmId, baseUrl)
 		if(combo) {
 			loadInfo.nrmId = combo.load[0].nrmId
@@ -920,7 +927,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
 		function def(id, deps, factory) {
 			var script, factoryStr, reqFnName, defQueue
 			if(typeof id != 'string') {
@@ -1034,7 +1041,7 @@ var define, require
 			}
 		}
 		sourceConf = config.source[_getSourceName(id)]
-		conf = _extendConfig(['charset', 'baseUrl', 'paths', 'shim', 'urlArgs'], config, sourceConf)
+		conf = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], config, sourceConf)
 		base = context.base
 		nrmId = _normalizeId(id, base, conf.paths)
 		if(_isRelativePath(id)) {
@@ -1060,7 +1067,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
 		function req(deps, callback, errCallback) {
 			var over = false
 			var loadList = []
