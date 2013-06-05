@@ -15,7 +15,7 @@ module.exports = function(grunt) {
     jshint: {
       all: [
         'Gruntfile.js',
-        'js/**/*.js'
+        'src/**/*.js'
       ],
       options: {
         jshintrc: '.jshintrc',
@@ -52,8 +52,8 @@ module.exports = function(grunt) {
 
     yomb: {
       options: {
-        buildTpl: true,
-        buildNodeTpl: true,
+        buildTpl: false,
+        buildNodeTpl: false,
         allowSrcOutput: true,
         uglify: 0,
         cssmin: false,
@@ -79,7 +79,7 @@ module.exports = function(grunt) {
         */
         compressHtmlOptions: '--remove-script-attr',
         outputBasePath: '<%=outputBasePath%>',
-        protect: ['./js', './html', './mockup-data', './test/tpl-src'],
+        protect: ['./src'],
         lang: null,
         properties: {
           cssmin: 'false'
@@ -98,11 +98,9 @@ module.exports = function(grunt) {
       'build-all': {
         files: [
           {
-            src: './',
-            dest: './',
+            src: './src',
+            dest: './dest',
             ignore: {
-              'node_modules': 1,
-              'tool': 1
             }
           }
         ]
@@ -120,6 +118,12 @@ module.exports = function(grunt) {
 
       'copy-all': {
         files: [
+          {
+            src: './src',
+            dest: './dest',
+            regexp: '(\\.jpg|\\.jpeg|\\.gif|\\.png|\\.ico|\\.otf|\\.eot|\\.svg|\\.ttf|\\.woff|-min\\.css|\\.html)$',
+            cssmin: false
+          }
         ]
       }
     },

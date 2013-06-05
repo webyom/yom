@@ -7,13 +7,13 @@
 <!-- include "../jasmine/jasmine.css" -->
 </head>
 <body>
-<!-- include "../../require/require.js" -->
-<!-- require "../../require-plugin/jsonp" -->
-<!-- require "../../require-plugin/ajax" -->
+<!-- include "../../src/require/require.js" -->
+<!-- require "../../src/require-plugin/jsonp" -->
+<!-- require "../../src/require-plugin/ajax" -->
 <!-- include "../jasmine/jasmine.js" -->
 <!-- include "../jasmine/jasmine-html.js" -->
 <script type="text/javascript">
-require(['../../core/core-built'], function(core) {
+require(['../../dest/core/core-built'], function(core) {
 	require([
 		'../spec/core/array',
 		'../jasmine/reporter'

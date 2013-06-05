@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>YOM LocalStorage Proxy Page</title>
+</head>
+<body>
+<script type="text/javascript">
+var require = parent.require.getConfig();
+</script>
+<script type="text/javascript" src="../require/require-built.js"></script>
+<script type="text/javascript">
+var localStorageProxyPull
+require(['yom/core/core-built', 'yom/local-storage/local-storage-built'], function(YOM, ls) {
+	localStorageProxyPull = function() {
+		var queue = frameElement._queue
+		if(!queue) {
+			return
+		}
+		while(queue.length) {
+			;(function(p) {
+				setTimeout(function() {
+					ls._do(p[0], null, p[1])
+				}, 0)
+			})(queue.shift())
+		}
+	};
+	frameElement._inited = 1
+	localStorageProxyPull()
+})
+frameElement._loaded = 1
+</script>
+</body>
+</html>

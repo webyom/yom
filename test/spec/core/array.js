@@ -1,5 +1,5 @@
 define(function() {
-	var array = require('../../core/core-built').array;
+	var array = require('../../dest/core/core-built').array;
 	describe('Test rfl.array', function(){
 		describe('Test rfl.array.isArray', function(){
 			it('[] should be array.', function(){
