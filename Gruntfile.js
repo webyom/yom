@@ -52,8 +52,8 @@ module.exports = function(grunt) {
 
     yomb: {
       options: {
-        buildTpl: false,
-        buildNodeTpl: false,
+        buildTpl: true,
+        buildNodeTpl: true,
         allowSrcOutput: true,
         uglify: 0,
         cssmin: false,

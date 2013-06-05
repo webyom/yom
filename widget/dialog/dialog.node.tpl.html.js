@@ -9,7 +9,6 @@ exports.render = function($data, $opt) {
         _$out_.push(str);
     };
     with ($data) {
-        _$out_.push("");
         if (noBorder && src) {
             _$out_.push('\n	<iframe data-type="yom-dialog-frame" style="width: 100%; height: 100%;" frameborder="0" scrolling="no" allowtransparency="yes" src="', frameSrc, '"></iframe>\n');
         } else {
