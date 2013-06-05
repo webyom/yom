@@ -127,7 +127,7 @@ var define, require
 		NO_DEFINE: 4
 	}
 	
-	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], {
+	var _gcfg = {
 		charset: 'utf-8',
 		baseUrl: '',
 		source: {},
@@ -143,7 +143,8 @@ var define, require
 		onLoadStart: null,
 		onLoadEnd: null,
 		waitSeconds: 30
-	}, require)//global config
+	}
+	_gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _gcfg, require)//global config
 	_gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
 	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-debug=1') > 0
 	var _interactiveMode = false
@@ -318,15 +319,15 @@ var define, require
 			if(config.enforceDefine && !shim) {
 				return false
 			}
-			if(shim.exports) {
+			if(shim && shim.exports) {
 				exports = _getShimExports(shim.exports)
 				if(!exports) {
 					return false
 				}
 			}
-			_makeRequire({config: config, base: {nrmId: nrmId, baseUrl: baseUrl}})(shim.deps || [], function() {
+			_makeRequire({config: config, base: {nrmId: nrmId, baseUrl: baseUrl}})(shim && shim.deps || [], function() {
 				var args = _getArray(arguments)
-				if(shim.init) {
+				if(shim && shim.init) {
 					exports = shim.init.apply(global, args) || exports
 				}
 				new Def(nrmId, baseUrl, exports, {id: nrmId, uri: _getFullUrl(nrmId, baseUrl)})

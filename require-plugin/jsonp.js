@@ -137,16 +137,20 @@ define('require-plugin/jsonp', ['global'], function(global) {
 		if(callback) {
 			if(url) {
 				params = this._getParams(id)
-				callbackName = params['callbackName'] || _getCallbackName(url) || 'callback'
-				charset = params['charset'] || 'utf-8'
-				_loadJsonp(url, function(data, err) {
-					if(err === _ERROR_OBJ) {
-						errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
-					} else {
-						_cache[url] = data
-						callback(data)
-					}
-				}, callbackName, charset)
+				if(!params['noCache'] && _cache[url]) {
+					callback(_cache[url])
+				} else {
+					callbackName = params['callbackName'] || _getCallbackName(url) || 'callback'
+					charset = params['charset'] || 'utf-8'
+					_loadJsonp(url, function(data, err) {
+						if(err === _ERROR_OBJ) {
+							errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
+						} else {
+							_cache[url] = data
+							callback(data)
+						}
+					}, callbackName, charset)
+				}
 			} else {
 				callback(this)
 			}
@@ -158,3 +162,4 @@ define('require-plugin/jsonp', ['global'], function(global) {
 		require: req
 	}
 })
+

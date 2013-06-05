@@ -20,7 +20,7 @@ define('require-plugin/ajax', ['global'], function(global) {
 			xhr.setRequestHeader('Cache-Control', 'no-cache')
 		}
 		if(opt.withCredentials) {
-			this._xhr.withCredentials = true
+			xhr.withCredentials = true
 		}
 		xhr.onreadystatechange = function() {
 			var res
@@ -59,17 +59,21 @@ define('require-plugin/ajax', ['global'], function(global) {
 						errCallback && errCallback(err, info)
 					})
 				} else {
-					_loadXhr(url, function(data, err) {
-						if(err === _ERROR_OBJ) {
-							errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
-						} else {
-							_cache[url] = data
-							callback(data)
-						}
-					}, {
-						noCache: !!params['noCache'],
-						withCredentials: !!params['withCredentials']
-					})
+					if(!params['noCache'] && _cache[url]) {
+						callback(_cache[url])
+					} else {
+						_loadXhr(url, function(data, err) {
+							if(err === _ERROR_OBJ) {
+								errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
+							} else {
+								_cache[url] = data
+								callback(data)
+							}
+						}, {
+							noCache: !!params['noCache'],
+							withCredentials: !!params['withCredentials']
+						})
+					}
 				}
 			} else {
 				callback(this)
