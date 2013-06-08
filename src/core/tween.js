@@ -30,9 +30,17 @@ define(['./browser', './object', './instance-manager', './element', './transitio
 	|| window.mozRequestAnimationFrame
 	|| window.oRequestAnimationFrame
 	|| window.msRequestAnimationFrame
-	|| function(callback) {
-		return setTimeout(callback, 1000 / _FPS)
-	}
+	|| (function() {
+		var lastTime = 0
+		return function(callback) {
+			var currTime = new Date().getTime()
+			var timeToCall = Math.max(0, 1000 / _FPS - (currTime - lastTime))
+			lastTime = currTime + timeToCall
+			return setTimeout(function() {
+				callback(currTime + timeToCall)
+			}, timeToCall)
+		}
+	})()
 	
 	var _cancelAnimationFrame = window.cancelAnimationFrame
 	|| window.webkitCancelAnimationFrame

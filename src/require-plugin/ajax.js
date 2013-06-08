@@ -5,6 +5,7 @@ define('require-plugin/ajax', ['global'], function(global) {
 	var _ERROR_OBJ = {}
 	
 	var _cache = {}
+	var _queue = {}
 	
 	function _loadXhr(url, callback, opt) {
 		var xhr
@@ -47,7 +48,7 @@ define('require-plugin/ajax', ['global'], function(global) {
 	
 	function req(id, config, callback, errCallback) {
 		var url = this._getResource(id)
-		var params
+		var params, queue
 		if(callback) {
 			if(url) {
 				params = this._getParams(id)
@@ -61,13 +62,22 @@ define('require-plugin/ajax', ['global'], function(global) {
 				} else {
 					if(!params['noCache'] && _cache[url]) {
 						callback(_cache[url])
+					} else if(!params['noCache'] && _queue[url]) {
+						_queue[url].push({callback: callback, errCallback: errCallback});
 					} else {
+						queue = _queue[url] = _queue[url] || [];
+						queue.push({callback: callback, errCallback: errCallback});
 						_loadXhr(url, function(data, err) {
 							if(err === _ERROR_OBJ) {
-								errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
+								while(queue.length) {
+									errCallback = queue.shift().errCallback
+									errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
+								}
 							} else {
 								_cache[url] = data
-								callback(data)
+								while(queue.length) {
+									queue.shift().callback(data);
+								}
 							}
 						}, {
 							noCache: !!params['noCache'],
