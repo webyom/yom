@@ -83,7 +83,18 @@ module.exports = function(grunt) {
         lang: null,
         properties: {
           cssmin: 'false'
+        },
+        coffeeOptions: {
+          bare: true
         }
+      },
+
+      'coffee-all': {
+        files: [
+          {
+            src: './src'
+          }
+        ]
       },
 
       'build-test': {
@@ -138,7 +149,7 @@ module.exports = function(grunt) {
 
   //
   grunt.registerTask('hint', ['jshint']);
-  grunt.registerTask('build', ['yomb:build-all', 'yomb:concat-all', 'yomb:copy-all']);
+  grunt.registerTask('build', ['yomb:coffee-all', 'yomb:build-all', 'yomb:concat-all', 'yomb:copy-all']);
   grunt.registerTask('test', ['build', 'yomb:build-test', 'yomb:copy-test', 'jasmine']);
   grunt.registerTask('default', ['build']);
 };
