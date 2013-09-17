@@ -65,10 +65,8 @@ define('require-plugin/jsonp', ['global'], function(global) {
 	
 	function _getCallbackName(url) {
 		var res
-		url.replace(/[^\/]+$/, function(m) {
-			m.replace(/^\w+/, function(m) {
-				res = m
-			})
+		url.split('/').pop().replace(/^[a-zA-Z_]\w*/, function(m) {
+			res = m + parseInt(Math.random() * 1000)
 		})
 		return res
 	}
