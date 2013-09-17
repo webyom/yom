@@ -63,14 +63,6 @@ define('require-plugin/jsonp', ['global'], function(global) {
 		return script
 	}
 	
-	function _getCallbackName(url) {
-		var res
-		url.split('/').pop().replace(/^[a-zA-Z_]\w*/, function(m) {
-			res = m + parseInt(Math.random() * 1000)
-		})
-		return res
-	}
-	
 	function _clearJsonp(jsEl, callbackName, onload, onerror) {
 		if(jsEl.addEventListener)  {
 			jsEl.removeEventListener('load', onload, false)
@@ -143,7 +135,7 @@ define('require-plugin/jsonp', ['global'], function(global) {
 				} else {
 					queue = _queue[url] = _queue[url] || [];
 					queue.push({callback: callback, errCallback: errCallback});
-					callbackName = params['callbackName'] || _getCallbackName(url) || 'callback'
+					callbackName = params['callbackName'] || 'callback'
 					charset = params['charset'] || 'utf-8'
 					_loadJsonp(url, function(data, err) {
 						if(err === _ERROR_OBJ) {
