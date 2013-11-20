@@ -144,7 +144,7 @@ var define, require
 		onLoadEnd: null,
 		waitSeconds: 30
 	}
-	_gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _gcfg, require)//global config
+	_gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _gcfg, require)//global config
 	_gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
 	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-debug=1') > 0
 	var _interactiveMode = false
@@ -248,14 +248,19 @@ var define, require
 	
 	function Hold(id, nrmId, config) {
 		var baseUrl = config.baseUrl
+		var noPrefixId = _removeIdPrefix(id)
 		this._id = id
 		this._nrmId = nrmId
 		this._baseUrl = baseUrl
 		this._config = config
 		this._defineCalled = false
 		this._queue = []
-		this._shim = config.shim[_removeIdPrefix(id)]
+		this._fallbacks = config.fallbacks[noPrefixId]
+		this._shim = config.shim[noPrefixId]
 		this._uri = _getFullUrl(nrmId, baseUrl)
+		if(!_isArray(this._fallbacks)) {
+			this._fallbacks = [this._fallbacks]
+		} 
 		_hold[this._uri] = this
 	}
 	
@@ -292,6 +297,10 @@ var define, require
 		
 		getShim: function() {
 			return this._shim
+		},
+		
+		getFallback: function() {
+			return this._fallbacks.shift()
 		},
 		
 		loadShimDeps: function(callback) {
@@ -536,6 +545,7 @@ var define, require
 				baseUrl: '',
 				source: {},
 				paths: {},//match by id removed prefix
+				fallbacks: {},//match by id removed prefix
 				shim: {},//match by id removed prefix
 				enforceDefine: false,
 				urlArgs: {//match by id removed prefix
@@ -652,13 +662,6 @@ var define, require
 		}
 	}
 	
-	function _checkHoldDefine(hold) {
-		if(!hold.isDefineCalled() && !hold.shimDefine()) {
-			hold.dispatch(_ERR_CODE.NO_DEFINE)
-			hold.remove()
-		}
-	}
-	
 	function _dealError(code, opt, errCallback) {
 		opt = opt || {}
 		if(errCallback) {
@@ -735,23 +738,45 @@ var define, require
 			}
 		}
 		function _ieOnload() {
+			var fallback
 			if(jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
 				_endLoad(jsNode, _ieOnload)
 				jsNode = null
 				_processDefQueue(nrmId, baseUrl, config, combo)
-				_checkHoldDefine(hold)
+				if(!hold.isDefineCalled() && !hold.shimDefine()) {
+					fallback = hold.getFallback()
+					if(fallback) {
+						_doLoad(id, fallback, config, hold)
+					} else {
+						hold.dispatch(_ERR_CODE.NO_DEFINE)
+						hold.remove()
+					}
+				}
 			}
 		}
 		function _onload() {
-			var def
+			var def, fallback
 			_endLoad(jsNode, _onload, _onerror)
 			_processDefQueue(nrmId, baseUrl, config, combo)
-			_checkHoldDefine(hold)
+			if(!hold.isDefineCalled() && !hold.shimDefine()) {
+				fallback = hold.getFallback()
+				if(fallback) {
+					_doLoad(id, fallback, config, hold)
+				} else {
+					hold.dispatch(_ERR_CODE.NO_DEFINE)
+					hold.remove()
+				}
+			}
 		}
 		function _onerror() {
+			var fallback = hold.getFallback()
 			_endLoad(jsNode, _onload, _onerror)
-			hold.dispatch(_ERR_CODE.LOAD_ERROR)
-			hold.remove()
+			if(fallback) {
+				_doLoad(id, fallback, config, hold)
+			} else {
+				hold.dispatch(_ERR_CODE.NO_DEFINE)
+				hold.remove()
+			}
 		}
 	}
 	
@@ -849,7 +874,7 @@ var define, require
 		var nrmId, conf, loadHold, hold, depMap
 		var baseUrl = loadInfo.baseUrl
 		var baseConfig = loadInfo.config || config
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], baseConfig, config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], baseConfig, config)
 		loadHold = _getHold(loadInfo.nrmId, baseUrl)
 		if(combo) {
 			loadInfo.nrmId = combo.load[0].nrmId
@@ -928,7 +953,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
 		function def(id, deps, factory) {
 			var script, factoryStr, reqFnName, defQueue
 			if(typeof id != 'string') {
@@ -1042,7 +1067,7 @@ var define, require
 			}
 		}
 		sourceConf = config.source[_getSourceName(id)]
-		conf = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], config, sourceConf)
+		conf = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], config, sourceConf)
 		base = context.base
 		nrmId = _normalizeId(id, base, conf.paths)
 		if(_isRelativePath(id)) {
@@ -1068,7 +1093,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
 		function req(deps, callback, errCallback) {
 			var over = false
 			var loadList = []
