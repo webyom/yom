@@ -11,7 +11,7 @@ var define, require
 	if(require && require._YOM_) {
 		return
 	}
-	
+
 	/**
 	 * utils
 	 */
@@ -19,33 +19,33 @@ var define, require
 	var _isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]'
 	var _op = Object.prototype
 	var _ots = _op.toString
-	
+
 	var _isArray = Array.isArray || function(obj) {
 		return _ots.call(obj) == '[object Array]'
 	}
-	
+
 	function _getArray(arr) {
 		return Array.prototype.slice.call(arr)
 	}
-	
+
 	function _isFunction(obj) {
 		return _ots.call(obj) == '[object Function]'
 	}
-	
+
 	function _hasOwnProperty(obj, prop) {
 		return _op.hasOwnProperty.call(obj, prop)
 	}
-	
+
 	function _trimTailSlash(path) {
 		return path.replace(/\/+$/, '')
 	}
-	
+
 	function _each(arr, callback) {
 		for(var i = 0, l = arr.length; i < l; i++) {
 			callback(arr[i], i, arr)
 		}
 	}
-	
+
 	function _extend(origin, extend, check) {
 		origin = origin || {}
 		for(var p in extend) {
@@ -55,7 +55,7 @@ var define, require
 		}
 		return origin
 	}
-	
+
 	function _clone(obj, deep, _level) {
 		var res = obj
 		deep = deep || 0
@@ -80,7 +80,7 @@ var define, require
 		}
 		return res
 	}
-	
+
 	function _getInteractiveScript() {
 		var script, scripts
 		scripts = document.getElementsByTagName('script')
@@ -92,7 +92,7 @@ var define, require
 		}
 		return script
 	}
-	
+
 	function _getUrlParamObj(str) {
 		if(!str) {
 			return {}
@@ -108,7 +108,7 @@ var define, require
 		}
 		return param
 	}
-	
+
 	/**
 	 * config
 	 */
@@ -126,7 +126,7 @@ var define, require
 		LOAD_ERROR: 3,
 		NO_DEFINE: 4
 	}
-	
+
 	var _gcfg = {
 		charset: 'utf-8',
 		baseUrl: '',
@@ -150,7 +150,7 @@ var define, require
 	var _interactiveMode = false
 	var _loadingCount = 0
 	var _scriptBeingInserted = null
-	
+
 	var _hold = {}//loading or waiting dependencies
 	var _interactiveDefQueue = {}
 	var _defQueue = []
@@ -158,7 +158,7 @@ var define, require
 	var _defined = {}
 	var _plugin = {}
 	var _depReverseMap = {}
-	
+
 	function Def(nrmId, baseUrl, exports, module, getter, loader) {
 		this._nrmId = nrmId
 		this._baseUrl = baseUrl
@@ -168,7 +168,7 @@ var define, require
 		this._loader = loader
 		_defined[module.uri] = this
 	}
-	
+
 	Def.prototype = {
 		getDef: function(context) {
 			if(this._getter) {
@@ -177,14 +177,14 @@ var define, require
 				return this._exports
 			}
 		},
-		
+
 		getLoader: function() {
 			return this._loader
 		},
-		
+
 		constructor: Def
 	}
-	
+
 	new Def('require', _gcfg.baseUrl, {}, {id: 'require', uri: 'require'}, function(context) {
 		return _makeRequire({config: context.config, base: context.base})
 	})
@@ -201,7 +201,7 @@ var define, require
 		var _queue = []
 		var _checking = false
 		var _ready = false
-		
+
 		function _onready() {
 			if(_ready) {
 				return
@@ -211,16 +211,16 @@ var define, require
 				domReadyLoader.apply(null, _getArray(_queue.shift()))
 			}
 		}
-		
+
 		function _onReadyStateChange() {
 			if(document.readyState == 'complete') {
 				_onready()
 			}
 		}
-		
+
 		function _checkReady() {
 			if(_checking || _ready) {
-				return		
+				return
 			}
 			_checking = true
 			if(document.readyState == 'complete') {
@@ -232,8 +232,8 @@ var define, require
 				document.attachEvent('onreadystatechange', _onReadyStateChange)
 				window.attachEvent('onload', _onready)
 			}
-		}		
-		
+		}
+
 		function domReadyLoader(context, onRequire) {
 			if(_ready) {
 				onRequire(0)
@@ -242,10 +242,10 @@ var define, require
 				_checkReady()
 			}
 		}
-		
+
 		return domReadyLoader
 	})())
-	
+
 	function Hold(id, nrmId, config) {
 		var baseUrl = config.baseUrl
 		var noPrefixId = _removeIdPrefix(id)
@@ -260,27 +260,27 @@ var define, require
 		this._uri = _getFullUrl(nrmId, baseUrl)
 		if(!_isArray(this._fallbacks)) {
 			this._fallbacks = [this._fallbacks]
-		} 
+		}
 		_hold[this._uri] = this
 	}
-	
+
 	Hold.prototype = {
 		push: function(onRequire) {
 			this._queue.push(onRequire)
 		},
-		
+
 		defineCall: function() {
 			this._defineCalled = true
 		},
-		
+
 		isDefineCalled: function() {
 			return this._defineCalled
 		},
-		
+
 		remove: function() {
 			delete _hold[this._uri]
 		},
-		
+
 		dispatch: function(errCode, opt) {
 			var callback
 			while(this._queue.length) {
@@ -290,19 +290,19 @@ var define, require
 				}
 			}
 		},
-		
+
 		getConfig: function() {
 			return this._config
 		},
-		
+
 		getShim: function() {
 			return this._shim
 		},
-		
+
 		getFallback: function() {
 			return this._fallbacks.shift()
 		},
-		
+
 		loadShimDeps: function(callback) {
 			var nrmId = this._nrmId
 			var config = this._config
@@ -317,7 +317,7 @@ var define, require
 				callback()
 			}
 		},
-		
+
 		shimDefine: function() {
 			var hold = this
 			var nrmId = this._nrmId
@@ -348,23 +348,23 @@ var define, require
 			})
 			return true
 		},
-		
+
 		constructor: Hold
 	}
-	
+
 	function Plugin(name) {
 		this._name = name
 		_plugin[name] = this
 	}
-	
+
 	Plugin.prototype = {
 		_paramsToken: '@',
-		
+
 		_getResource: function(id) {
 			var res = _removePluginPrefix(id).split(this._paramsToken)
 			return res.slice(0, res.length - 1 || 1).join(this._paramsToken)
 		},
-		
+
 		_getParams: function(id) {
 			var params = {}
 			var i, item
@@ -379,22 +379,22 @@ var define, require
 			}
 			return params
 		},
-		
+
 		require: function(id, config, callback, errCallback) {
 			if(callback) {
 				callback(this)
 			}
 			return this
 		},
-		
+
 		constructor: Plugin
 	}
-	
+
 	function _getHold(nrmId, baseUrl) {
 		var url = _getFullUrl(nrmId, baseUrl)
 		return _hold[url]
 	}
-	
+
 	function _getDefined(id, nrmId, config) {
 		var def, shim, exports, module
 		var url = _getFullUrl(nrmId, config.baseUrl)
@@ -414,7 +414,7 @@ var define, require
 		}
 		return def
 	}
-	
+
 	function _getPlugin(pluginName) {
 		return _plugin[pluginName]
 	}
@@ -427,7 +427,7 @@ var define, require
 		}
 		return exports
 	}
-		
+
 	function _getInteractiveDefQueue(nrmId, baseUrl) {
 		var fullUrl = _getFullUrl(nrmId, baseUrl) || 'require'
 		_interactiveDefQueue[fullUrl] = _interactiveDefQueue[fullUrl] || {
@@ -435,17 +435,17 @@ var define, require
 		}
 		return _interactiveDefQueue[fullUrl]
 	}
-	
+
 	function _getDepReverseMap(url) {
 		var map = _depReverseMap[url] = _depReverseMap[url] || {}
 		return map
 	}
-	
+
 	function _setDepReverseMap(url, depReverseUrl) {
 		var map = _getDepReverseMap(url)
 		map[depReverseUrl] = 1
 	}
-	
+
 	function _hasCircularDep(depReverseUrl, url, _checkedUrls) {
 		var depMap = _getDepReverseMap(depReverseUrl)
 		var p
@@ -467,36 +467,36 @@ var define, require
 		}
 		return false
 	}
-	
+
 	/**
 	 * id start width 'http:', 'https:', '/', or end with '.js' is unnormal
 	 */
 	function _isUnnormalId(id) {
 		return (/^https?:|^\/|.js$/).test(id)
 	}
-	
+
 	function _isRelativePath(path) {
 		return (path + '').indexOf('.') === 0
 	}
-	
+
 	function _removeIdPrefix(id) {
 		return id.replace(/^([a-zA-Z0-9_\-]+?!)?([a-zA-Z0-9_\-]+?#)?/, '')
 	}
-	
+
 	function _removePluginPrefix(id) {
 		return id.replace(/^[a-zA-Z0-9_\-]+?!/, '')
 	}
-	
+
 	function _getSourceName(id) {
 		var m = id.match(/^([^#]+?)#/)
 		return m && m[1] || ''
 	}
-	
+
 	function _getPluginName(id) {
 		var m = id.match(/^([^!]+?)!/)
 		return m && m[1] || ''
 	}
-	
+
 	function _normalizeId(id, base, paths) {
 		var nrmId, a, b, maped
 		if(!id) {
@@ -531,7 +531,7 @@ var define, require
 		}
 		return nrmId
 	}
-	
+
 	function _extendConfig(props, config, ext) {
 		if(!config) {
 			return ext
@@ -562,16 +562,16 @@ var define, require
 			config = _clone(config, 1)
 		}
 		_each(props, function(p) {
-			config[p] = typeof config[p] == 'object' && typeof ext[p] == 'object' ? _extend(config[p], ext[p]) : 
+			config[p] = typeof config[p] == 'object' && typeof ext[p] == 'object' ? _extend(config[p], ext[p]) :
 					typeof ext[p] == 'undefined' ? config[p] : ext[p]
 		})
 		return config
 	}
-	
+
 	function _getOrigin() {
 		return location.origin || location.protocol + '//' +  location.host
 	}
-	
+
 	function _resolvePath(base, path) {
 		if(!_isRelativePath(path)) {
 			return path
@@ -601,7 +601,7 @@ var define, require
 		path = bArr.join('/')
 		return path
 	}
-	
+
 	function _getFullBaseUrl(url) {
 		if(url) {
 			if(url.indexOf('://') < 0) {
@@ -616,7 +616,7 @@ var define, require
 		}
 		return url
 	}
-	
+
 	function _getFullUrl(nrmId, baseUrl) {
 		var url = ''
 		baseUrl = baseUrl || _gcfg.baseUrl
@@ -641,7 +641,7 @@ var define, require
 			return charset && (charset[_removeIdPrefix(id)] || charset['*']) || ''
 		}
 	}
-	
+
 	function _endLoad(jsNode, onload, onerror) {
 		_loadingCount--
 		if(jsNode.attachEvent && !_isOpera) {
@@ -661,7 +661,7 @@ var define, require
 			}
 		}
 	}
-	
+
 	function _dealError(code, opt, errCallback) {
 		opt = opt || {}
 		if(errCallback) {
@@ -676,7 +676,7 @@ var define, require
 			}
 		}
 	}
-	
+
 	function _loadPlugin(pluginName, id, config, onRequire) {
 		require(['require-plugin/' + pluginName], function(pluginDef) {
 			var plugin = _plugin[pluginName]
@@ -696,7 +696,7 @@ var define, require
 			onRequire(errCode, opt)
 		})
 	}
-	
+
 	function _doLoad(id, nrmId, config, hold) {
 		var combo, comboUrl, baseUrl, charset, jsNode, urlArg
 		combo = typeof id == 'object' && id && id.combo && id
@@ -779,7 +779,7 @@ var define, require
 			}
 		}
 	}
-	
+
 	function _load(id, nrmId, config, onRequire) {
 		var combo = typeof id == 'object' && id && id.combo && id,
 			baseUrl = config.baseUrl,
@@ -840,7 +840,7 @@ var define, require
 			}
 		}
 	}
-	
+
 	function _processDefQueue(nrmId, baseUrl, config, combo) {
 		var def, queue, defQueue, postDefQueue
 		if(_interactiveMode) {
@@ -854,8 +854,8 @@ var define, require
 		def = defQueue.shift()
 		while(def) {
 			_defineCall(def.id, def.deps, def.factory, {
-				nrmId: nrmId || '',
-				baseUrl: baseUrl || '',
+				nrmId: nrmId || def.id,
+				baseUrl: baseUrl || def.config && def.config.baseUrl || config && config.baseUrl || _gcfg.baseUrl,
 				config: config
 			}, def.config, postDefQueue, combo)
 			def = defQueue.shift()
@@ -866,7 +866,7 @@ var define, require
 			def = postDefQueue.shift()
 		}
 	}
-	
+
 	/**
 	 * define
 	 */
@@ -915,10 +915,10 @@ var define, require
 			config: config
 		})
 	}
-	
+
 	function _postDefineCall(base, deps, factory, hold, config) {
 		_makeRequire({config: config, base: base})(deps, function() {
-			var nrmId 
+			var nrmId
 			if(!base.baseUrl && (/^require-plugin\//).test(base.nrmId)) {//require-plugin builtin with html
 				nrmId = _normalizeId(base.nrmId, base, config.paths)
 			} else {
@@ -948,7 +948,7 @@ var define, require
 			hold.remove()
 		})
 	}
-	
+
 	function _makeDefine(context) {
 		var config
 		context = context || {}
@@ -995,13 +995,13 @@ var define, require
 		}
 		return def
 	}
-	
+
 	define = _makeDefine()
 
 	define.amd = {
-		
+
 	}
-	
+
 	/**
 	 * require
 	 */
@@ -1022,7 +1022,7 @@ var define, require
 		comboUrl = hostName + '/c/=' + combo.join(',')
 		return comboUrl
 	}
-	
+
 	function _loadCombo(combo, config, context, callback) {
 		var callArgs = combo.combo
 		var baseUrl = config.baseUrl
@@ -1047,7 +1047,7 @@ var define, require
 			callback(errCode, opt)
 		}
 	}
-	
+
 	function _getDep(id, config, context) {
 		var base, conf, nrmId, def, pluginName, sourceConf, fullUrl, baseFullUrl, loader
 		if(!id) {
@@ -1088,7 +1088,7 @@ var define, require
 			return {load: {id: id, nrmId: nrmId, config: conf}}
 		}
 	}
-	
+
 	function _makeRequire(context) {
 		var config
 		context = context || {}
@@ -1257,9 +1257,9 @@ var define, require
 		req.ERR_CODE = _ERR_CODE
 		return req
 	}
-	
+
 	require = _makeRequire()
-	
+
 	require._YOM_ = true
 	require.PAGE_BASE_URL = _PAGE_BASE_URL
 	//for modules built with require.js or html builtin
@@ -1280,7 +1280,7 @@ var define, require
 		plugin: _plugin,
 		depReverseMap: _depReverseMap
 	}
-	
+
 	;(function() {
 		var scripts, script, i, main, baseUrl
 		scripts = document.getElementsByTagName('script')
