@@ -893,7 +893,11 @@ var define, require
 				hold.defineCall()
 			}
 		} else {
-			nrmId = _normalizeId(id, loadInfo, config.paths)
+			if(id == loadInfo.nrmId) {//html built in module
+				nrmId = loadInfo.nrmId
+			} else {
+				nrmId = _normalizeId(id, loadInfo, config.paths)
+			}
 			if((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
 				nrmId = loadInfo.nrmId
 				hold = loadHold
@@ -925,7 +929,7 @@ var define, require
 				nrmId = base.nrmId
 			}
 			var baseUrl = base.baseUrl || config.baseUrl
-			var exports, module
+			var exports, module, factoryRes
 			var args = _getArray(arguments)
 			module = {
 				id: nrmId,
@@ -934,12 +938,19 @@ var define, require
 			if(deps[2] == 'module') {
 				args[2] = module
 			}
-			exports = args[1]
 			if(_isFunction(factory)) {
-				exports = factory.apply(null, args) || exports
+				if(deps[1] == 'exports') {
+					exports = args[1] = {}
+					factoryRes = factory.apply(null, args)
+					exports = module.exports || factoryRes || exports
+				} else {
+					factoryRes = factory.apply(null, args)
+					exports = module.exports || factoryRes
+				}
 			} else {
 				exports = factory
 			}
+			module.exports = exports
 			new Def(nrmId, baseUrl, exports, module)
 			hold.dispatch(0)
 			hold.remove()
