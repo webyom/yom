@@ -940,13 +940,9 @@ var define, require
 			}
 			if(_isFunction(factory)) {
 				if(deps[1] == 'exports') {
-					exports = args[1] = {}
-					factoryRes = factory.apply(null, args)
-					exports = module.exports || factoryRes || exports
-				} else {
-					factoryRes = factory.apply(null, args)
-					exports = module.exports || factoryRes
+					exports = module.exports = args[1] = {}
 				}
+				exports = factory.apply(null, args) || module.exports
 			} else {
 				exports = factory
 			}
