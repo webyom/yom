@@ -472,7 +472,7 @@ var define, require
 	 * id start width 'http:', 'https:', '/', or end with '.js' is unnormal
 	 */
 	function _isUnnormalId(id) {
-		return (/^https?:|^\/|.js$/).test(id)
+		return (/^https?:|^\/|\.js$/).test(id)
 	}
 
 	function _isRelativePath(path) {
